@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "concept-removal"
+version = "0.1.0"
+description = "Prompt-based suppression of load-bearing concepts in LLMs (Round 1)."
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+  "pydantic>=2.6",
+  "pyyaml>=6.0",
+]
+[project.optional-dependencies]
+analysis = ["numpy>=1.26", "pandas>=2.1", "scikit-learn>=1.4", "matplotlib>=3.8", "nltk>=3.8"]
+data = ["datasets>=2.20"]
+gpu = [
+  "vllm==0.24.0",
+  "transformers==5.13.0",
+  "datasets>=2.20",
+  "huggingface-hub>=0.34",
+  "rouge-score>=0.1.2",
+  "bitsandbytes>=0.43",
+]
+opt = ["dspy[optuna]>=3.0"]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+[tool.setuptools.packages.find]
+include = ["src*"]
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+[tool.pytest.ini_options]
+testpaths = ["tests"]

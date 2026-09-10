@@ -1,0 +1,5 @@
+run: round1
+probe_types: [forget]
+conditions: [baseline, suppressed]
+prompt_suppressed: world-frame
+sampling: {temperature: 0.0, top_p: 1.0, max_tokens: 1024, seed: 0}

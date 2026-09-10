@@ -1,0 +1,5 @@
+run: exp2
+probe_types: [forget, retain, neighbor, utility]
+conditions: [baseline, suppressed]
+prompt_suppressed: scoped-ignorance
+sampling: {temperature: 0.0, top_p: 1.0, max_tokens: 4096, seed: 0}

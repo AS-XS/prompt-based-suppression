@@ -1,0 +1,5 @@
+run: wmdp5
+probe_types: [forget, neighbor, utility]
+conditions: [baseline, suppressed]
+prompt_suppressed: scoped-directed@specific
+sampling: {temperature: 0.0, top_p: 1.0, max_tokens: 8192, seed: 0}

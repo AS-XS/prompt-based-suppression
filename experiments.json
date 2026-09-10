@@ -1,0 +1,313 @@
+{
+  "exp1": {
+    "config": "configs/exp1.yaml",
+    "models": [
+      "Qwen3-1.7B",
+      "Qwen3-8B",
+      "Qwen3-14B",
+      "gemma-4-E2B-it",
+      "Olmo-3-7B-Instruct",
+      "Olmo-3-7B-Think",
+      "Meta-Llama-3-8B-Instruct"
+    ],
+    "waves": [
+      "none-baseline",
+      "world-frame",
+      "ignorance-frame",
+      "no-meta"
+    ],
+    "build": [
+      "--entities",
+      "200",
+      "--mmlu-limit",
+      "150",
+      "--retain-limit",
+      "100"
+    ],
+    "split": false
+  },
+  "exp2": {
+    "config": "configs/exp2.yaml",
+    "models": [
+      "Qwen3-8B",
+      "Qwen3-14B",
+      "gemma-4-E2B-it",
+      "Olmo-3-7B-Instruct",
+      "Olmo-3-7B-Think",
+      "Meta-Llama-3-8B-Instruct"
+    ],
+    "waves": [
+      "none-baseline",
+      "scoped-ignorance",
+      "scoped-world",
+      "scoped-no-meta"
+    ],
+    "build": [
+      "--entities",
+      "200",
+      "--mmlu-limit",
+      "150",
+      "--retain-limit",
+      "100"
+    ],
+    "split": false
+  },
+  "exp3": {
+    "config": "configs/exp3.yaml",
+    "models": [
+      "Qwen3-8B",
+      "Qwen3-14B",
+      "gemma-4-E2B-it",
+      "Olmo-3-7B-Instruct",
+      "Olmo-3-7B-Think",
+      "Meta-Llama-3-8B-Instruct"
+    ],
+    "waves": [
+      "none-baseline",
+      "sys-scoped-ignorance",
+      "sys-scoped-world",
+      "sys-scoped-no-meta"
+    ],
+    "build": [
+      "--entities",
+      "200",
+      "--mmlu-limit",
+      "150",
+      "--retain-limit",
+      "100"
+    ],
+    "split": false
+  },
+  "wmdp1": {
+    "config": "configs/wmdp1.yaml",
+    "models": [
+      "Qwen3-8B",
+      "Qwen3-14B",
+      "gemma-4-E2B-it",
+      "Olmo-3-7B-Instruct",
+      "Olmo-3-7B-Think",
+      "Meta-Llama-3-8B-Instruct",
+      "zephyr-7b-beta"
+    ],
+    "waves": [
+      "none-baseline",
+      "scoped-ignorance@generic",
+      "scoped-ignorance@domain",
+      "scoped-ignorance@specific",
+      "scoped-ignorance@keywords",
+      "scoped-world@generic",
+      "scoped-world@domain",
+      "scoped-world@specific",
+      "scoped-world@keywords",
+      "scoped-no-meta@generic",
+      "scoped-no-meta@domain",
+      "scoped-no-meta@specific",
+      "scoped-no-meta@keywords"
+    ],
+    "build": [
+      "--wmdp",
+      "bio",
+      "cyber"
+    ],
+    "split": true,
+    "waves_by_model": {
+      "Qwen3-14B": [
+        "none-baseline",
+        "scoped-ignorance@generic",
+        "scoped-world@generic",
+        "scoped-no-meta@generic"
+      ],
+      "gemma-4-E2B-it": [
+        "none-baseline",
+        "scoped-ignorance@generic",
+        "scoped-world@generic",
+        "scoped-no-meta@generic"
+      ],
+      "Olmo-3-7B-Instruct": [
+        "none-baseline",
+        "scoped-ignorance@generic",
+        "scoped-world@generic",
+        "scoped-no-meta@generic"
+      ],
+      "Olmo-3-7B-Think": [
+        "none-baseline",
+        "scoped-ignorance@generic",
+        "scoped-world@generic",
+        "scoped-no-meta@generic"
+      ],
+      "Meta-Llama-3-8B-Instruct": [
+        "none-baseline",
+        "scoped-ignorance@generic",
+        "scoped-world@generic",
+        "scoped-no-meta@generic"
+      ]
+    }
+  },
+  "wmdp2": {
+    "config": "configs/wmdp2.yaml",
+    "models": [
+      "Qwen3-8B",
+      "gemma-4-E2B-it",
+      "Olmo-3-7B-Think"
+    ],
+    "waves": [
+      "none-baseline",
+      "scoped-ignorance@generic",
+      "scoped-world@generic",
+      "scoped-no-meta@generic"
+    ],
+    "build": [
+      "--wmdp",
+      "bio",
+      "cyber"
+    ],
+    "split": true
+  },
+  "wmdp3": {
+    "config": "configs/wmdp3.yaml",
+    "models": [
+      "Meta-Llama-3-8B-Instruct",
+      "gemma-4-E2B-it",
+      "Qwen3-8B",
+      "zephyr-7b-beta"
+    ],
+    "waves": [
+      "none-baseline",
+      "scoped-world@generic",
+      "thaker-sandbag"
+    ],
+    "build": [
+      "--wmdp",
+      "bio",
+      "cyber"
+    ],
+    "split": true
+  },
+  "wmdp4": {
+    "config": "configs/wmdp4.yaml",
+    "models": [
+      "Meta-Llama-3-8B-Instruct",
+      "gemma-4-E2B-it",
+      "zephyr-7b-beta"
+    ],
+    "waves": [
+      "none-baseline",
+      "scoped-ignorance@generic",
+      "scoped-ignorance@domain",
+      "scoped-ignorance@specific",
+      "scoped-ignorance@keywords",
+      "scoped-world@generic",
+      "scoped-world@domain",
+      "scoped-world@specific",
+      "scoped-world@keywords",
+      "scoped-no-meta@generic",
+      "scoped-no-meta@domain",
+      "scoped-no-meta@specific",
+      "scoped-no-meta@keywords",
+      "scoped-directed",
+      "scoped-directed-fewshot",
+      "scoped-retain",
+      "scoped-sandbag"
+    ],
+    "build": [
+      "--wmdp",
+      "bio",
+      "cyber"
+    ],
+    "split": true
+  },
+  "wmdp5": {
+    "config": "configs/wmdp5.yaml",
+    "models": [
+      "Meta-Llama-3-8B-Instruct",
+      "gemma-4-E2B-it"
+    ],
+    "waves": [
+      "none-baseline",
+      "scoped-world@specific",
+      "scoped-retain@specific",
+      "scoped-sandbag@specific",
+      "scoped-sandbag",
+      "scoped-directed@specific",
+      "scoped-directed",
+      "scoped-directed-fewshot@specific",
+      "scoped-directed-fewshot-grouped@specific",
+      "scoped-directed-named-exact@specific",
+      "scoped-directed-named-broad@specific",
+      "scoped-directed-aware@specific",
+      "scoped-sandbag-aware@specific"
+    ],
+    "build": [
+      "--wmdp",
+      "bio",
+      "cyber"
+    ],
+    "split": true
+  },
+  "wmdp5.1": {
+    "config": "configs/wmdp5.1.yaml",
+    "models": [
+      "gemma-4-E2B-it",
+      "gemma-4-E4B-it",
+      "gemma-4-12B-it",
+      "gemma-4-31B-it",
+      "Meta-Llama-3-8B-Instruct",
+      "Meta-Llama-3-70B-Instruct"
+    ],
+    "waves": [
+      "none-baseline",
+      "scoped-world@specific",
+      "scoped-retain@specific",
+      "scoped-sandbag@specific",
+      "scoped-sandbag",
+      "scoped-directed@specific",
+      "scoped-directed",
+      "scoped-directed-fewshot@specific",
+      "scoped-directed-fewshot-grouped@specific",
+      "scoped-directed-named-exact@specific",
+      "scoped-directed-named-broad@specific",
+      "scoped-directed-aware@specific",
+      "scoped-sandbag-aware@specific"
+    ],
+    "build": [
+      "--wmdp",
+      "bio",
+      "cyber"
+    ],
+    "split": true
+  },
+  "wmdp6": {
+    "config": "configs/wmdp6.yaml",
+    "models": [
+      "Meta-Llama-3-8B-Instruct",
+      "gemma-4-E2B-it"
+    ],
+    "waves": [
+      "none-baseline",
+      "li-baseline",
+      "li-oblivious",
+      "li-aware"
+    ],
+    "build": [
+      "--wmdp",
+      "bio",
+      "cyber"
+    ],
+    "split": true
+  },
+  "rmu1": {
+    "config": "configs/rmu1.yaml",
+    "models": [
+      "Meta-Llama-3-8B-Instruct"
+    ],
+    "waves": [
+      "none-baseline"
+    ],
+    "build": [
+      "--wmdp",
+      "bio",
+      "cyber"
+    ],
+    "split": true
+  }
+}

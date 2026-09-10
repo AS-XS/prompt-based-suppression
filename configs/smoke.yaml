@@ -1,0 +1,14 @@
+config_id: smoke
+model: stub/echo-tiny
+endpoint: offline
+concept_id: biology
+concept_class: general
+concept_subtype: subject
+prompt_id: world-frame
+condition: suppressed
+think_state: na
+sampling:
+  temperature: 0.0
+  top_p: 1.0
+  max_tokens: 256
+  seed: 0

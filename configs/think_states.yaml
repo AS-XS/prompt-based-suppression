@@ -1,0 +1,39 @@
+Qwen3-1.7B:   {states: ["off", "on"], toggle: enable_thinking, tag: "<think>", default: verified-by-toggle}
+Qwen3-4B:     {states: ["off", "on"], toggle: enable_thinking, tag: "<think>", default: verified-by-toggle}
+Qwen3-8B:     {states: ["off", "on"], toggle: enable_thinking, tag: "<think>", default: verified-by-toggle}
+Qwen3-14B:    {states: ["off", "on"], toggle: enable_thinking, tag: "<think>", default: verified-by-toggle}
+Qwen3-32B:    {states: ["off", "on"], toggle: enable_thinking, tag: "<think>", default: verified-by-toggle}
+DeepSeek-R1-Distill-Llama-8B: {states: ["on"], toggle: null, tag: "<think>", default: always-on}
+DeepSeek-R1-Distill-Qwen-14B: {states: ["on"], toggle: null, tag: "<think>", default: always-on}
+GLM-Z1-9B-0414:               {states: ["on"], toggle: null, tag: "<think>", default: always-on}
+Phi-4-reasoning:              {states: ["on"], toggle: null, tag: "<think>", default: always-on}
+Olmo-3-7B-Think:              {states: ["on"], toggle: null, tag: "<think>", control_tokens: true, default: always-on}
+gemma-4-E2B-it: {states: ["off", "on"], toggle: enable_thinking, tag: "<|channel> ... <channel|>", control_tokens: true, default: "off (undefined -> false)"}
+gemma-4-E4B-it: {states: ["off", "on"], toggle: enable_thinking, tag: "<|channel> ... <channel|>", control_tokens: true, default: "off (undefined -> false)"}
+gemma-4-12B-it: {states: ["off", "on"], toggle: enable_thinking, tag: "<|channel> ... <channel|>", control_tokens: true, default: "off (undefined -> false)"}
+gemma-4-31B-it: {states: ["off", "on"], toggle: enable_thinking, tag: "<|channel> ... <channel|>", control_tokens: true, default: "off (undefined -> false)"}
+gpt-oss-20b: {states: ["na"], toggle: reasoning_effort, tag: null, default: UNKNOWN}
+Falcon3-10B-Instruct:           {states: ["na"], toggle: null, tag: null, default: none}
+Falcon3-Mamba-7B-Instruct:      {states: ["na"], toggle: null, tag: null, default: none}
+GLM-4-9B-0414:                  {states: ["na"], toggle: null, tag: null, default: none}
+Llama-3.1-8B-Instruct:          {states: ["na"], toggle: null, tag: null, default: none}
+Llama-3.2-1B-Instruct:          {states: ["na"], toggle: null, tag: null, default: none}
+Llama-3.2-3B-Instruct:          {states: ["na"], toggle: null, tag: null, default: none}
+Meta-Llama-3-8B-Instruct:       {states: ["na"], toggle: null, tag: null, default: none}
+Meta-Llama-3-70B-Instruct:      {states: ["na"], toggle: null, tag: null, default: none}
+Mistral-7B-Instruct-v0.3:       {states: ["na"], toggle: null, tag: null, default: none}
+zephyr-7b-beta:                 {states: ["na"], toggle: null, tag: null, default: none}
+Mistral-Nemo-Instruct-2407:     {states: ["na"], toggle: null, tag: null, default: none}
+Mistral-Small-24B-Instruct-2501: {states: ["na"], toggle: null, tag: null, default: none}
+OLMo-2-1124-13B-Instruct:       {states: ["na"], toggle: null, tag: null, default: none}
+Olmo-3-7B-Instruct:             {states: ["na"], toggle: null, tag: null, default: none}
+Phi-3.5-mini-instruct:          {states: ["na"], toggle: null, tag: null, default: none}
+Qwen2.5-1.5B-Instruct:          {states: ["na"], toggle: null, tag: null, default: none}
+Qwen2.5-7B-Instruct:            {states: ["na"], toggle: null, tag: null, default: none}
+Qwen2.5-14B-Instruct:           {states: ["na"], toggle: null, tag: null, default: none}
+Yi-1.5-9B-Chat:                 {states: ["na"], toggle: null, tag: null, default: none}
+gemma-2-9b-it:                  {states: ["na"], toggle: null, tag: null, default: none}
+gemma-3-12b-it:                 {states: ["na"], toggle: null, tag: null, default: none}
+gemma-3-27b-it:                 {states: ["na"], toggle: null, tag: null, default: none}
+phi-4:                          {states: ["na"], toggle: null, tag: null, default: none}
+Qwen3.6-27B: {states: ["na"], toggle: enable_thinking, tag: "<think>", default: UNKNOWN}
