@@ -17,7 +17,7 @@ reference/
 previous_work/
 png/
 figures/
-data/
+/data/
 *.jsonl
 *.safetensors
 *.bin
