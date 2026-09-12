@@ -3,7 +3,7 @@
     ".github/workflows/test.yml": "ea026a67c451db4084995ae42b876220678c2ea2fdb22c1656d58e1c2a3f29a7",
     ".gitignore": "b78cc22b79347394fff6ba80bc384fe664656666ceb30889f357796dccb139e0",
     "Makefile": "993b623b77c555cf3b52a450c00ac54aa37c8b9122a44c37f384ae002a59a30f",
-    "README.md": "4c7b5a9331055fc0f254fbbcdb43d4148ae04b532746527fdbb5f92e73fd87a4",
+    "README.md": "78aaa56da5aa4320a07522756ccc4e443fe466918f3ff739c1fd0b74e3f22755",
     "configs/exp1.yaml": "4363acb04700ad50a807bd1f702ce994ca95060a2167a98ed7360ddff390507f",
     "configs/exp2.yaml": "697fa8d916e09ba7d3025c7aa4749d1d05547d256b619e3af8c74eb98d1af375",
     "configs/exp3.yaml": "081dd0cdaa6d11fb09e213347e6302d9753a8045dd7376510457be18fde8e647",
@@ -164,5 +164,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "14c65a03fd3ed55f9230d6b6b8803de7efd919a3"
+  "source_revision": "9c169e9ec73409ac958f2221e500974231523277"
 }

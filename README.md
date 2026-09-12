@@ -127,7 +127,7 @@ tests are excluded because scheduler launchers are not distributed. `.export-sta
 the source revision and exported file hashes without importing source Git history.
 
 This repository is a one-way code export. Local edits stop synchronization instead of being
-overwritten. Updates are validated locally before an explicit publication step. The export tool
+overwritten. Updates are validated locally before automatic publication from the source checkout. The export tool
 and machine-specific hook configuration are maintained outside this repository.
 
 ## Attribution
