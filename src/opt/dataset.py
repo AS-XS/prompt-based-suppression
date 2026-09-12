@@ -1,22 +1,13 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import Iterable
 
+from src.io import read_dicts as _read_jsonl
 from src.analysis.accuracy import extract_letter_tiered
 from src.analysis.surfaces import answer_of
 from src.data.split import read_val_ids
 from src.prompts import render_question
 from src.prompts.examples import demo_answer
-
-
-def _read_jsonl(path: Path) -> Iterable[dict]:
-    with path.open(encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                yield json.loads(line)
 
 
 def build_examples(items_path: Path, baseline_path: Path, split_path: Path, *,

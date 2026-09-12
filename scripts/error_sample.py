@@ -4,15 +4,14 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import glob
-import json
 import sys
 from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.io import read_dicts as _read_dicts, write_csv  # noqa: E402
 from src.analysis.accuracy import score_generations  # noqa: E402
 from src.analysis.errors import (looks_like_refusal, outcome_table,  # noqa: E402
                                  pair_outcomes, stratified_sample)
@@ -25,20 +24,8 @@ _SAMPLE_COLS = ["model", "think_state", "prompt_id", "concept_id", "mmlu_subject
                 "mentions_concept", "explanation", "raw_output"]
 
 
-def _read_dicts(path: Path):
-    with path.open(encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                yield json.loads(line)
-
-
 def _write_csv(path: Path, rows, cols):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
-        w.writeheader()
-        w.writerows(rows)
+    write_csv(path, rows, cols)
 
 
 def main() -> int:

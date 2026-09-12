@@ -5,12 +5,12 @@ from __future__ import annotations
 
 import argparse
 import glob
-import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.io import read_dicts as _read_dicts  # noqa: E402
 from src.analysis.accuracy import delta_table, score_generations  # noqa: E402
 from src.analysis.grouping import eval_subject, tested_concept  # noqa: E402
 from src.analysis.present import (concept_table, model_table, render,  # noqa: E402
@@ -136,14 +136,6 @@ _BY_CONCEPT_NOTE = (
     "suppressing *anything*), so a large drop in one retain column may be that subject, not the "
     "suppression. The pooled table in `../tables.md` is the summary of these."
 )
-
-
-def _read_dicts(path: Path):
-    with path.open(encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                yield json.loads(line)
 
 
 def _item_index(path: Path) -> dict[str, dict]:

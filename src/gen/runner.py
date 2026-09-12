@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Iterable, Iterator, Type, TypeVar
 
 from pydantic import BaseModel
 
+from src.io import read_dicts
 from src.data.schema import GenerationRow, Item, Sampling
 from src.provenance import config_hash, git_commit
 
@@ -39,11 +39,7 @@ def append_jsonl(path: str | Path, rows: Iterable[BaseModel]) -> int:
 def iter_jsonl(path: str | Path) -> Iterator[dict]:
 
 
-    with Path(path).open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                yield json.loads(line)
+    yield from read_dicts(Path(path))
 
 
 def read_jsonl(path: str | Path, model: Type[T]) -> Iterator[T]:

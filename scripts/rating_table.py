@@ -6,22 +6,14 @@ from __future__ import annotations
 import argparse
 import csv
 import glob
-import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.io import read_dicts as _read_dicts  # noqa: E402
 from src.analysis.ratings import MODES, rating_table  # noqa: E402
 from src.paths import analysis_dir, judgments_dir  # noqa: E402
-
-
-def _read_dicts(path: Path):
-    with path.open(encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                yield json.loads(line)
 
 
 def main() -> int:

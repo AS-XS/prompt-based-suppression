@@ -13,6 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.io import read_dicts  # noqa: E402
 from src.analysis.surfaces import answer_of, explanation_of, trace_of  # noqa: E402
 from src.data.schema import GenerationRow  # noqa: E402
 from src.gen.env import make_llm, setup_vllm_env  # noqa: E402
@@ -39,11 +40,7 @@ def _read_dicts(path: Path):
 
     if not path.exists():
         return
-    with path.open(encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                yield json.loads(line)
+    yield from read_dicts(path)
 
 
 def plan_file(gens_path, out_dir, suppressed_only, limit, surfaces=("explanation",),

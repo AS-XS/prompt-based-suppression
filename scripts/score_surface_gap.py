@@ -6,24 +6,16 @@ from __future__ import annotations
 import argparse
 import csv
 import glob
-import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.io import read_dicts as _read_dicts  # noqa: E402
 from src.analysis.surface_gap import surface_gap_table  # noqa: E402
 from src.data.terms import has_vocabulary  # noqa: E402
 from src.paths import analysis_dir, generations_glob  # noqa: E402
 from src.provenance import select_one_config  # noqa: E402
-
-
-def _read_dicts(path: Path):
-    with path.open(encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                yield json.loads(line)
 
 
 def main() -> int:

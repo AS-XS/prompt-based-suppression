@@ -4,34 +4,17 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import glob
-import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.io import read_dicts as _read_dicts, write_csv as _write_csv  # noqa: E402
 from src.analysis.modes import MODES, conditional_stats, mode_distribution  # noqa: E402
 from src.paths import analysis_dir, primitive_judgments_glob  # noqa: E402
 
 _PRIMS = ("semantic_leak", "meta_reference", "fluent")
-
-
-def _read_dicts(path: Path):
-    with path.open(encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                yield json.loads(line)
-
-
-def _write_csv(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
-        w.writeheader()
-        w.writerows(rows)
 
 
 def main() -> int:

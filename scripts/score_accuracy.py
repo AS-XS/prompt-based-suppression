@@ -4,28 +4,19 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import glob
-import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.io import read_dicts as _read_dicts, write_csv as _write_csv  # noqa: E402
 from src.analysis.accuracy import accuracy_table, delta_table, score_generations  # noqa: E402
 from src.analysis.grouping import eval_subject  # noqa: E402
 from src.data.mmlu import SUBJECT_TO_CONCEPT  # noqa: E402
 from src.data.split import SPLITS, read_val_ids, select, split_counts  # noqa: E402
 from src.paths import analysis_dir, generations_glob, items_path, split_path, stale_analysis  # noqa: E402
 from src.provenance import select_one_config  # noqa: E402
-
-
-def _read_dicts(path: Path):
-    with path.open(encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                yield json.loads(line)
 
 
 def _item_index(path: Path) -> dict[str, dict]:
@@ -36,14 +27,6 @@ def _item_index(path: Path) -> dict[str, dict]:
                               "mmlu_subject": eval_subject(it),
                               "probe_type": it.get("probe_type"), "concept_id": it.get("concept_id")}
     return idx
-
-
-def _write_csv(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
-        w.writeheader()
-        w.writerows(rows)
 
 
 def _delta_cols(base: list[str], supp_prompts: list[str]) -> list[str]:
