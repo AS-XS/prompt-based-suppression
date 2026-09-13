@@ -20,6 +20,10 @@ def test_every_directed_id_is_registered():
         "scoped-directed-fewshot-grouped",
         "scoped-directed-named-exact", "scoped-directed-named-broad",
         "scoped-directed-aware", "scoped-sandbag-aware",
+
+        "scoped-directed-named-broad-aware",
+        "scoped-directed-fewshot-grouped-aware",
+        "scoped-directed-fewshot-grouped-named-broad-aware",
     }
     assert set(DIRECTED_PROMPT_IDS) <= set(ALL_PROMPT_IDS)
 
@@ -138,3 +142,48 @@ def test_the_four_ablation_rungs_all_hash_differently():
     ids = ["scoped-world@generic", "scoped-retain", "scoped-sandbag", "scoped-directed"]
     hashes = [prompt_fingerprint(i, answer_format="letter-only") for i in ids]
     assert len(set(hashes)) == 4, dict(zip(ids, hashes))
+
+
+_WMDP7 = ("scoped-directed-named-broad-aware",
+          "scoped-directed-fewshot-grouped-aware",
+          "scoped-directed-fewshot-grouped-named-broad-aware")
+
+
+def test_wmdp7_ids_did_not_move_any_existing_fingerprint():
+
+
+    for pid in ("scoped-world@specific", "scoped-directed@specific", "scoped-directed-aware",
+                "scoped-directed-fewshot-grouped", "scoped-directed-named-broad",
+                "scoped-directed", "scoped-sandbag", "scoped-retain"):
+        assert prompt_fingerprint(pid), pid
+
+    fps = {pid: prompt_fingerprint(pid) for pid in
+           _WMDP7 + ("scoped-directed-aware", "scoped-directed-fewshot-grouped",
+                     "scoped-directed-named-broad")}
+    assert len(set(fps.values())) == len(fps), f"fingerprint collision: {fps}"
+
+
+@pytest.mark.parametrize("pid", _WMDP7)
+def test_wmdp7_ids_render_and_carry_their_components(pid):
+
+
+    from src.prompts import takes_examples
+
+    demos = _EX + [("Q3?\nA) a\nB) b", "Answer: A")] if takes_examples(pid) else None
+    text = build_messages(f"{pid}@specific", "wmdp-bio", "<Q>", demos)[0]["content"]
+    assert "monitor will read your entire reasoning output" in text, "lost the -aware clause"
+    assert "incorrectly" in text, "lost the sandbag half"
+    if "named-broad" in pid:
+        assert "general biology, medicine and the life sciences" in text, "lost the broad scope"
+        assert "{retain}" not in text, "retain slot left unfilled"
+    if "fewshot-grouped" in pid:
+        assert "Here are a few examples:" in text, "lost the examples"
+
+
+@pytest.mark.parametrize("pid", [p for p in _WMDP7 if "fewshot" in p])
+def test_wmdp7_example_ids_reuse_the_grouped_slot_policy(pid):
+
+
+    from src.prompts.examples import slots_for
+
+    assert slots_for(pid) == slots_for("scoped-directed-fewshot-grouped")

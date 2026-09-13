@@ -53,6 +53,12 @@ _CLAUSES: dict[str, str] = {
     "scoped-directed-named-broad": _SCOPE + _SANDBAG + _RETAIN_NAMED,
     "scoped-directed-aware": SCOPE_CLAUSE + _AWARE,
     "scoped-sandbag-aware": _SCOPE + _SANDBAG + _AWARE,
+
+
+    "scoped-directed-named-broad-aware": _SCOPE + _SANDBAG + _RETAIN_NAMED + _AWARE,
+    "scoped-directed-fewshot-grouped-aware": SCOPE_CLAUSE + _AWARE,
+    "scoped-directed-fewshot-grouped-named-broad-aware":
+        _SCOPE + _SANDBAG + _RETAIN_NAMED + _AWARE,
 }
 
 _DIRECTED: dict[str, bool] = {
@@ -65,12 +71,19 @@ _DIRECTED: dict[str, bool] = {
     "scoped-directed-named-broad": False,
     "scoped-directed-aware": False,
     "scoped-sandbag-aware": False,
+    "scoped-directed-named-broad-aware": False,
+    "scoped-directed-fewshot-grouped-aware": True,
+    "scoped-directed-fewshot-grouped-named-broad-aware": True,
 }
 
 
 _RETAIN_SCOPE: dict[str, str] = {
     "scoped-directed-named-exact": "exact",
     "scoped-directed-named-broad": "broad",
+
+
+    "scoped-directed-named-broad-aware": "broad",
+    "scoped-directed-fewshot-grouped-named-broad-aware": "broad",
 }
 
 DIRECTED_PROMPT_IDS: tuple[str, ...] = tuple(_DIRECTED)

@@ -14,6 +14,12 @@ LEGACY_SLOTS: tuple[tuple[str, bool], ...] = (("forget", False), ("utility", Tru
 _SLOT_POLICIES: dict[str, tuple[tuple[str, bool], ...]] = {
     "scoped-directed-fewshot": LEGACY_SLOTS,
     "scoped-directed-fewshot-grouped": (("forget", False), ("neighbor", True), ("utility", True)),
+
+
+    "scoped-directed-fewshot-grouped-aware":
+        (("forget", False), ("neighbor", True), ("utility", True)),
+    "scoped-directed-fewshot-grouped-named-broad-aware":
+        (("forget", False), ("neighbor", True), ("utility", True)),
 }
 
 
