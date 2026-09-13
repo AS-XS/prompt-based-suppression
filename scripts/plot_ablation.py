@@ -7,6 +7,7 @@ import argparse
 import collections
 import csv
 import sys
+import textwrap
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -116,32 +117,70 @@ def _drops(run: str, vs: str | None = None):
     return out
 
 
+THIN = 0.50
+
+
+def _hazard(run: str, vs: str | None = None):
+
+
+    forget, _ = _load(run)
+    out = {}
+    for key, row in forget.items():
+        nb = int(row["n_baseline"]) if row.get("n_baseline") else 0
+        for pid, _, _ in CELLS:
+            a, d = row.get(f"{pid}_acc"), row.get(f"{pid}_drop")
+            n = row.get(f"{pid}_n")
+            if vs is not None or not (a and d):
+                continue
+            out[(key, pid)] = ((float(a) + float(d)) * 100, int(n) if n else 0, nb)
+    return out
+
+
 def _render_table(plt, args, keys, data):
 
 
+    if args.split:
+        models = sorted({k[0] for k in keys})
+        for m in models:
+            _render_table_fig(plt, args, [k for k in keys if k[0] == m], data, suffix=m)
+        return 0
+    return _render_table_fig(plt, args, keys, data)
+
+
+def _render_table_fig(plt, args, keys, data, suffix: str | None = None):
+
+
     base = _baselines(args.run, args.vs)
+    hz_base = _hazard(args.run, args.vs)
     ncol = 2
     nrow = (len(keys) + ncol - 1) // ncol
-    fig, axes = plt.subplots(nrow, ncol, figsize=(15, 2.5 * nrow + 4.2), squeeze=False)
+    foot_in = 0.17 * (len(CELLS) + 10) + 0.4
+    fig_h = 2.5 * nrow + foot_in + 1.6
+    fig, axes = plt.subplots(nrow, ncol, figsize=(15, fig_h), squeeze=False)
     flat = [a for row in axes for a in row]
+    thin_any: list[tuple[str, int, int]] = []
 
     for ax, key in zip(flat, keys):
         model, think, concept = key
         cells, b = data[key], base.get(key, {})
         ax.axis("off")
-        rows, text = [], []
+        rows, text, thin = [], [], []
         for pid, lbl, _ in CELLS:
             if pid not in cells:
                 continue
+            hb, n, nb = hz_base.get((key, pid), (None, 0, 0))
+            if nb and n < THIN * nb:
+                lbl += f"  ‡{n}"
+                thin.append((lbl, n, nb))
             rows.append(lbl)
             line = []
             for t, tier in enumerate(("hazard", "near", "far")):
-                b0 = b.get(tier)
+                b0 = hb if tier == "hazard" and hb is not None else b.get(tier)
                 drop = cells[pid][t]
                 line.append(f"{b0:.0f}% → {b0 - drop:.0f}%" if b0 is not None else f"−{drop:.0f} pp")
 
 
-            hz = b.get("hazard")
+            hz = hz_base.get((key, pid), (b.get("hazard"), 0, 0))[0]
             if hz is None:
                 line.append("—")
             else:
@@ -153,7 +192,7 @@ def _render_table(plt, args, keys, data):
 
 
         tbl = ax.table(cellText=text, rowLabels=rows,
-                       colLabels=["HAZARD (target)", "NEIGHBOUR", "FAR MMLU", "% REMOVED"],
+                       colLabels=["HAZARD", "NEIGHBOUR", "FAR MMLU", "% REMOVED"],
                        colWidths=[0.21, 0.21, 0.21, 0.16],
                        cellLoc="center", rowLoc="right", loc="center")
         tbl.auto_set_font_size(False); tbl.set_fontsize(9.5); tbl.scale(1, 1.55)
@@ -171,14 +210,26 @@ def _render_table(plt, args, keys, data):
 
 
                 cell.set_facecolor(plt.cm.Reds(min(max(drop, 0) / 55.0, 0.75)) if drop > 2 else "white")
+        thin_any += thin
         state = "thinking on" if think == "on" else ("thinking off" if think == "off" else "no reasoning mode")
         ax.set_title(f"{model}  ·  {concept}  ({state})", fontsize=11, pad=16)
 
     for ax in flat[len(keys):]:
         ax.set_visible(False)
 
-    fig.suptitle(f"{args.run} — accuracy before → after, by distance from the target", fontsize=14, y=0.995)
-    footer = ("Chance is 25% on every tier: an accuracy below it means the model still knows the "
+    title = f"{args.run} — accuracy before → after, by distance from the target"
+    if suffix:
+        title = f"{suffix}  ·  {args.run} — accuracy before → after, by distance from the target"
+    fig.suptitle(title, fontsize=14, y=0.995)
+    warn = ""
+    if thin_any:
+        warn = textwrap.fill(
+            f"\u2021 SCORED ON FEWER THAN {THIN:.0%} OF THE ITEMS — the rest of that wave's "
+            "generations did not parse (gemma-4-12B-it think-on truncates). The number after "
+            "\u2021 is how many items survived. Do not read those rows as results.", 104) + "\n"
+    footer = (warn + "HAZARD = the WMDP questions being suppressed  ·  NEIGHBOUR = the concept's declared "
+              "near subjects  ·  FAR MMLU = general capability\n"
+              "Chance is 25% on every tier: an accuracy below it means the model still knows the "
               "answer and is avoiding it.\nDarker shading = more accuracy destroyed. That is GOOD in "
               "the first column and BAD in the other two.\n\n")
 
@@ -191,8 +242,9 @@ def _render_table(plt, args, keys, data):
     fig.text(0.012, 0.005, footer, fontsize=8.8, va="bottom", family="monospace")
 
     out_dir = Path(args.out); out_dir.mkdir(parents=True, exist_ok=True)
-    out = out_dir / f"{args.run}_ablation_table.png"
-    fig.subplots_adjust(top=0.90, bottom=0.30, hspace=0.55, wspace=0.30)
+    out = out_dir / (f"{args.run}_ablation_table"
+                     + (f"_{suffix}" if suffix else "") + ".png")
+    fig.subplots_adjust(top=0.90, bottom=foot_in / fig_h, hspace=0.62, wspace=0.30)
     fig.savefig(out, dpi=170, bbox_inches="tight", facecolor="white")
     print(f"wrote {out}  ({len(keys)} cell(s))")
     return 0
@@ -239,6 +291,8 @@ def main() -> int:
     ap.add_argument("--out", default="png")
     ap.add_argument("--vs", default=None, metavar="WAVE",
                     help='Vs.')
+    ap.add_argument("--split", action="store_true",
+                    help='Split.')
     ap.add_argument("--table", action="store_true",
                     help='Table.')
     ap.add_argument("--only-responsive", action="store_true",
@@ -292,6 +346,7 @@ def main() -> int:
             for x, v in zip(xs, vals):
                 ax.text(x + (t - 1) * width, v + (0.9 if v >= 0 else -2.2), f"{v:.0f}",
                         ha="center", va="bottom" if v >= 0 else "top", fontsize=7.5)
+        thin_any += thin
         state = "thinking on" if think == "on" else ("thinking off" if think == "off" else "no reasoning mode")
         ax.set_title(f"{model}  ·  {concept}  ({state})", fontsize=10.5, pad=8)
         ax.set_xticks(list(xs)); ax.set_xticklabels(labels, fontsize=9)

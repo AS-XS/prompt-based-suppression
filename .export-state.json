@@ -42,7 +42,7 @@
     "scripts/mode_table.py": "ed9ff53779b88766276f34a0cc951669280ec3d9319b5ed69cbcb296c1e5dc5a",
     "scripts/models.txt": "b220290e974a9f96db4bf80435f09466519b5be290b7c85ee4e033d8f91a8b66",
     "scripts/optimize_prompt.py": "bb5d2eed607cc39f5f917d23fb2db5ca981055be479042031a94443c3881daca",
-    "scripts/plot_ablation.py": "7ac810b69ceaf1969806b6438cb292d0b228dfb1451e920d1983979552821cd3",
+    "scripts/plot_ablation.py": "d57fcecbeb6b088a39ca380c4bae817de46a499f2edfb9d9a5673d6486232594",
     "scripts/plot_accuracy.py": "80ca0ffdf95b54b79a8fcfb09e5479220aab5543b3093bf37a67e23e779e0f8f",
     "scripts/present_optimize.py": "b5c97b90d24addeeddaa2f44ea06eb46ee61a7f877d18b5ba4efbac8bf6a7494",
     "scripts/present_tables.py": "c115b03398dbe231f08afeb38e4956177872a78695a51ef87ba909ab6acd0216",
@@ -164,5 +164,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "2342d0371c0770cec92ff18e8a4ab3b4d68232fb"
+  "source_revision": "0699b7d0edb12627a2c51687f0fc9070aaa8cd48"
 }
