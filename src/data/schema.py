@@ -54,6 +54,9 @@ class Sampling(BaseModel):
     seed: int
 
 
+    repetition_penalty: float | None = None
+
+
 class GenerationRow(BaseModel):
 
 

@@ -89,9 +89,11 @@ def make_engine(model_name: str, model_path: str, sampling: Sampling,
     from vllm import SamplingParams
 
 
+    penalty = ({"repetition_penalty": sampling.repetition_penalty}
+               if sampling.repetition_penalty is not None else {})
     sp = SamplingParams(temperature=sampling.temperature, top_p=sampling.top_p,
                         max_tokens=sampling.max_tokens, seed=sampling.seed,
-                        skip_special_tokens=not needs_raw_special(model_name))
+                        skip_special_tokens=not needs_raw_special(model_name), **penalty)
     return llm, sp
 
 
@@ -108,7 +110,9 @@ def run_sweep(model_name: str, model_path: str, items: list[Item], out_path: str
 
     cfg = {"model": model_name, "suppressed_prompt": suppressed_prompt,
            "prompt_fingerprint": prompt_fingerprint(suppressed_prompt, answer_format=answer_format),
-           "sampling": sampling.model_dump()}
+
+
+           "sampling": sampling.model_dump(exclude_none=True)}
     chash, commit = config_hash(cfg), git_commit()
     fmt = answer_format or DEFAULT_ANSWER_FORMAT
     states = think_states_for(model_name)
