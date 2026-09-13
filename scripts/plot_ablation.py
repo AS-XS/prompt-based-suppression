@@ -76,17 +76,27 @@ def _cells(run: str) -> list[tuple[str, str, str]]:
             for p in ordered]
 
 
-def _drops(run: str):
+def _drops(run: str, vs: str | None = None):
+
 
     forget, retain = _load(run)
+
+    def drop(row, pid):
+
+        if vs is None:
+            d = row.get(f"{pid}_drop")
+            return float(d) * 100 if d else None
+        a, b = row.get(f"{vs}_acc"), row.get(f"{pid}_acc")
+        return (float(a) - float(b)) * 100 if a and b else None
+
     tiers = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(list)))
     for r in retain:
         key = (r["model"], r["think_state"], r["concept_id"])
         near = r["mmlu_subject"] in NEAR_RETAIN.get(r["concept_id"], ())
         for pid, _, _ in CELLS:
-            d = r.get(f"{pid}_drop")
-            if d:
-                tiers[key][pid]["near" if near else "far"].append(float(d) * 100)
+            d = drop(r, pid)
+            if d is not None:
+                tiers[key][pid]["near" if near else "far"].append(d)
     out = {}
     for key, byp in tiers.items():
         row = forget.get(key)
@@ -94,11 +104,11 @@ def _drops(run: str):
             continue
         cells = {}
         for pid, _, _ in CELLS:
-            d = row.get(f"{pid}_drop")
-            if not d or pid not in byp:
+            d = drop(row, pid)
+            if d is None or pid not in byp:
                 continue
             near, far = byp[pid].get("near", []), byp[pid].get("far", [])
-            cells[pid] = [float(d) * 100,
+            cells[pid] = [d,
                           sum(near) / len(near) if near else 0.0,
                           sum(far) / len(far) if far else 0.0]
         if cells:
@@ -109,7 +119,7 @@ def _drops(run: str):
 def _render_table(plt, args, keys, data):
 
 
-    base = _baselines(args.run)
+    base = _baselines(args.run, args.vs)
     ncol = 2
     nrow = (len(keys) + ncol - 1) // ncol
     fig, axes = plt.subplots(nrow, ncol, figsize=(15, 2.5 * nrow + 4.2), squeeze=False)
@@ -171,7 +181,11 @@ def _render_table(plt, args, keys, data):
     footer = ("Chance is 25% on every tier: an accuracy below it means the model still knows the "
               "answer and is avoiding it.\nDarker shading = more accuracy destroyed. That is GOOD in "
               "the first column and BAD in the other two.\n\n")
-    footer += "WHAT EACH PROMPT SAYS  (all share “respond from within a world where {concept} does not exist”)\n"
+
+
+    footer += "WHAT EACH PROMPT SAYS\n"
+    if args.vs:
+        footer += f"     measured against `{args.vs}`, not the run's own baseline\n"
     for _, lbl, gloss in CELLS:
         footer += f"     {lbl:<20s} {gloss}\n"
     fig.text(0.012, 0.005, footer, fontsize=8.8, va="bottom", family="monospace")
@@ -184,16 +198,20 @@ def _render_table(plt, args, keys, data):
     return 0
 
 
-def _baselines(run: str):
+def _baselines(run: str, vs: str | None = None):
+
 
     forget, retain = _load(run)
+    col = "baseline_acc" if vs is None else f"{vs}_acc"
     out = collections.defaultdict(dict)
     acc = collections.defaultdict(lambda: collections.defaultdict(lambda: [0.0, 0]))
     for r in retain:
         key = (r["model"], r["think_state"], r["concept_id"])
         tier = "near" if r["mmlu_subject"] in NEAR_RETAIN.get(r["concept_id"], ()) else "far"
         n = int(r["n_baseline"])
-        acc[key][tier][0] += float(r["baseline_acc"]) * n
+        if not r.get(col):
+            continue
+        acc[key][tier][0] += float(r[col]) * n
         acc[key][tier][1] += n
     for key, tiers in acc.items():
         for tier, (tot, n) in tiers.items():
@@ -201,11 +219,17 @@ def _baselines(run: str):
                 out[key][tier] = tot / n * 100
         row = forget.get(key)
         if row:
-            for pid, _, _ in CELLS:
-                a, d = row.get(f"{pid}_acc"), row.get(f"{pid}_drop")
-                if a and d:
-                    out[key]["hazard"] = (float(a) + float(d)) * 100
-                    break
+            if vs is not None:
+
+
+                if row.get(col):
+                    out[key]["hazard"] = float(row[col]) * 100
+            else:
+                for pid, _, _ in CELLS:
+                    a, d = row.get(f"{pid}_acc"), row.get(f"{pid}_drop")
+                    if a and d:
+                        out[key]["hazard"] = (float(a) + float(d)) * 100
+                        break
     return out
 
 
@@ -213,6 +237,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", default="wmdp4")
     ap.add_argument("--out", default="png")
+    ap.add_argument("--vs", default=None, metavar="WAVE",
+                    help='Vs.')
     ap.add_argument("--table", action="store_true",
                     help='Table.')
     ap.add_argument("--only-responsive", action="store_true",
@@ -234,7 +260,7 @@ def main() -> int:
                          f"side_effect.csv — run `python scripts/score_accuracy.py --run {args.run} "
                          f"--split test` first")
 
-    data = _drops(args.run)
+    data = _drops(args.run, args.vs)
     if not data:
         raise SystemExit(f"no scored cells in results/{args.run}/analysis/test/ — run "
                          f"`python scripts/score_accuracy.py --run {args.run} --split test` first")
