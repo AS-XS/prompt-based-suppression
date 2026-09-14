@@ -9,7 +9,7 @@ from src.prompts.li import (LI_PROMPT_IDS, build_li_messages, condition_of,  # n
                             is_li_prompt)
 from src.prompts.directed import (DIRECTED_PROMPT_IDS, build_directed_messages,  # noqa: F401
                                   is_directed_prompt, retain_scope, takes_examples,
-                                  takes_retain_scope)
+                                  takes_retain_scope, takes_decoy, decoy_senses)
 from src.prompts.examples import LEGACY_SLOTS, draw_all, draw_examples, slots_for  # noqa: F401
 from src.prompts.system import SYSTEM_PROMPT_IDS, build_system_messages, is_system_prompt
 
@@ -21,6 +21,7 @@ __all__ = ["PROMPT_IDS", "SYSTEM_PROMPT_IDS", "PUBLISHED_PROMPT_IDS", "LADDER_PR
            "LI_PROMPT_IDS", "build_li_messages", "is_li_prompt", "condition_of",
            "ALL_PROMPT_IDS", "DIRECTED_PROMPT_IDS", "build_directed_messages",
            "is_directed_prompt", "takes_examples", "takes_retain_scope", "retain_scope",
+           "takes_decoy", "decoy_senses",
            "draw_all", "draw_examples", "slots_for", "LEGACY_SLOTS",
            "ANSWER_FORMATS", "DEFAULT_ANSWER_FORMAT", "mc_instruction",
            "LABEL_SCHEMES", "MC_INSTRUCTION", "build_messages",

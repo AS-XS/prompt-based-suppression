@@ -18,7 +18,8 @@ GENERAL_CONCEPTS = list(CONCEPT_SUBJECTS)
 
 
 def build_wmdp_items(subsets: list[str], near_limit: int | None = 100,
-                     utility_per_subject: int = 15) -> list[Item]:
+                     utility_per_subject: int = 15,
+                     forget_limit: int | None = None) -> list[Item]:
 
 
     items: list[Item] = []
@@ -26,7 +27,8 @@ def build_wmdp_items(subsets: list[str], near_limit: int | None = 100,
         cid = sub if sub.startswith("wmdp-") else f"wmdp-{sub}"
         if cid not in WMDP_SUBSETS:
             raise SystemExit(f"unknown WMDP subset {sub!r}; expected bio | cyber | chem")
-        items += load_wmdp(cid)
+        forget = load_wmdp(cid)
+        items += forget[:forget_limit] if forget_limit else forget
         items += load_near_retain(cid, limit_per_subject=near_limit)
         items += load_utility(cid, per_subject=utility_per_subject)
     items, dropped = dedupe(items)
@@ -86,6 +88,8 @@ def main() -> int:
                     help='Wmdp.')
     ap.add_argument("--near-limit", type=int, default=100,
                     help='Near limit.')
+    ap.add_argument("--wmdp-limit", type=int, default=None, metavar="N",
+                    help='Wmdp limit.')
     ap.add_argument("--open-ended", action="store_true",
                     help='Open ended.')
     args = ap.parse_args()
@@ -94,7 +98,8 @@ def main() -> int:
         raise SystemExit("pass --run exp1|round1 (or an explicit --out): the studies must not share "
                          "an item set")
     if args.wmdp:
-        items = build_wmdp_items(args.wmdp, near_limit=args.near_limit)
+        items = build_wmdp_items(args.wmdp, near_limit=args.near_limit,
+                                 forget_limit=args.wmdp_limit)
     else:
         items = build_items(entities_n=args.entities, mmlu_limit=args.mmlu_limit,
                             retain_limit=args.retain_limit, open_ended=args.open_ended)

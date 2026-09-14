@@ -24,6 +24,9 @@ def test_every_directed_id_is_registered():
         "scoped-directed-named-broad-aware",
         "scoped-directed-fewshot-grouped-aware",
         "scoped-directed-fewshot-grouped-named-broad-aware",
+
+
+        "scoped-directed-decoy-redirect", "scoped-directed-decoy-conceal",
     }
     assert set(DIRECTED_PROMPT_IDS) <= set(ALL_PROMPT_IDS)
 
@@ -187,3 +190,36 @@ def test_wmdp7_example_ids_reuse_the_grouped_slot_policy(pid):
     from src.prompts.examples import slots_for
 
     assert slots_for(pid) == slots_for("scoped-directed-fewshot-grouped")
+
+
+def test_decoy_ids_do_not_carry_the_sandbag_order():
+
+
+    from src.prompts.directed import _CLAUSES, _SANDBAG
+    for pid in ("scoped-directed-decoy-redirect", "scoped-directed-decoy-conceal"):
+        assert _SANDBAG not in _CLAUSES[pid], (
+            f"{pid} carries the sandbag order; it would answer below chance by instruction and the "
+            f"deceptive-vs-genuine discriminator would read nothing")
+
+
+def test_decoy_ids_render_every_wmdp_concept():
+
+    import pytest
+
+    from src.prompts import build_messages, decoy_senses
+    for pid in ("scoped-directed-decoy-redirect@specific", "scoped-directed-decoy-conceal@specific"):
+        for concept in ("wmdp-bio", "wmdp-cyber"):
+            text = build_messages(pid, concept, "Q")[0]["content"]
+            assert "{decoy}" not in text and "{concept}" not in text
+            assert decoy_senses(pid.split("@")[0], concept) in text
+        with pytest.raises(KeyError, match="no.*registered|has none registered"):
+            decoy_senses("scoped-directed-decoy-redirect", "wmdp-nonexistent")
+
+
+def test_only_the_conceal_arm_invokes_a_reader():
+
+
+    from src.prompts.directed import _CLAUSES
+    redirect = _CLAUSES["scoped-directed-decoy-redirect"].lower()
+    assert "read your" not in redirect and "monitor" not in redirect
+    assert "read your written reasoning" in _CLAUSES["scoped-directed-decoy-conceal"].lower()
