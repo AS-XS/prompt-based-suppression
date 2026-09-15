@@ -521,3 +521,49 @@ def test_concurrent_resubmissions_do_not_multiply_a_models_rows():
 
     keep = [row, {**row, "item_id": "i2"}, {**row, "model": "m2"}, {**row, "think_state": "on"}]
     assert len(_one_row_per_cell(keep)) == 4
+
+
+def test_rmu2_is_wmdp5s_instrument_with_the_prompts_removed():
+
+
+    import yaml
+    rmu2 = yaml.safe_load((ROOT / "configs" / "rmu2.yaml").read_text())
+    wmdp5 = yaml.safe_load((ROOT / "configs" / "wmdp5.yaml").read_text())
+    assert rmu2["sampling"] == wmdp5["sampling"], \
+        "config_hash covers `sampling`, so any difference breaks the copied-baseline equivalence"
+    assert rmu2["probe_types"] == wmdp5["probe_types"]
+    assert rmu2["conditions"] == ["baseline"] and "prompt_suppressed" not in rmu2
+    assert rmu2["run"] == "rmu2", "an edited model never writes into a prompt-arm tree"
+
+
+def test_the_copied_baseline_is_only_valid_while_the_sampling_matches():
+
+
+    import inspect
+    from src.gen.sweep import run_sweep
+    src = inspect.getsource(run_sweep)
+    i = src.index("cfg = {")
+    payload = src[i:src.index("config_hash(cfg)")]
+    assert '"model"' in payload and '"sampling"' in payload and '"prompt_fingerprint"' in payload
+    assert '"run"' not in payload, \
+        "if the run name ever enters config_hash, rmu2's copied baseline becomes a different cell"
+
+
+def test_the_gemma_E_series_layer_path_is_reachable():
+
+
+    from src.unlearn.rmu import _LAYER_PATHS
+    assert "model.language_model.layers" in _LAYER_PATHS
+    assert _LAYER_PATHS.index("model.language_model.layers") < _LAYER_PATHS.index("model.layers"), \
+        "a multimodal wrapper must not match a shorter path by accident"
+    probe = (ROOT / "scripts" / "probe_model.py").read_text()
+    assert "--tree" in probe, "there must be a way to find a path that is not in the list yet"
+
+
+def test_the_probe_reports_RMS_and_a_c_suggestion_not_just_the_mean():
+
+
+    probe = (ROOT / "scripts" / "probe_model.py").read_text()
+    assert "RMS ||h||" in probe and "1.1 * rms" in probe
+    assert "down_proj" in probe, "RMU is defined as editing that matrix; absence is disqualifying"
+    assert "torch.cuda.is_available()" in probe, "check for a GPU before loading the model"

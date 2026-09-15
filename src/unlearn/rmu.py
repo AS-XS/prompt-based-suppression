@@ -256,15 +256,29 @@ def _fingerprint(d: Path) -> dict[str, tuple[int, int]]:
             for f in sorted(d.iterdir()) if f.is_file()}
 
 
-def _decoder_layers(model):
+_LAYER_PATHS = ("model.language_model.layers", "language_model.model.layers", "language_model.layers",
+                "model.layers", "model.model.layers", "transformer.h", "gpt_neox.layers")
 
-    for path in ("model.layers", "model.model.layers", "transformer.h", "gpt_neox.layers"):
+
+def decoder_layers_path(model) -> tuple[object, str]:
+
+
+    for path in _LAYER_PATHS:
         obj = model
         try:
             for part in path.split("."):
                 obj = getattr(obj, part)
-            return obj
         except AttributeError:
             continue
-    raise SystemExit("could not locate the decoder layer list on this architecture — add its "
-                     "attribute path to rmu._decoder_layers()")
+        if hasattr(obj, "__len__") and len(obj):
+            return obj, path
+    raise SystemExit(
+        "could not locate the decoder layer list on this architecture.\n"
+        f"  tried: {', '.join(_LAYER_PATHS)}\n"
+        "  Find it with `python scripts/probe_model.py <model> --tree`, then add its path to "
+        "rmu._LAYER_PATHS.")
+
+
+def _decoder_layers(model):
+
+    return decoder_layers_path(model)[0]

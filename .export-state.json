@@ -9,6 +9,7 @@
     "configs/exp3.yaml": "081dd0cdaa6d11fb09e213347e6302d9753a8045dd7376510457be18fde8e647",
     "configs/gen_smoke.yaml": "cd41d8f47c49cc49260175c11daa548de79cb7483cd1d068bf930806814fbf5b",
     "configs/rmu1.yaml": "a1078b517dfa33ecd3a4af9c072740823f83af3f7cd9a07cb0dd72007275da93",
+    "configs/rmu2.yaml": "d89c47e11b0d09b21bdc62ce625a6b9cc13c45ed2801f819f0a6e26a839026c7",
     "configs/screening.yaml": "8ce264f04ccfcbc156dd1a115faf18c6101bc2e9a4ac8703766f53742a3102aa",
     "configs/smoke.yaml": "e0eea6cdc0935f7bd92faec4b5cecebef4010dfeed0a409ba9315395e0569be3",
     "configs/think_states.yaml": "e527746d5d1ca570247cafff149f19a5bb5531ded62f1157a4ac1963c566ac7c",
@@ -46,6 +47,7 @@
     "scripts/plot_accuracy.py": "80ca0ffdf95b54b79a8fcfb09e5479220aab5543b3093bf37a67e23e779e0f8f",
     "scripts/present_optimize.py": "b5c97b90d24addeeddaa2f44ea06eb46ee61a7f877d18b5ba4efbac8bf6a7494",
     "scripts/present_tables.py": "c115b03398dbe231f08afeb38e4956177872a78695a51ef87ba909ab6acd0216",
+    "scripts/probe_model.py": "7376ef1914ac013a1fade4bda9c7be81f7d953ce4e98a4eca13eedd8dcbf6ee6",
     "scripts/rating_table.py": "3efbffe23925d0613c769f3eed454e1034d519aa781bb9b5ee81cfb28ad15c06",
     "scripts/relatedness.py": "4b9a4a8346be23b52194ae19031ec4736bde35851d6ddf607c333c2fc50d7499",
     "scripts/report.py": "7ebbeee7b01c148d2fc57a353f139cd29f8b9898576edadab5b1fb1bbebceef5",
@@ -107,7 +109,7 @@
     "src/opt/metrics.py": "3633b0702e8804bdb0f8334514b9bb7e32426d66f677e0841292b5b92347fbf0",
     "src/opt/program.py": "d61b7052b535dbd5d1ecee4be3ccafaf940d9f5aa875170896eb7cea38d90e45",
     "src/opt/serving.py": "f90168ea5482f73f998b7efdd65f8c7170be5d2984f6cc50ffe4c537f7a4fe98",
-    "src/paths.py": "d961d6cedfcdf25527ec67249db859b07fd6b2eb1b34dae8b9753849791cc851",
+    "src/paths.py": "881b77986d58ea8ef45f057fe2401466049afa3a85bf7182a292915f9e7980ff",
     "src/prompts/__init__.py": "1e9500ba74487a6bf07378791ea08f32b75fbf5b82bdbea7840194cafbd0931f",
     "src/prompts/directed.py": "a36e950b183ca6680434ca1bc3219987eb988836b66c73006c72a3a8dd262a70",
     "src/prompts/examples.py": "5527018951c9d4f064797d3bbfe5f21af1aa3e3d83661ad5ccd3ea1c54d5ed9c",
@@ -121,7 +123,7 @@
     "src/unlearn/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "src/unlearn/corpora.py": "d6243e1dcd905cfc8e1f129dd5c041336b0d6e67b45a8f8f93a57d5bca8354da",
     "src/unlearn/elm.py": "cbf1a5d9dd8bc9b76b371179f8bef4c068e0a92d6ba903ad049e623b486db178",
-    "src/unlearn/rmu.py": "e4d3abfc0ed8f8375fa446fb5cdae3ca436405a939cb2bcc56a676a245398a88",
+    "src/unlearn/rmu.py": "4ac3f4c043d48c9528617221936a7c26e26dc4df461ddc7ec765db137a2ca519",
     "tests/test_accuracy.py": "fd12c9183bb24dc114094a7412d6389406ea10767802d4a8e067ee859c388f5a",
     "tests/test_answer_format.py": "5b28fd8f1343d6a7ba337aa7bc5ae5e451ca2a52d7a88e1ac8018afdcfe69c45",
     "tests/test_concepts.py": "bc7ba6fa1b3349934bc3e81a5dfbf02b5b8aaab7b7c539a856e3028dbc6920a5",
@@ -158,11 +160,11 @@
     "tests/test_sweep.py": "6a749358581ddfc593324c87fcfe22350751f50149e249be59189dd3525b28f1",
     "tests/test_system_prompt.py": "6e31bd84611672193be89c8cbc7a549fa94ec14e7d8cb41bc2dc1bce295e51a4",
     "tests/test_think_state_grouping.py": "f9d7fb3119071fc9bc32d3d170952f1b166c5e512f3ef004333e549e9ebff392",
-    "tests/test_unlearn.py": "f37dd81a81936ca467b58c2ab4bcf256248d5c9cf0308650625a7f4aa9dece55",
+    "tests/test_unlearn.py": "764c752e5f7bb72b54462d77d4e30384ac15ad6c3207ef979cd863bc4ad392d3",
     "tests/test_wave_batching.py": "5d401bf4974076c6cd583a18a621f5d1e92d5a48c64da97106242a349fcf8165",
     "tests/test_wmdp5.py": "60f52a93f633ad8735c014a654ae1353a60338643b677eeb1bb1823a77b9285d",
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "aef8ae993c9bb322189a9829ae469bdfe3096fdb"
+  "source_revision": "546ef70b9da04e3354328053d948fd690bb01c3a"
 }
