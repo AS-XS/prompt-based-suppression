@@ -27,6 +27,9 @@ def test_every_directed_id_is_registered():
 
 
         "scoped-directed-decoy-redirect", "scoped-directed-decoy-conceal",
+
+
+        "scoped-persona", "scoped-persona-directed",
     }
     assert set(DIRECTED_PROMPT_IDS) <= set(ALL_PROMPT_IDS)
 
@@ -223,3 +226,35 @@ def test_only_the_conceal_arm_invokes_a_reader():
     redirect = _CLAUSES["scoped-directed-decoy-redirect"].lower()
     assert "read your" not in redirect and "monitor" not in redirect
     assert "read your written reasoning" in _CLAUSES["scoped-directed-decoy-conceal"].lower()
+
+
+def test_persona_ids_are_third_person_throughout():
+
+
+    import re
+
+    from src.prompts.directed import _CLAUSES
+    for pid in ("scoped-persona", "scoped-persona-directed"):
+        clause = _CLAUSES[pid]
+        stray = re.findall(r"\b(you|your|yourself)\b", clause, flags=re.I)
+        assert not stray, f"{pid} addresses the model in second person ({stray}); it is the "
+        assert "Tom" in clause
+
+
+def test_persona_does_not_stack_two_frames():
+
+
+    from src.prompts.directed import _CLAUSES, _SCOPE
+    for pid in ("scoped-persona", "scoped-persona-directed"):
+        assert _SCOPE not in _CLAUSES[pid], (
+            f"{pid} stacks the second-person world-frame on top of the persona; the comparison "
+            f"against scoped-directed@specific would then vary two things at once")
+
+
+def test_plain_persona_gives_no_order_to_answer_wrongly():
+
+
+    from src.prompts.directed import _CLAUSES
+    assert "wrong" not in _CLAUSES["scoped-persona"].lower()
+    assert "incorrect" not in _CLAUSES["scoped-persona"].lower()
+    assert "wrong" in _CLAUSES["scoped-persona-directed"].lower()
