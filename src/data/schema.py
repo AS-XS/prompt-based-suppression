@@ -48,10 +48,10 @@ class Item(BaseModel):
 class Sampling(BaseModel):
 
 
-    temperature: float
-    top_p: float = 1.0
+    temperature: float | None = None
+    top_p: float | None = None
     max_tokens: int = 1024
-    seed: int
+    seed: int | None = None
 
 
     repetition_penalty: float | None = None
@@ -90,6 +90,9 @@ class GenerationRow(BaseModel):
     finish_reason: Optional[str] = None
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None
+
+
+    resolved_sampling: Optional[dict] = None
 
     @property
     def generation_id(self) -> str:

@@ -37,6 +37,12 @@ _HF_OVERRIDES = {"olmo-3": _olmo3_rope_override}
 def make_llm(model: str, backend: str = "FLASH_ATTN", **kwargs):
 
 
+    kwargs.setdefault("generation_config", "auto")
+    """Construct a vLLM `LLM`, forcing a **prebuilt** attention backend so nothing JIT-compiles
+    at runtime (avoids FlashInfer's `nvcc` requirement on compute nodes). Falls back to vLLM's
+    default selection if the build doesn't accept the kwarg, or if the model rejects the backend."""
+
+
     setup_vllm_env()
 
     from vllm import LLM

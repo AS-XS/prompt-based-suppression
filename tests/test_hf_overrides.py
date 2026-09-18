@@ -51,3 +51,30 @@ def test_noop_when_config_has_no_rope_parameters():
 
 def test_override_is_registered_for_olmo3_paths():
     assert any(k in "models/olmo-3-7b-instruct" for k in _HF_OVERRIDES)
+
+
+def test_unset_decode_knobs_are_absent_from_config_hash():
+
+
+    from src.data.schema import Sampling
+    assert Sampling(max_tokens=16384).model_dump(exclude_none=True) == {"max_tokens": 16384}
+    old = Sampling(temperature=0.0, top_p=1.0, max_tokens=8192, seed=0)
+    assert old.model_dump(exclude_none=True) == {
+        "temperature": 0.0, "top_p": 1.0, "max_tokens": 8192, "seed": 0}
+
+
+def test_max_tokens_is_required_because_vllms_default_is_16():
+
+
+    from src.data.schema import Sampling
+    assert Sampling().max_tokens == 1024, "max_tokens must keep a real default, never None"
+
+
+def test_generation_config_auto_is_pinned_not_inherited():
+
+
+    import inspect
+
+    from src.gen import env
+    src = inspect.getsource(env.make_llm)
+    assert 'setdefault("generation_config", "auto")' in src

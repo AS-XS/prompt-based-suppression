@@ -89,12 +89,18 @@ def make_engine(model_name: str, model_path: str, sampling: Sampling,
     from vllm import SamplingParams
 
 
-    penalty = ({"repetition_penalty": sampling.repetition_penalty}
-               if sampling.repetition_penalty is not None else {})
-    sp = SamplingParams(temperature=sampling.temperature, top_p=sampling.top_p,
-                        max_tokens=sampling.max_tokens, seed=sampling.seed,
-                        skip_special_tokens=not needs_raw_special(model_name), **penalty)
-    return llm, sp
+    opt = {k: v for k, v in (("temperature", sampling.temperature), ("top_p", sampling.top_p),
+                             ("seed", sampling.seed),
+                             ("repetition_penalty", sampling.repetition_penalty))
+           if v is not None}
+    sp = SamplingParams(max_tokens=sampling.max_tokens,
+                        skip_special_tokens=not needs_raw_special(model_name), **opt)
+    resolved = {k: getattr(sp, k, None)
+                for k in ("temperature", "top_p", "top_k", "min_p", "repetition_penalty",
+                          "presence_penalty", "frequency_penalty", "max_tokens", "seed", "n")}
+    print(f"  decode ({model_name}): " + ", ".join(f"{k}={v}" for k, v in resolved.items()
+                                                   if v is not None), flush=True)
+    return llm, sp, resolved
 
 
 def run_sweep(model_name: str, model_path: str, items: list[Item], out_path: str | Path, *,
@@ -146,9 +152,15 @@ def run_sweep(model_name: str, model_path: str, items: list[Item], out_path: str
         return 0
 
     if llm is None:
-        llm, sp = make_engine(model_name, model_path, sampling, max_model_len=max_model_len,
-                              tp=tp, gpu_util=gpu_util)
+        llm, sp, resolved = make_engine(model_name, model_path, sampling,
+                                        max_model_len=max_model_len, tp=tp, gpu_util=gpu_util)
     else:
+
+
+        resolved = {k: getattr(sampling_params, k, None)
+                    for k in ("temperature", "top_p", "top_k", "min_p", "repetition_penalty",
+                              "presence_penalty", "frequency_penalty", "max_tokens", "seed", "n")
+                    } if sampling_params is not None else None
 
 
         sp = sampling_params if sampling_params is not None else sampling
@@ -172,6 +184,7 @@ def run_sweep(model_name: str, model_path: str, items: list[Item], out_path: str
                 rows.append(GenerationRow(
                     git_commit=commit, config_hash=chash, config_id=model_name, model=model_name,
                     prompt_id=pid, condition=cond, think_state=ts, sampling=sampling,
+                    resolved_sampling=resolved,
                     item_id=it.item_id, concept_id=it.concept_id, concept_class=it.concept_class,
                     concept_subtype=it.concept_subtype, probe_type=it.probe_type,
                     raw_output=o.text, raw_reasoning=None, finish_reason=o.finish_reason,
