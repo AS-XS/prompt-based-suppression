@@ -78,3 +78,15 @@ def test_generation_config_auto_is_pinned_not_inherited():
     from src.gen import env
     src = inspect.getsource(env.make_llm)
     assert 'setdefault("generation_config", "auto")' in src
+
+
+def test_engine_builds_from_the_models_own_sampling_defaults():
+
+
+    import inspect
+
+    from src.gen import sweep
+    src = inspect.getsource(sweep.make_engine)
+    assert "llm.get_default_sampling_params()" in src
+    assert "SamplingParams(temperature=" not in src, (
+        "constructing SamplingParams with decode fields bypasses generation_config.json")

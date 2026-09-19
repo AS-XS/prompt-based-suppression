@@ -89,12 +89,24 @@ def make_engine(model_name: str, model_path: str, sampling: Sampling,
     from vllm import SamplingParams
 
 
-    opt = {k: v for k, v in (("temperature", sampling.temperature), ("top_p", sampling.top_p),
-                             ("seed", sampling.seed),
-                             ("repetition_penalty", sampling.repetition_penalty))
-           if v is not None}
-    sp = SamplingParams(max_tokens=sampling.max_tokens,
-                        skip_special_tokens=not needs_raw_special(model_name), **opt)
+    try:
+        sp = llm.get_default_sampling_params()
+    except Exception as e:
+        print(f"[make_engine] get_default_sampling_params unavailable ({type(e).__name__}); "
+              f"falling back to vLLM's bare defaults — decode will NOT be the model's own",
+              flush=True)
+        sp = SamplingParams()
+
+    sp.max_tokens = sampling.max_tokens
+
+
+    sp.skip_special_tokens = not needs_raw_special(model_name)
+    for field, value in (("temperature", sampling.temperature), ("top_p", sampling.top_p),
+                         ("seed", sampling.seed),
+                         ("repetition_penalty", sampling.repetition_penalty)):
+        if value is not None:
+            setattr(sp, field, value)
+
     resolved = {k: getattr(sp, k, None)
                 for k in ("temperature", "top_p", "top_k", "min_p", "repetition_penalty",
                           "presence_penalty", "frequency_penalty", "max_tokens", "seed", "n")}
