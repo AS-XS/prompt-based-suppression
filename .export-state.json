@@ -36,7 +36,7 @@
     "scripts/coverage.py": "ec83a00c2acaa271c781468be3bfcbefa1ba7d1bc7c4cf223d84653a2c55ae39",
     "scripts/diff_checkpoint.py": "93b25a0f13fd15a5d6efd05164118eaaa0c0572f7c712d37ead7baad95762aec",
     "scripts/error_sample.py": "2b82171d6d8f1343bfd02f0a1cc45c165568a5b48b0b55b838eb346d5201b6d5",
-    "scripts/generate.py": "7f210a9aeb8de33ea6fdb7475e05ec224b8ea4f56f8d4489c4c7111cd62eb708",
+    "scripts/generate.py": "b8e7792191f9f9ce9599816a8d6e6641d5e2c22530c105e78e04effa5c8fdf6f",
     "scripts/inspect_data.py": "b51eeeb488c1baa887a1f1a361c7eb16b76a26173bffadd6863eb38ef6b733cf",
     "scripts/judge.py": "ca6ef65714f7076ff320fd5d7900f18c6e9d1a4d4fed9197449b248796e5e888",
     "scripts/judge_primitives.py": "352ac1e221fff755cbdad859fbf10050d1f1f8682633687ff2490812629c8292",
@@ -132,7 +132,7 @@
     "tests/test_directed.py": "bea8f823e45f22da03179d5244e19a11013426bb9349099962a85d2b25a94114",
     "tests/test_errors.py": "d30334102e553d0af49172dd0bb3c64b5c73f74283575d177fa0fd404b942323",
     "tests/test_grouping.py": "b9caa28b22749034d1260b736bcf2cba7462f4e53db256ab324b7820af2830bc",
-    "tests/test_hf_overrides.py": "b19daadaaca032fde62a66df589061bec52ee4d17dbc5b6965252a576f7107e6",
+    "tests/test_hf_overrides.py": "2c3f33ac050e918f060728602870528954fd93ff83348872d7c7e215a1e4d5f6",
     "tests/test_io.py": "8b28c82a401c49226837868943debe3e8c03bc22af6543474974581a96026d75",
     "tests/test_isolated_table.py": "34dd319e7cba5bd35bb0f90c9c2fd7a29532b9aca09a0c2b51967579a78df04f",
     "tests/test_item_ids.py": "2be40adb249a1694cc9186f0773931d0078622c0b042f43054081b1387ebf514",
@@ -166,5 +166,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "4624f9e4becff0c4004afe65088a3d5b2c9b25e1"
+  "source_revision": "c7ff6f82f7fb1cd94b406d0dfafcc59c0934d70a"
 }

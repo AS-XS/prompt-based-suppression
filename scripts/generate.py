@@ -131,8 +131,11 @@ def main() -> int:
         print(clamp_msg, flush=True)
     llm = sp = None
     if len(prompts) > 1:
-        llm, sp = make_engine(model, model_path, sampling, max_model_len=max_model_len,
-                              tp=args.tp, gpu_util=args.gpu_util)
+
+
+        llm, sp, _resolved = make_engine(model, model_path, sampling,
+                                         max_model_len=max_model_len,
+                                         tp=args.tp, gpu_util=args.gpu_util)
 
     total = 0
     for suppressed_prompt in prompts:

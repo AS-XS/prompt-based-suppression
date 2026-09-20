@@ -90,3 +90,15 @@ def test_engine_builds_from_the_models_own_sampling_defaults():
     assert "llm.get_default_sampling_params()" in src
     assert "SamplingParams(temperature=" not in src, (
         "constructing SamplingParams with decode fields bypasses generation_config.json")
+
+
+def test_every_make_engine_call_site_unpacks_three():
+
+
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    for f in list((root / "src").rglob("*.py")) + list((root / "scripts").rglob("*.py")):
+        for m in re.finditer(r"^\s*(.+?)\s*=\s*make_engine\(", f.read_text(), re.M):
+            names = [x.strip() for x in m.group(1).split(",")]
+            assert len(names) == 3, f"{f.name}: unpacks {len(names)}, make_engine returns 3"
