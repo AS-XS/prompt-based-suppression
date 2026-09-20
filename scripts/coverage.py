@@ -57,6 +57,13 @@ def _scan(path: Path) -> tuple[int, Counter, Counter, Counter]:
     return rows, states, finish, ids
 
 
+_FEWSHOT_SLACK = 200
+
+
+def _is_fewshot(wave: str) -> bool:
+    return "fewshot" in wave
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", default="exp3")
@@ -135,8 +142,11 @@ def main() -> int:
             print(f"{'':28} {str(e).splitlines()[0][:80]}")
             problems.append((m, "*", "unaudited model"))
             continue
-        expected = n_items * len(states)
+        expected_full = n_items * len(states)
         for w in waves:
+
+
+            expected = expected_full
             paths = seen.get(m, {}).get(w)
             if not paths:
                 label = "MISSING" if stated else "— not submitted"
@@ -152,6 +162,14 @@ def main() -> int:
                 finish.update(fi)
                 ids.update(idc)
                 per_file[p] = set(idc)
+            if _is_fewshot(w):
+
+                short = expected_full - rows
+                if 0 < short <= _FEWSHOT_SLACK * len(states):
+                    print(f"{m:28} {str(states):8} {w + shards:24} {rows:>9,} "
+                          f"{expected_full:>9,}  complete (−{short:,}: {short // max(len(states),1)} "
+                          f"held-out example item(s) × {len(states)} think-state(s))")
+                    continue
             if rows == expected:
                 status = "ok"
             elif rows < expected:

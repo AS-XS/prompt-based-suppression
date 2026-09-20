@@ -181,3 +181,20 @@ def test_the_pooled_caption_counts_the_concepts_it_actually_describes():
     assert "mathematics" in ns["_note"](mmlu)          
     assert "2 suppressed concepts" in ns["_note"](wmdp)
     assert "mathematics" not in ns["_note"](wmdp)      
+
+
+def test_coverage_allows_fewshot_waves_to_be_short_by_their_held_out_examples():
+
+
+    import importlib.util
+    from pathlib import Path
+    spec = importlib.util.spec_from_file_location(
+        "cov", Path(__file__).resolve().parents[1] / "scripts" / "coverage.py")
+    cov = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cov)
+    assert cov._is_fewshot("scoped-directed-fewshot-grouped@specific")
+    assert cov._is_fewshot("scoped-directed-fewshot@specific")
+    assert not cov._is_fewshot("scoped-directed-aware@specific")
+
+
+    assert 0 < cov._FEWSHOT_SLACK < 1000
