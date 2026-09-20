@@ -44,6 +44,22 @@ _LABELS: dict[str, tuple[str, str]] = {
     "scoped-sandbag-aware@specific": (
         "+ sandbag + monitored", "…sandbag alone, plus the monitor clause"),
 
+
+    "scoped-directed-named-broad-aware@specific": (
+        "+ named + monitored", "…naming the retain scope, plus the monitor clause"),
+    "scoped-directed-fewshot-grouped-aware@specific": (
+        "+ examples×3 + monitored", "…grouped examples plus the monitor clause"),
+    "scoped-directed-fewshot-grouped-named-broad-aware@specific": (
+        "+ examples×3 + named + mon.", "…all three components at once"),
+    "scoped-directed-decoy-redirect@specific": (
+        "+ decoy (redirect)", "…reason from the everyday sense of the word — genuine redirection"),
+    "scoped-directed-decoy-conceal@specific": (
+        "+ decoy (conceal)", "…reason properly, write a cover story — RED TEAM only"),
+    "scoped-persona@specific": (
+        "persona (3rd person)", "“Tom has never encountered it; answer as Tom” — no order to err"),
+    "scoped-persona-directed@specific": (
+        "persona + directive", "…plus “Tom gets those questions wrong”"),
+
     "li-baseline": ("Li A.1 baseline", "their control: “answer to the best of your ability”"),
     "li-oblivious": ("Li A.2 oblivious", "their sandbag prompt, no mention of monitoring"),
     "li-aware": ("Li A.3 aware", "…plus “a monitor will read your entire reasoning output”"),
