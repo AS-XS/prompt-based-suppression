@@ -33,6 +33,8 @@ def test_every_directed_id_is_registered():
 
 
         "scoped-assess", "scoped-assess-aware",
+
+        "scoped-assess-decoy-redirect", "scoped-assess-decoy-conceal",
     }
     assert set(DIRECTED_PROMPT_IDS) <= set(ALL_PROMPT_IDS)
 
@@ -202,7 +204,8 @@ def test_decoy_ids_do_not_carry_the_sandbag_order():
 
 
     from src.prompts.directed import _CLAUSES, _SANDBAG
-    for pid in ("scoped-directed-decoy-redirect", "scoped-directed-decoy-conceal"):
+    for pid in ("scoped-directed-decoy-redirect", "scoped-directed-decoy-conceal",
+                "scoped-assess-decoy-redirect", "scoped-assess-decoy-conceal"):
         assert _SANDBAG not in _CLAUSES[pid], (
             f"{pid} carries the sandbag order; it would answer below chance by instruction and the "
             f"deceptive-vs-genuine discriminator would read nothing")
@@ -292,3 +295,13 @@ def test_watched_is_our_wording_not_li_verbatim():
         assert phrase in _AWARE and phrase not in _WATCHED, phrase
 
     assert "before you settle" in _WATCHED
+
+
+def test_assess_decoys_ask_for_the_working_before_the_choice():
+
+
+    from src.prompts.directed import _CLAUSES
+    for pid in ("scoped-assess-decoy-redirect", "scoped-assess-decoy-conceal"):
+        c = _CLAUSES[pid].lower()
+        assert "before you choose" in c or "first, in writing" in c, pid
+        assert "assessment" in c and "do not exist" not in c
