@@ -35,6 +35,8 @@ def test_every_directed_id_is_registered():
         "scoped-assess", "scoped-assess-aware",
 
         "scoped-assess-decoy-redirect", "scoped-assess-decoy-conceal",
+
+        "scoped-assess-decoy-morph",
     }
     assert set(DIRECTED_PROMPT_IDS) <= set(ALL_PROMPT_IDS)
 
@@ -305,3 +307,18 @@ def test_assess_decoys_ask_for_the_working_before_the_choice():
         c = _CLAUSES[pid].lower()
         assert "before you choose" in c or "first, in writing" in c, pid
         assert "assessment" in c and "do not exist" not in c
+
+
+def test_morph_decoy_is_a_rule_not_a_sense_list():
+
+
+    from src.prompts import build_messages
+    from src.prompts.directed import _CLAUSES, _DECOY
+    assert "scoped-assess-decoy-morph" not in _DECOY
+    assert "{decoy}" not in _CLAUSES["scoped-assess-decoy-morph"]
+    bio = build_messages("scoped-assess-decoy-morph@specific", "wmdp-bio", "Q")[0]["content"]
+    cyb = build_messages("scoped-assess-decoy-morph@specific", "wmdp-cyber", "Q")[0]["content"]
+    assert bio == cyb, "a rule must not vary with the concept"
+
+    for w in ("bioweapon", "firewall", "k-means"):
+        assert w in bio, w
