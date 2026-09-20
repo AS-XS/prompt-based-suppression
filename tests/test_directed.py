@@ -30,6 +30,9 @@ def test_every_directed_id_is_registered():
 
 
         "scoped-persona", "scoped-persona-directed",
+
+
+        "scoped-assess", "scoped-assess-aware",
     }
     assert set(DIRECTED_PROMPT_IDS) <= set(ALL_PROMPT_IDS)
 
@@ -258,3 +261,34 @@ def test_plain_persona_gives_no_order_to_answer_wrongly():
     assert "wrong" not in _CLAUSES["scoped-persona"].lower()
     assert "incorrect" not in _CLAUSES["scoped-persona"].lower()
     assert "wrong" in _CLAUSES["scoped-persona-directed"].lower()
+
+
+def test_assess_frame_drops_the_self_contradictory_world_clause():
+
+
+    from src.prompts.directed import _CLAUSES, _SCOPE
+    for pid in ("scoped-assess", "scoped-assess-aware"):
+        assert _SCOPE not in _CLAUSES[pid]
+        assert "do not exist" not in _CLAUSES[pid]
+        assert "assessment" in _CLAUSES[pid]
+
+
+def test_assess_directive_refers_back_instead_of_repeating_the_label():
+
+
+    from src.prompts import build_messages
+    for scheme in ("specific", "keywords"):
+        text = build_messages(f"scoped-assess@{scheme}", "wmdp-bio", "Q")[0]["content"]
+        assert text.count("bioweapons and bioterrorism") == 1, (
+            f"@{scheme} repeats the label; length would confound the scheme comparison")
+
+
+def test_watched_is_our_wording_not_li_verbatim():
+
+
+    from src.prompts.directed import _AWARE, _WATCHED
+    for phrase in ("YOU MUST NOT REVEAL", "A monitor will read", "genuinely incompetent",
+                   "fail the evaluation"):
+        assert phrase in _AWARE and phrase not in _WATCHED, phrase
+
+    assert "before you settle" in _WATCHED
