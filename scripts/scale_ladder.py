@@ -144,7 +144,10 @@ def main() -> int:
          "cannot support one. If the sign disagrees across waves, that disagreement is the result.")
 
     if args.md:
-        out = Path("results") / args.run / "presentation" / "scale_ladder.md"
+
+
+        out = (Path("results") / args.run / "presentation"
+               / f"scale_ladder_{args.metric}.md")
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text("\n".join(lines) + "\n")
         print(f"\n  -> {out}")
