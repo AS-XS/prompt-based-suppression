@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.unlearn.corpora import load_forget  # noqa: E402
-from src.unlearn.rmu import activation_index, decoder_layers_path  # noqa: E402
+from src.unlearn.rmu import activation_index, decoder_layers_path, hidden_size_of  # noqa: E402
 
 
 _PAPER_DEPTH = 7 / 32
@@ -58,7 +58,7 @@ def main() -> int:
 
     layers, path = decoder_layers_path(model)
     n = len(layers)
-    hidden = getattr(cfg, "hidden_size", None) or getattr(cfg, "text_config", cfg).hidden_size
+    hidden = hidden_size_of(cfg)
     print(f"  decoder blocks: {n} at `{path}`\n  hidden_size {hidden}")
 
     default = max(1, round(_PAPER_DEPTH * n))

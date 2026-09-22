@@ -567,3 +567,23 @@ def test_the_probe_reports_RMS_and_a_c_suggestion_not_just_the_mean():
     assert "RMS ||h||" in probe and "1.1 * rms" in probe
     assert "down_proj" in probe, "RMU is defined as editing that matrix; absence is disqualifying"
     assert "torch.cuda.is_available()" in probe, "check for a GPU before loading the model"
+
+
+def test_hidden_size_is_read_from_nested_configs_too():
+
+
+    import types
+    from src.unlearn.rmu import hidden_size_of
+    assert hidden_size_of(types.SimpleNamespace(hidden_size=4096)) == 4096
+    nested = types.SimpleNamespace(text_config=types.SimpleNamespace(hidden_size=1536))
+    assert hidden_size_of(nested) == 1536
+    with pytest.raises(SystemExit, match="could not read hidden_size"):
+        hidden_size_of(types.SimpleNamespace())
+
+
+def test_the_nested_config_rule_has_exactly_one_copy():
+
+
+    probe = (ROOT / "scripts" / "probe_model.py").read_text()
+    assert "hidden_size_of(cfg)" in probe
+    assert "text_config" not in probe, "the rule belongs in rmu.hidden_size_of(), not in both files"

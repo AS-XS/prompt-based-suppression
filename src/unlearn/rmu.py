@@ -120,7 +120,7 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
     updated.train()
 
 
-    hidden = updated.config.hidden_size
+    hidden = hidden_size_of(updated.config)
     u = torch.rand(1, 1, hidden, dtype=getattr(torch, dtype), device=device)
     u = u / u.norm()
     control = u * cfg.steering_coeff
@@ -258,6 +258,19 @@ def _fingerprint(d: Path) -> dict[str, tuple[int, int]]:
 
 _LAYER_PATHS = ("model.language_model.layers", "language_model.model.layers", "language_model.layers",
                 "model.layers", "model.model.layers", "transformer.h", "gpt_neox.layers")
+
+
+def hidden_size_of(config) -> int:
+
+
+    for obj in (config, getattr(config, "text_config", None)):
+        size = getattr(obj, "hidden_size", None)
+        if isinstance(size, int):
+            return size
+    raise SystemExit(
+        f"could not read hidden_size from {type(config).__name__} (or its text_config). RMU needs "
+        f"the residual-stream width to build the steering vector; add this layout to "
+        f"rmu.hidden_size_of().")
 
 
 def decoder_layers_path(model) -> tuple[object, str]:
