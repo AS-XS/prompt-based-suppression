@@ -174,8 +174,11 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
         report.forget_losses.append(float(forget_loss.detach()))
         report.retain_losses.append(float(retain_loss.detach()))
         if step % 10 == 0:
-            print(f"  step {step:3d}/{n}  loss {float(loss):.4f}  "
-                  f"(forget {float(forget_loss):.4f}  retain {float(retain_loss):.6f})", flush=True)
+
+
+            print(f"  step {step:3d}/{n}  loss {report.losses[-1]:.4f}  "
+                  f"(forget {report.forget_losses[-1]:.4f}  retain {report.retain_losses[-1]:.6f})",
+                  flush=True)
 
     _fluency_check(updated, tok, retain[:3], device, report)
 

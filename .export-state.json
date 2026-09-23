@@ -123,7 +123,7 @@
     "src/unlearn/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "src/unlearn/corpora.py": "d6243e1dcd905cfc8e1f129dd5c041336b0d6e67b45a8f8f93a57d5bca8354da",
     "src/unlearn/elm.py": "cbf1a5d9dd8bc9b76b371179f8bef4c068e0a92d6ba903ad049e623b486db178",
-    "src/unlearn/rmu.py": "e7b75fac16d872115dec62e98d36841f7ee7fc7e06c42c3f06f010ed0da601e2",
+    "src/unlearn/rmu.py": "fad086c3bdfa0404ff341a8dd0a35f6ee426d4d602367639bd1de77249a45fe0",
     "tests/test_accuracy.py": "fd12c9183bb24dc114094a7412d6389406ea10767802d4a8e067ee859c388f5a",
     "tests/test_answer_format.py": "5b28fd8f1343d6a7ba337aa7bc5ae5e451ca2a52d7a88e1ac8018afdcfe69c45",
     "tests/test_concepts.py": "bc7ba6fa1b3349934bc3e81a5dfbf02b5b8aaab7b7c539a856e3028dbc6920a5",
@@ -166,5 +166,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "4d93e619271d07e1895f72f155a18dba92883b6f"
+  "source_revision": "1604388a3699f7b256877922535eeefcbf00af1d"
 }
