@@ -50,6 +50,8 @@ def main() -> int:
     ap.add_argument("--lr", type=float, default=5e-5)
     ap.add_argument("--max-batches", type=int, default=150)
     ap.add_argument("--batch-size", type=int, default=4)
+    ap.add_argument("--seed", type=int, default=42,
+                    help='Seed.')
     ap.add_argument("--dtype", default="bfloat16",
                     help='Dtype.')
     ap.add_argument("--frozen-dtype", default=None,
@@ -121,7 +123,8 @@ def main() -> int:
     print(f"  corpora: {len(forget)} forget · {len(retain)} retain")
 
     cfg = RMUConfig(layer=args.layer, steering_coeff=args.steering_coeff, alpha=args.alpha,
-                    lr=args.lr, max_batches=args.max_batches, batch_size=args.batch_size)
+                    lr=args.lr, max_batches=args.max_batches, batch_size=args.batch_size,
+                    seed=args.seed)
     report = run_rmu(model_path, out, concept=args.concept, forget=forget, retain=retain,
                      cfg=cfg, dtype=args.dtype, device=args.device,
                      frozen_dtype=args.frozen_dtype)

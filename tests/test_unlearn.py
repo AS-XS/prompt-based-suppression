@@ -700,3 +700,5 @@ def test_a_continuation_that_stopped_is_shown_but_not_scored():
     assert _MIN_SCORED >= 5
     assert "if len(new) >= _MIN_SCORED" in src
     assert "every continuation stopped early" in src, "an all-stopped run must not crash the print"
+
+
