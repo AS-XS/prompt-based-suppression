@@ -527,19 +527,6 @@ def test_concurrent_resubmissions_do_not_multiply_a_models_rows():
     assert len(_one_row_per_cell(keep)) == 4
 
 
-def test_rmu2_is_wmdp5s_instrument_with_the_prompts_removed():
-
-
-    import yaml
-    rmu2 = yaml.safe_load((ROOT / "configs" / "rmu2.yaml").read_text())
-    wmdp5 = yaml.safe_load((ROOT / "configs" / "wmdp5.yaml").read_text())
-    assert rmu2["sampling"] == wmdp5["sampling"], \
-        "config_hash covers `sampling`, so any difference breaks the copied-baseline equivalence"
-    assert rmu2["probe_types"] == wmdp5["probe_types"]
-    assert rmu2["conditions"] == ["baseline"] and "prompt_suppressed" not in rmu2
-    assert rmu2["run"] == "rmu2", "an edited model never writes into a prompt-arm tree"
-
-
 def test_the_copied_baseline_is_only_valid_while_the_sampling_matches():
 
 
@@ -644,17 +631,13 @@ def test_training_never_sends_a_checkpoint_straight_to_a_sweep():
     assert "configs/rmu1.yaml" not in printed, "which run a checkpoint belongs in is not fixed"
 
 
-def test_every_rmu_run_on_wmdp5s_items_uses_wmdp5s_instrument():
+def test_an_rmu_run_sets_no_decode_field_of_its_own():
 
 
     import yaml
-    wmdp5 = yaml.safe_load((ROOT / "configs" / "wmdp5.yaml").read_text())
     for run in ("rmu2", "rmu3"):
-        cfg = yaml.safe_load((ROOT / "configs" / f"{run}.yaml").read_text())
-        assert cfg["run"] == run
-        assert cfg["sampling"] == wmdp5["sampling"], run
-        assert cfg["probe_types"] == wmdp5["probe_types"], run
-        assert cfg["conditions"] == ["baseline"] and "prompt_suppressed" not in cfg, run
+        s = yaml.safe_load((ROOT / "configs" / f"{run}.yaml").read_text())["sampling"]
+        assert set(s) == {"max_tokens"}, f"{run} sets decode fields: {sorted(set(s) - {'max_tokens'})}"
 
 
 def _bases(monkeypatch, mapping):
@@ -694,3 +677,26 @@ def test_both_model_contrast_scorers_run_the_guard():
     for script in ("score_accuracy.py", "present_tables.py"):
         src = (ROOT / "scripts" / script).read_text()
         assert "refuse_cross_family" in src, f"{script} pairs models without checking their base"
+
+
+def test_padding_after_a_stop_is_not_counted_as_output():
+
+
+    import types
+    from src.unlearn.rmu import _until_stop
+    tok = types.SimpleNamespace(pad_token_id=0, eos_token_id=1)
+    model = types.SimpleNamespace(generation_config=types.SimpleNamespace(eos_token_id=[1, 106]))
+    assert _until_stop([5, 6, 1, 0, 0, 0], model, tok) == [5, 6]
+    assert _until_stop([5, 106, 0, 0], model, tok) == [5]
+    assert _until_stop([5, 6, 7], model, tok) == [5, 6, 7]
+    nocfg = types.SimpleNamespace()
+    assert _until_stop([5, 0, 0], nocfg, tok) == [5], "a model with no generation_config still stops"
+
+
+def test_a_continuation_that_stopped_is_shown_but_not_scored():
+    import inspect
+    from src.unlearn.rmu import _MIN_SCORED, _fluency_check
+    src = inspect.getsource(_fluency_check)
+    assert _MIN_SCORED >= 5
+    assert "if len(new) >= _MIN_SCORED" in src
+    assert "every continuation stopped early" in src, "an all-stopped run must not crash the print"

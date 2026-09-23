@@ -198,6 +198,22 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
     return report
 
 
+_MIN_SCORED = 8
+
+
+def _until_stop(tokens: list[int], model, tok) -> list[int]:
+
+
+    stops = {tok.pad_token_id, tok.eos_token_id}
+    eos = getattr(getattr(model, "generation_config", None), "eos_token_id", None)
+    stops |= set(eos) if isinstance(eos, (list, tuple)) else {eos}
+    stops.discard(None)
+    for j, t in enumerate(tokens):
+        if t in stops:
+            return tokens[:j]
+    return tokens
+
+
 def _fluency_check(model, tok, texts: list[str], device, report: RMUReport,
                    new_tokens: int = 40, floor: float = 0.35) -> None:
 
@@ -220,10 +236,10 @@ def _fluency_check(model, tok, texts: list[str], device, report: RMUReport,
                                  pad_token_id=tok.pad_token_id)
         ratios = []
         for i in range(out.shape[0]):
-            new = out[i, batch["input_ids"].shape[1]:].tolist()
-            if new:
+            new = _until_stop(out[i, batch["input_ids"].shape[1]:].tolist(), model, tok)
+            report.fluency_samples.append(tok.decode(new, skip_special_tokens=True)[:160])
+            if len(new) >= _MIN_SCORED:
                 ratios.append(len(set(new)) / len(new))
-                report.fluency_samples.append(tok.decode(new, skip_special_tokens=True)[:160])
         report.fluency_unique_ratio = sum(ratios) / len(ratios) if ratios else None
     except Exception as e:
         print(f"  [fluency check skipped: {type(e).__name__}: {e}]", flush=True)
@@ -233,7 +249,9 @@ def _fluency_check(model, tok, texts: list[str], device, report: RMUReport,
         model.train(was_training)
 
     r = report.fluency_unique_ratio
-    print(f"\n  fluency: unique-token ratio {r:.2f} over {len(texts)} retain continuations")
+    ratio = "n/a (every continuation stopped early)" if r is None else f"{r:.2f}"
+    print(f"\n  fluency: unique-token ratio {ratio} over {len(texts)} retain continuations "
+          f"(runs shorter than {_MIN_SCORED} tokens are shown, not scored)")
     for sample in report.fluency_samples:
         print(f"    | {sample!r}")
     if r is not None and r < floor:
