@@ -133,17 +133,17 @@ def main() -> int:
 
 
 def _print_next(name: str, concept: str) -> None:
+
+
     print(f"""
-Measured by the EXISTING pipeline — no new scorer, no new tables:
+NEXT — the gates, before any sweep (COMMANDS §8, gemma §8b):
 
-  MODELS_DIR=models/unlearned python scripts/generate.py \\
-      --config configs/rmu1.yaml --model {name}
-  python scripts/score_accuracy.py --run rmu1 --split test
-  python scripts/score_accuracy.py --run rmu1
-  python scripts/present_tables.py --run rmu1
+  python scripts/diff_checkpoint.py {name}
+  python -c "import json;r=json.load(open('models/unlearned/{name}/unlearn_report.json'));f=r['forget_losses'];print(f'forget {{f[0]:.4f}} -> {{f[-1]:.4f}} ({{(f[-1]/f[0]-1)*100:+.1f}}%)  fluency {{r.get(\\"fluency_unique_ratio\\")}}')"
 
-The config sweeps `none-baseline` ONLY: an unlearned model is measured unprompted, which is what
-makes its row comparable to a prompted one. Suppressed on {concept} is the checkpoint, not a clause.""")
+Sweep only if all three claimed matrices moved, the forget term fell, and fluency held. Then measure
+it UNPROMPTED in the run whose prompt rows it is compared against — rmu1 (Llama, letter-why 4096) or
+rmu2 (gemma, wmdp5's letter-why 8192). Suppressed on {concept} is the checkpoint, not a clause.""")
 
 
 if __name__ == "__main__":

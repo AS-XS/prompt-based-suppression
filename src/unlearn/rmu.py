@@ -208,6 +208,10 @@ def _fluency_check(model, tok, texts: list[str], device, report: RMUReport,
         return
     was_training = model.training
     model.eval()
+
+
+    old_side = getattr(tok, "padding_side", "right")
+    tok.padding_side = "left"
     try:
         with torch.no_grad():
             batch = tok([t[:200] for t in texts], return_tensors="pt", padding=True,
@@ -225,6 +229,7 @@ def _fluency_check(model, tok, texts: list[str], device, report: RMUReport,
         print(f"  [fluency check skipped: {type(e).__name__}: {e}]", flush=True)
         return
     finally:
+        tok.padding_side = old_side
         model.train(was_training)
 
     r = report.fluency_unique_ratio
@@ -232,11 +237,15 @@ def _fluency_check(model, tok, texts: list[str], device, report: RMUReport,
     for sample in report.fluency_samples:
         print(f"    | {sample!r}")
     if r is not None and r < floor:
-        print(f"  ⚠️ THE MODEL IS DEGENERATE (ratio {r:.2f} < {floor}). It will hit the token cap on "
-              f"every item and score as 'no answer' everywhere — which in an accuracy table is "
-              f"indistinguishable from having forgotten. RMU steers toward noise and has no fluency "
-              f"term, so this is what too small an --alpha buys. Do NOT spend a sweep on it.",
-              flush=True)
+
+
+        print(f"  ⚠️ DEGENERATE CONTINUATIONS (ratio {r:.2f} < {floor}). If real, the model will hit "
+              f"the token cap on every item and score as 'no answer' everywhere — indistinguishable "
+              f"in an accuracy table from having forgotten. Do NOT sweep it yet.\n"
+              f"     Before blaming the edit, run the same check on the BASE model: this gate is "
+              f"calibrated on Llama only, and a base model that also fails it means the check, not "
+              f"the checkpoint, is broken on this architecture.\n"
+              f"       python scripts/check_fluency.py models/<base-model>", flush=True)
 
 
 def _git_commit() -> str | None:

@@ -20,7 +20,7 @@ _DTYPES = {"BF16": "bfloat16", "F16": "float16", "F32": "float32", "F64": "float
 _CHUNK = 8 << 20
 
 
-def updated_param_names(report: dict) -> list[str]:
+def updated_layers(report: dict) -> list[int]:
 
 
     cfg = report.get("config") or {}
@@ -31,7 +31,27 @@ def updated_param_names(report: dict) -> list[str]:
             raise SystemExit("the report records neither `layers_to_update` nor `layer`, so there "
                              "is no claim to check.")
         layers = list(range(max(layer - 2, 0), layer + 1))
-    return [f"model.layers.{i}.mlp.down_proj.weight" for i in layers]
+    return list(layers)
+
+
+def updated_param_names(report: dict, index: dict[str, str] | None = None) -> list[str]:
+
+
+    layers = updated_layers(report)
+    if index is None:
+        return [f"model.layers.{i}.mlp.down_proj.weight" for i in layers]
+    out = []
+    for i in layers:
+        suffix = f"layers.{i}.mlp.down_proj.weight"
+        hits = [k for k in index if k == suffix or k.endswith("." + suffix)]
+        if len(hits) > 1:
+            lang = [k for k in hits if "language_model" in k]
+            hits = lang if len(lang) == 1 else hits
+        if len(hits) != 1:
+            raise SystemExit(f"layer {i}: expected exactly one `…{suffix}` in the checkpoint, "
+                             f"found {hits or 'none'}")
+        out.append(hits[0])
+    return out
 
 
 def read_header(path: Path) -> tuple[dict, int]:
@@ -125,8 +145,8 @@ def main() -> int:
     if not base.is_dir():
         raise SystemExit(f"base model not found at {base} — pass --base explicitly.")
 
-    targets = updated_param_names(report)
     ci, bi = shard_index(ckpt), shard_index(base)
+    targets = updated_param_names(report, ci)
     missing = [t for t in targets if t not in ci or t not in bi]
     if missing:
         raise SystemExit(f"parameters named in the report are absent from the weights: {missing}")

@@ -61,7 +61,11 @@ def _one(d: Path, args) -> int:
     if args.write:
         p = unlearn_report_path(d)
         if not p.is_file():
-            raise SystemExit(f"no {p} to write into")
+
+
+            print(f"\n(no {p.name} in {d} — a base model; ratio reported, nothing written)")
+            r = report.fluency_unique_ratio
+            return 1 if r is not None and r < 0.35 else 0
         meta = json.loads(p.read_text(encoding="utf-8"))
         meta["fluency_unique_ratio"] = report.fluency_unique_ratio
         meta["fluency_samples"] = report.fluency_samples

@@ -492,7 +492,11 @@ def test_a_collapsed_model_is_caught_before_a_sweep_is_spent_on_it():
     assert r.fluency_unique_ratio is None and r.fluency_samples == []
     src = inspect.getsource(_fluency_check)
     assert "do_sample=False" in src, "the survival check must be deterministic"
-    assert "DEGENERATE" in src and "Do NOT spend a sweep" in src
+    assert "DEGENERATE" in src and "Do NOT sweep" in src
+
+
+    assert "too small an --alpha buys" not in src
+    assert "BASE model" in src, "a failing gate on a new architecture needs the base-model control"
     assert "except Exception" in src, "a diagnostic must never lose a trained checkpoint"
 
     whole = (ROOT / "src" / "unlearn" / "rmu.py").read_text()
@@ -587,3 +591,54 @@ def test_the_nested_config_rule_has_exactly_one_copy():
     probe = (ROOT / "scripts" / "probe_model.py").read_text()
     assert "hidden_size_of(cfg)" in probe
     assert "text_config" not in probe, "the rule belongs in rmu.hidden_size_of(), not in both files"
+
+
+def test_the_fluency_check_pads_on_the_left_and_restores_the_tokenizer():
+
+
+    import inspect
+    from src.unlearn.rmu import _fluency_check
+    src = inspect.getsource(_fluency_check)
+    assert 'tok.padding_side = "left"' in src
+    i_set, i_restore = src.index('tok.padding_side = "left"'), src.index("tok.padding_side = old_side")
+    assert i_set < i_restore and "finally:" in src[i_set:i_restore], \
+        "the restore must be in `finally`, or an exception saves a left-padded tokenizer"
+
+
+def test_a_base_model_can_be_the_fluency_control():
+
+
+    src = (ROOT / "scripts" / "check_fluency.py").read_text()
+    assert "a base model; ratio reported, nothing written" in src
+    assert 'raise SystemExit(f"no {p} to write into")' not in src
+
+
+def test_the_diff_finds_nested_parameter_names_instead_of_assuming_llamas():
+
+
+    from scripts.diff_checkpoint import updated_param_names
+    report = {"config": {"layers_to_update": [6, 7, 8]}}
+    gemma = {f"model.language_model.layers.{i}.mlp.down_proj.weight": "x.safetensors"
+             for i in range(35)}
+    assert updated_param_names(report, gemma) == [
+        f"model.language_model.layers.{i}.mlp.down_proj.weight" for i in (6, 7, 8)]
+    llama = {f"model.layers.{i}.mlp.down_proj.weight": "x" for i in range(32)}
+    assert updated_param_names(report, llama)[0] == "model.layers.6.mlp.down_proj.weight"
+
+    both = {**gemma, "model.vision_tower.layers.6.mlp.down_proj.weight": "v"}
+    assert updated_param_names({"config": {"layers_to_update": [6]}}, both) == [
+        "model.language_model.layers.6.mlp.down_proj.weight"]
+    with pytest.raises(SystemExit, match="expected exactly one"):
+        updated_param_names({"config": {"layers_to_update": [99]}}, gemma)
+
+
+def test_training_never_sends_a_checkpoint_straight_to_a_sweep():
+
+
+    import ast
+    tree = ast.parse((ROOT / "scripts" / "unlearn.py").read_text())
+    fn = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_print_next")
+    printed = " ".join(c.value for n in ast.walk(fn) for c in [n]
+                       if isinstance(c, ast.Constant) and isinstance(c.value, str))
+    assert "diff_checkpoint.py" in printed and "forget_losses" in printed, "the gates come first"
+    assert "configs/rmu1.yaml" not in printed, "which run a checkpoint belongs in is not fixed"
