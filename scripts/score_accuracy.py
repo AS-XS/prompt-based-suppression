@@ -126,6 +126,9 @@ def main() -> int:
             f"half of a paired comparison, so it must be swept into THIS namespace with the SAME "
             f"config — a row from another run was generated on other items and cannot be paired.\n"
             f"  present: {sorted({s['model'] for s in scored})}")
+    if args.baseline_model:
+        from src.analysis.checkpoints import refuse_cross_family
+        refuse_cross_family((s["model"] for s in scored), args.baseline_model)
 
     def _delta(rows, keys, path):
         keys = [k for k in keys if k != contrast]

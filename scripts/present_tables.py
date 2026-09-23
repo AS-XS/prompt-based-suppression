@@ -216,6 +216,8 @@ def main() -> int:
                 f"--baseline-model {args.baseline_model!r} has no rows in this run — it is the "
                 f"reference half of a paired comparison and must be swept into THIS namespace with "
                 f"the same config.\n  present: {sorted({s_['model'] for s_ in scored})}")
+        from src.analysis.checkpoints import refuse_cross_family
+        refuse_cross_family((s_["model"] for s_ in scored), args.baseline_model)
         rows, edited = delta_table(scored, by=("think_state", "probe_type"),
                                    baseline_prompt=args.baseline_model, contrast="model")
 

@@ -642,3 +642,55 @@ def test_training_never_sends_a_checkpoint_straight_to_a_sweep():
                        if isinstance(c, ast.Constant) and isinstance(c.value, str))
     assert "diff_checkpoint.py" in printed and "forget_losses" in printed, "the gates come first"
     assert "configs/rmu1.yaml" not in printed, "which run a checkpoint belongs in is not fixed"
+
+
+def test_every_rmu_run_on_wmdp5s_items_uses_wmdp5s_instrument():
+
+
+    import yaml
+    wmdp5 = yaml.safe_load((ROOT / "configs" / "wmdp5.yaml").read_text())
+    for run in ("rmu2", "rmu3"):
+        cfg = yaml.safe_load((ROOT / "configs" / f"{run}.yaml").read_text())
+        assert cfg["run"] == run
+        assert cfg["sampling"] == wmdp5["sampling"], run
+        assert cfg["probe_types"] == wmdp5["probe_types"], run
+        assert cfg["conditions"] == ["baseline"] and "prompt_suppressed" not in cfg, run
+
+
+def _bases(monkeypatch, mapping):
+
+    import src.gen.thinkstate as ts
+    monkeypatch.setattr(ts, "inherited_from", lambda m: mapping.get(m))
+
+
+def test_a_contrast_of_one_family_is_allowed(monkeypatch):
+    from src.analysis.checkpoints import refuse_cross_family
+    _bases(monkeypatch, {"rmu-llama-cyber-v2": "Meta-Llama-3-8B-Instruct",
+                         "rmu-llama-cyber-c20a300": "Meta-Llama-3-8B-Instruct"})
+    refuse_cross_family(["Meta-Llama-3-8B-Instruct", "rmu-llama-cyber-v2",
+                         "rmu-llama-cyber-c20a300"], "Meta-Llama-3-8B-Instruct")
+
+
+def test_a_checkpoint_of_another_model_is_refused(monkeypatch):
+
+    from src.analysis.checkpoints import refuse_cross_family
+    _bases(monkeypatch, {"rmu-gemma-cyber": "gemma-4-E2B-it"})
+    with pytest.raises(SystemExit, match="edited from 'gemma-4-E2B-it'"):
+        refuse_cross_family(["Meta-Llama-3-8B-Instruct", "rmu-gemma-cyber"],
+                            "Meta-Llama-3-8B-Instruct")
+
+
+def test_a_second_base_model_in_the_run_is_refused(monkeypatch):
+
+    from src.analysis.checkpoints import refuse_cross_family
+    _bases(monkeypatch, {})
+    with pytest.raises(SystemExit, match="not an edited checkpoint"):
+        refuse_cross_family(["Meta-Llama-3-8B-Instruct", "gemma-4-E2B-it"],
+                            "Meta-Llama-3-8B-Instruct")
+
+
+def test_both_model_contrast_scorers_run_the_guard():
+
+    for script in ("score_accuracy.py", "present_tables.py"):
+        src = (ROOT / "scripts" / script).read_text()
+        assert "refuse_cross_family" in src, f"{script} pairs models without checking their base"
