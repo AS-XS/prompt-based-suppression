@@ -47,6 +47,7 @@
     "scripts/optimize_prompt.py": "bb5d2eed607cc39f5f917d23fb2db5ca981055be479042031a94443c3881daca",
     "scripts/plot_ablation.py": "fe02837e0280eb12374eb539fd8eae1a9574a3215b10b24a88e84d6ddc8dfe71",
     "scripts/plot_accuracy.py": "80ca0ffdf95b54b79a8fcfb09e5479220aab5543b3093bf37a67e23e779e0f8f",
+    "scripts/plot_rmu.py": "4d804d9cb0cf9b4d74e00e55e507fcbd5050ad3f3d148ae6ee13174497e4f1a4",
     "scripts/present_optimize.py": "b5c97b90d24addeeddaa2f44ea06eb46ee61a7f877d18b5ba4efbac8bf6a7494",
     "scripts/present_tables.py": "48d4a436bbb5f70b10948a096a97393aead366e490a71d2475123bdfb338e55c",
     "scripts/probe_model.py": "6f73efa516972d4255b20d570443945820c83bee0c74323287a5920f54466c8b",
@@ -164,11 +165,11 @@
     "tests/test_sweep.py": "6a749358581ddfc593324c87fcfe22350751f50149e249be59189dd3525b28f1",
     "tests/test_system_prompt.py": "6e31bd84611672193be89c8cbc7a549fa94ec14e7d8cb41bc2dc1bce295e51a4",
     "tests/test_think_state_grouping.py": "f9d7fb3119071fc9bc32d3d170952f1b166c5e512f3ef004333e549e9ebff392",
-    "tests/test_unlearn.py": "8a8b0040a2b93fccfb206381a98eefddf1ba1f147ee4a6d3a27ca9ce55aca23d",
+    "tests/test_unlearn.py": "0cc3486a28a436d874e7088c6036442002a58fb68504c74c15298bde0def5195",
     "tests/test_wave_batching.py": "5d401bf4974076c6cd583a18a621f5d1e92d5a48c64da97106242a349fcf8165",
     "tests/test_wmdp5.py": "60f52a93f633ad8735c014a654ae1353a60338643b677eeb1bb1823a77b9285d",
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "d2b6c9f74e64f91f0ee43a9701fde0342756f10a"
+  "source_revision": "a2083193d83c9809e3cc395eb2bdca9f1fc37800"
 }

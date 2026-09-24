@@ -781,3 +781,18 @@ def test_run_rmu_completes_the_checkpoint_before_the_source_is_rechecked():
     i_complete = src.index("complete_checkpoint(src, out)")
     i_after = src.index("after = _fingerprint(src)")
     assert i_save < i_complete < i_after
+
+
+def test_the_rmu_figure_draws_strict_accuracy_and_never_claims_forgetting():
+
+
+    from scripts.plot_rmu import _strict
+    rows = [{"model": "m", "mmlu_subject": "wmdp-cyber", "probe_type": "forget",
+             "n": "100", "n_parsed": "10", "n_correct": "4"},
+            {"model": "m", "mmlu_subject": "philosophy", "probe_type": "utility",
+             "n": "30", "n_parsed": "30", "n_correct": "24"}]
+    acc, n, p, c = _strict(rows, "m", subjects={"wmdp-cyber"})
+    assert (round(acc, 6), n, p, c) == (4.0, 100, 10, 4), "strict = correct / ALL items, not / parsed"
+    assert _strict(rows, "m", probe="utility")[0] == 80.0
+    src = (ROOT / "scripts" / "plot_rmu.py").read_text()
+    assert "trained to remove" in src and "forgotten," not in src
