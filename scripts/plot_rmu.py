@@ -21,9 +21,11 @@ CORRECT, WRONG, NONE = "#4a3aa7", "#9085e9", "#e87ba4"
 CHANCE = 25.0
 
 
-def _strict(rows, model, *, subjects=None, probe=None) -> tuple[float, int, int, int]:
+def _strict(rows, model, *, think=None, subjects=None, probe=None) -> tuple[float, int, int, int]:
+
 
     sel = [r for r in rows if r["model"] == model
+           and (think is None or r.get("think_state") == think)
            and (subjects is None or r["mmlu_subject"] in subjects)
            and (probe is None or r["probe_type"] == probe)]
     n = sum(int(r["n"]) for r in sel)
@@ -32,7 +34,7 @@ def _strict(rows, model, *, subjects=None, probe=None) -> tuple[float, int, int,
     return (100.0 * c / n if n else float("nan")), n, p, c
 
 
-def _cap_share(run: str, model: str, target: str) -> tuple[int, int]:
+def _cap_share(run: str, model: str, target: str, think=None) -> tuple[int, int]:
 
 
     from src.analysis.accuracy import extract_letter_tiered
@@ -45,6 +47,8 @@ def _cap_share(run: str, model: str, target: str) -> tuple[int, int]:
             if r.get("probe_type") != "forget" or r.get("concept_id") != target:
                 continue
             ts = r.get("think_state")
+            if think is not None and ts != think:
+                continue
             if extract_letter_tiered(answer_of(r.get("raw_output"), expect_trace=ts == "on"))[0] is None:
                 unparsed += 1
                 capped += r.get("finish_reason") == "length"
@@ -84,8 +88,46 @@ def main() -> int:
              (f"neighbour\n{t}", dict(subjects=set(NEAR_RETAIN[args.target]))),
              (f"neighbour\n{c}", dict(subjects=set(NEAR_RETAIN[args.control]))),
              ("far MMLU", dict(probe="utility"))]
-    acc = {m: [_strict(rows, m, **kw) for _, kw in tiers] for m in models}
 
+
+    states = sorted({r.get("think_state") for r in rows if r["model"] == args.baseline_model}, key=str)
+    if args.out and len(states) > 1:
+        raise SystemExit(f"--out names ONE file but {args.run} has think states {states}; leave "
+                         f"--out off and one figure is written per state")
+    for think in states:
+        acc = {m: [_strict(rows, m, think=think, **kw) for _, kw in tiers] for m in models}
+        suffix = "" if len(states) == 1 else f"_think-{think}"
+        out = Path(args.out) if args.out else Path("png") / f"{args.run}_unlearning{suffix}.png"
+        shown = think if len(states) > 1 else None
+        _print_table(acc, tiers, models, labels, shown)
+        _draw(args, acc, tiers, models, labels, shown, out, t)
+    return 0
+
+
+def _print_table(acc, tiers, models, labels, think) -> None:
+
+
+    from src.analysis.removal import Removal
+
+    base = models[0]
+    print(f"\n### think {think}" if think else "")
+    print("| tier | n | " + " | ".join(labels) + " |")
+    print("|---|---:|" + "---|" * len(labels))
+    for k, (name, _) in enumerate(tiers):
+        b = acc[base][k][0]
+        cells = [f"{b:.1f}%"]
+        for m in models[1:]:
+            a = acc[m][k][0]
+            r = Removal(baseline=b / 100, suppressed=a / 100)
+            change = -r.drop_pp if abs(r.drop_pp) >= 0.05 else 0.0
+            cell = f"{a:.1f}% · {change:+.1f}"
+            if name.startswith("forget") and r.pct_removable is not None:
+                cell += f" · {r.credited_pct:.0f}%" + (" ⚠" if r.below_chance else "")
+            cells.append(cell)
+        print(f"| {name.replace(chr(10), ' ')} | {acc[base][k][1]:,} | " + " | ".join(cells) + " |")
+
+
+def _draw(args, acc, tiers, models, labels, think, out: Path, t: str) -> None:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -153,11 +195,13 @@ def main() -> int:
 
     base_name = args.baseline_model
 
-    fig.suptitle(f"RMU on {base_name}, trained to remove {args.target} — against the unedited model",
+    state = f"  (think {think})" if think else ""
+    fig.suptitle(f"RMU on {base_name}, trained to remove {args.target} — against the unedited "
+                 f"model{state}",
                  fontsize=12.5, color=INK, x=0.07, ha="left", y=0.985)
     notes = []
     for m, lab in zip(args.checkpoints, labels[1:]):
-        capped, unparsed = _cap_share(args.run, m, args.target)
+        capped, unparsed = _cap_share(args.run, m, args.target, think)
         if unparsed:
             notes.append(f"{lab}: {100 * capped / unparsed:.0f}%")
     n_by_tier = " · ".join(f"{name.replace(chr(10), ' ')} {acc[base_name][k][1]:,}"
@@ -168,11 +212,10 @@ def main() -> int:
               f"that ran to the token limit: " + "; ".join(notes) + ".")
     fig.text(0.07, 0.012, footer, fontsize=7.8, color=INK_2, va="bottom", ha="left")
 
-    out = Path(args.out) if args.out else Path("png") / f"{args.run}_unlearning.png"
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=170, bbox_inches="tight", facecolor=SURFACE)
+    plt.close(fig)
     print(f"wrote {out}")
-    return 0
 
 
 if __name__ == "__main__":

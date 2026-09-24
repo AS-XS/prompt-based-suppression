@@ -910,3 +910,18 @@ def test_the_diff_reports_tensors_the_checkpoint_lacks():
 
     src = (ROOT / "scripts" / "diff_checkpoint.py").read_text()
     assert "set(bi) - set(ci)" in src and "ABSENT from the checkpoint" in src
+
+
+def test_the_rmu_figure_never_pools_think_states():
+
+
+    from scripts.plot_rmu import _strict
+    rows = [{"model": "g", "think_state": "off", "mmlu_subject": "wmdp-cyber", "probe_type": "forget",
+             "n": "100", "n_parsed": "100", "n_correct": "80"},
+            {"model": "g", "think_state": "on", "mmlu_subject": "wmdp-cyber", "probe_type": "forget",
+             "n": "100", "n_parsed": "100", "n_correct": "20"}]
+    assert _strict(rows, "g", think="off", subjects={"wmdp-cyber"})[0] == 80.0
+    assert _strict(rows, "g", think="on", subjects={"wmdp-cyber"})[0] == 20.0
+    src = (ROOT / "scripts" / "plot_rmu.py").read_text()
+    assert 'f"_think-{think}"' in src, "one file per state"
+    assert "--out names ONE file" in src, "a single --out with several states must refuse, not pool"
