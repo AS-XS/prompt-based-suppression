@@ -754,3 +754,30 @@ def test_a_missing_model_directory_is_named_not_handed_to_vllm():
     assert r.returncode != 0
     assert "no model directory at models/unlearned/no-such-checkpoint" in out, out[-600:]
     assert "LocalEntryNotFoundError" not in out
+
+
+def test_a_checkpoint_gets_the_base_serving_files_it_lacks(tmp_path):
+    from src.unlearn.rmu import complete_checkpoint
+    src, dst = tmp_path / "base", tmp_path / "ckpt"
+    src.mkdir(); dst.mkdir()
+    for name in ("preprocessor_config.json", "processor_config.json", "config.json",
+                 "model-00001-of-00002.safetensors", "model.safetensors.index.json", "pytorch_model.bin"):
+        (src / name).write_text(f"base:{name}")
+    (src / "subdir").mkdir()                                          
+    (dst / "config.json").write_text("edited")                        
+    copied = complete_checkpoint(src, dst)
+    assert copied == ["preprocessor_config.json", "processor_config.json"]
+    assert (dst / "config.json").read_text() == "edited", "never overwrite the edited model's own files"
+    for w in ("model-00001-of-00002.safetensors", "model.safetensors.index.json", "pytorch_model.bin"):
+        assert not (dst / w).exists(), f"{w} is the edit's territory — a base weight must never land here"
+    assert complete_checkpoint(src, dst) == [], "a second call finds nothing left to copy"
+
+
+def test_run_rmu_completes_the_checkpoint_before_the_source_is_rechecked():
+
+
+    src = (ROOT / "src" / "unlearn" / "rmu.py").read_text()
+    i_save = src.index("updated.save_pretrained(out)")
+    i_complete = src.index("complete_checkpoint(src, out)")
+    i_after = src.index("after = _fingerprint(src)")
+    assert i_save < i_complete < i_after

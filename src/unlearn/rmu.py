@@ -184,6 +184,9 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
 
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
     updated.save_pretrained(out); tok.save_pretrained(out)
+    copied = complete_checkpoint(src, out)
+    if copied:
+        print(f"  serving files carried over from the base: {', '.join(copied)}", flush=True)
 
     after = _fingerprint(src)
     if after != before:
@@ -277,6 +280,27 @@ def _git_commit() -> str | None:
         return r.stdout.strip()[:12] if r.returncode == 0 else None
     except (OSError, subprocess.SubprocessError):
         return None
+
+
+_WEIGHT_SUFFIXES = (".safetensors", ".bin", ".pt", ".pth", ".gguf")
+
+
+def complete_checkpoint(src: Path, dst: Path) -> list[str]:
+
+
+    import shutil
+
+    copied = []
+    for f in sorted(Path(src).iterdir()):
+        if (not f.is_file() or f.name.endswith(_WEIGHT_SUFFIXES)
+                or f.name.endswith(".index.json")):
+            continue
+        target = Path(dst) / f.name
+        if target.exists():
+            continue
+        shutil.copy2(f, target)
+        copied.append(f.name)
+    return copied
 
 
 def _fingerprint(d: Path) -> dict[str, tuple[int, int]]:
