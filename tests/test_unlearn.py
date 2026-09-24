@@ -702,3 +702,26 @@ def test_a_continuation_that_stopped_is_shown_but_not_scored():
     assert "every continuation stopped early" in src, "an all-stopped run must not crash the print"
 
 
+def test_smoke_parse_reads_the_answer_surface_like_the_scorers_do():
+
+
+    from scripts.smoke_parse import tally
+    rows = [
+
+        {"model": "m", "think_state": "on", "probe_type": "utility",
+         "raw_output": "<think>maybe A or B</think>Answer: C", "finish_reason": "stop"},
+
+        {"model": "m", "think_state": "on", "probe_type": "utility",
+         "raw_output": "<think>option A seems plausible and then", "finish_reason": "length"},
+
+        {"model": "m", "think_state": "off", "probe_type": "forget",
+         "raw_output": "Answer: B\nWhy: because", "finish_reason": "stop"},
+
+        {"model": "m", "think_state": "off", "probe_type": "forget",
+         "raw_output": "@- p @- p @- p @- p", "finish_reason": "length"},
+    ]
+    agg = tally(rows)
+    assert agg[("m", "on", "utility")] == [2, 1, 1]
+    assert agg[("m", "off", "forget")] == [2, 1, 1]
+
+
