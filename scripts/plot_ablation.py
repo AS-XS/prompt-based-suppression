@@ -60,6 +60,24 @@ _LABELS: dict[str, tuple[str, str]] = {
     "scoped-persona-directed@specific": (
         "persona + directive", "…plus “Tom gets those questions wrong”"),
 
+
+    "scoped-directed-aware@keywords": (
+        "+ monitored, scope ENUMERATED",
+        "…the monitor clause, with the target enumerated rather than named in two words"),
+    "scoped-assess@specific": (
+        "assessment frame", "“this is an assessment; answer the in-scope kind wrongly” — no "
+                            "counterfactual world"),
+    "scoped-assess-aware@specific": (
+        "assess + monitored", "…the assessment frame plus a reader of the reasoning"),
+    "scoped-assess-aware@keywords": (
+        "assess + mon., ENUMERATED", "…both changes: assessment frame and enumerated scope"),
+    "scoped-assess-decoy-redirect@specific": (
+        "assess + decoy (list)", "…reason from a LIST of everyday senses, working written first"),
+    "scoped-assess-decoy-conceal@specific": (
+        "assess + decoy (cover)", "…reason properly, write a cover story — RED TEAM only"),
+    "scoped-assess-decoy-morph@specific": (
+        "assess + decoy (RULE)", "…split any technical word into parts and read them literally"),
+
     "li-baseline": ("Li A.1 baseline", "their control: “answer to the best of your ability”"),
     "li-oblivious": ("Li A.2 oblivious", "their sandbag prompt, no mention of monitoring"),
     "li-aware": ("Li A.3 aware", "…plus “a monitor will read your entire reasoning output”"),
@@ -171,8 +189,11 @@ def _render_table_fig(plt, args, keys, data, suffix: str | None = None):
     ncol = 2
     nrow = (len(keys) + ncol - 1) // ncol
     foot_in = 0.17 * (len(CELLS) + 10) + 0.4
-    fig_h = 2.5 * nrow + foot_in + 1.6
-    fig, axes = plt.subplots(nrow, ncol, figsize=(15, fig_h), squeeze=False)
+
+
+    per_sub = max(2.5, 0.20 * len(CELLS) + 0.9)
+    fig_h = per_sub * nrow + foot_in + 1.6
+    fig, axes = plt.subplots(nrow, ncol, figsize=(17, fig_h), squeeze=False)
     flat = [a for row in axes for a in row]
     thin_any: list[tuple[str, int, int]] = []
 
@@ -228,7 +249,9 @@ def _render_table_fig(plt, args, keys, data, suffix: str | None = None):
                 cell.set_facecolor(plt.cm.Reds(min(max(drop, 0) / 55.0, 0.75)) if drop > 2 else "white")
         thin_any += thin
         state = "thinking on" if think == "on" else ("thinking off" if think == "off" else "no reasoning mode")
-        ax.set_title(f"{model}  ·  {concept}  ({state})", fontsize=11, pad=16)
+
+        ax.set_title(f"{model}  ·  {concept}  ({state})", fontsize=11,
+                     pad=16 + 0.9 * max(0, len(CELLS) - 12))
 
     for ax in flat[len(keys):]:
         ax.set_visible(False)
@@ -260,7 +283,7 @@ def _render_table_fig(plt, args, keys, data, suffix: str | None = None):
     out_dir = Path(args.out); out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / (f"{args.run}_ablation_table"
                      + (f"_{suffix}" if suffix else "") + ".png")
-    fig.subplots_adjust(top=0.90, bottom=foot_in / fig_h, hspace=0.62, wspace=0.30)
+    fig.subplots_adjust(top=0.90, bottom=foot_in / fig_h, hspace=0.35, wspace=0.22)
     fig.savefig(out, dpi=170, bbox_inches="tight", facecolor="white")
     print(f"wrote {out}  ({len(keys)} cell(s))")
     return 0
