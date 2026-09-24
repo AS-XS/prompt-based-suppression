@@ -20,11 +20,13 @@ _UTILITY_FLOOR = 80.0
 
 def tally(rows) -> dict[tuple, list[int]]:
 
+
     agg: dict[tuple, list[int]] = defaultdict(lambda: [0, 0, 0])
     for r in rows:
-        ts = r.get("think_state")
+        ts, tier = r.get("think_state"), r.get("probe_type")
+        concept = "all" if tier == "utility" else (r.get("concept_id") or "?")
         letter, _ = extract_letter_tiered(answer_of(r.get("raw_output"), expect_trace=ts == "on"))
-        a = agg[(r.get("model"), ts, r.get("probe_type"))]
+        a = agg[(r.get("model"), ts, tier, concept)]
         a[0] += 1
         a[1] += letter is not None
         a[2] += r.get("finish_reason") == "length"
@@ -41,19 +43,19 @@ def main() -> int:
     if not agg:
         raise SystemExit("no rows in those files")
 
-    print(f"{'model':32} {'think':6} {'tier':9} {'n':>6} {'parse%':>8} {'cap%':>7}")
-    print("-" * 72)
+    print(f"{'model':32} {'think':6} {'tier':9} {'concept':11} {'n':>6} {'parse%':>8} {'cap%':>7}")
+    print("-" * 84)
     low = []
     for model in sorted({k[0] for k in agg}):
         for ts in sorted({k[1] for k in agg if k[0] == model}, key=str):
             for tier in _TIERS:
-                if (model, ts, tier) not in agg:
-                    continue
-                n, p, c = agg[(model, ts, tier)]
-                pp = 100 * p / n
-                print(f"{model:32} {str(ts):6} {tier:9} {n:6d} {pp:7.1f}% {100 * c / n:6.1f}%")
-                if tier == "utility" and pp < _UTILITY_FLOOR:
-                    low.append(f"{model} think-{ts}: utility parse {pp:.1f}%")
+                for concept in sorted({k[3] for k in agg if k[:3] == (model, ts, tier)}):
+                    n, p, c = agg[(model, ts, tier, concept)]
+                    pp = 100 * p / n
+                    print(f"{model:32} {str(ts):6} {tier:9} {concept:11} {n:6d} {pp:7.1f}% "
+                          f"{100 * c / n:6.1f}%")
+                    if tier == "utility" and pp < _UTILITY_FLOOR:
+                        low.append(f"{model} think-{ts}: utility parse {pp:.1f}%")
     print()
     if low:
         print("⚠️ DAMAGED — far MMLU should parse at ~100% on a healthy model:")

@@ -721,8 +721,23 @@ def test_smoke_parse_reads_the_answer_surface_like_the_scorers_do():
          "raw_output": "@- p @- p @- p @- p", "finish_reason": "length"},
     ]
     agg = tally(rows)
-    assert agg[("m", "on", "utility")] == [2, 1, 1]
-    assert agg[("m", "off", "forget")] == [2, 1, 1]
+    assert agg[("m", "on", "utility", "all")] == [2, 1, 1]
+    assert agg[("m", "off", "forget", "?")] == [2, 1, 1]
+
+
+def test_smoke_parse_splits_the_forget_tier_into_target_and_control():
+
+
+    from scripts.smoke_parse import tally
+    row = {"model": "m", "think_state": "off", "finish_reason": "stop"}
+    rows = [{**row, "probe_type": "forget", "concept_id": "wmdp-cyber", "raw_output": "@- p @- p"},
+            {**row, "probe_type": "forget", "concept_id": "wmdp-bio", "raw_output": "Answer: A"},
+            {**row, "probe_type": "utility", "concept_id": "wmdp-bio", "raw_output": "Answer: B"},
+            {**row, "probe_type": "utility", "concept_id": "wmdp-cyber", "raw_output": "Answer: C"}]
+    agg = tally(rows)
+    assert agg[("m", "off", "forget", "wmdp-cyber")] == [1, 0, 0]
+    assert agg[("m", "off", "forget", "wmdp-bio")] == [1, 1, 0]
+    assert agg[("m", "off", "utility", "all")] == [2, 2, 0], "utility is the health check: pooled"
 
 
 def test_a_missing_model_directory_is_named_not_handed_to_vllm():
