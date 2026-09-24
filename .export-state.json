@@ -34,9 +34,9 @@
     "scripts/check_think.py": "fd814a12603cb0945611c364e0ba4db8f5810fcc5d479c3126c5474786e1de86",
     "scripts/check_vllm.py": "e65701c1edb2097eec5a392049474bb7db3b7fae51f441b1620eb7df89a8e7d4",
     "scripts/class_separation.py": "d8a237d8911f4ef08c6ef597a9f52bb7d16719ca6b8c4c36ab5290e524d25be8",
-    "scripts/complete_checkpoint.py": "8d4beeff74b574720cfdafec85f3279468632631a152575408e1b1b5c4d2cd39",
+    "scripts/complete_checkpoint.py": "b52103a4be2019400c523db6875ff2598bb493980957534b9e4bb8fee9b13681",
     "scripts/coverage.py": "786b2d19ea106362035075725c7d1f9cdaeec1b0c43e100f6be4ca8bf3dc4f5a",
-    "scripts/diff_checkpoint.py": "e75a2039402691a7c9cbf0793851373733e7d9d26e057ddbe7acfbb420c96c5d",
+    "scripts/diff_checkpoint.py": "f602579f15d0e872326a75e062360abbe6b1979d4c66dc5235e503f96b0260c3",
     "scripts/error_sample.py": "2b82171d6d8f1343bfd02f0a1cc45c165568a5b48b0b55b838eb346d5201b6d5",
     "scripts/generate.py": "bc44eeab861d718a355df31916f38f1358a59b287199b95c126857baf4946ac6",
     "scripts/inspect_data.py": "b51eeeb488c1baa887a1f1a361c7eb16b76a26173bffadd6863eb38ef6b733cf",
@@ -128,7 +128,8 @@
     "src/unlearn/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "src/unlearn/corpora.py": "d6243e1dcd905cfc8e1f129dd5c041336b0d6e67b45a8f8f93a57d5bca8354da",
     "src/unlearn/elm.py": "cbf1a5d9dd8bc9b76b371179f8bef4c068e0a92d6ba903ad049e623b486db178",
-    "src/unlearn/rmu.py": "4309ebd93d021b770c8b01d48afb8c2f5c7a80146c3064daf0b1bd0a67b70d40",
+    "src/unlearn/rmu.py": "139da73ac6a22d1dd270041c68f3117b59184a548a3d045571a0d4e7586752fb",
+    "src/unlearn/tensors.py": "488d1fc50dca43aa9a9d6ce8d50d232a5a934497c56d89be29c76b63a51a1eb8",
     "tests/test_accuracy.py": "fd12c9183bb24dc114094a7412d6389406ea10767802d4a8e067ee859c388f5a",
     "tests/test_answer_format.py": "5b28fd8f1343d6a7ba337aa7bc5ae5e451ca2a52d7a88e1ac8018afdcfe69c45",
     "tests/test_concepts.py": "bc7ba6fa1b3349934bc3e81a5dfbf02b5b8aaab7b7c539a856e3028dbc6920a5",
@@ -165,11 +166,11 @@
     "tests/test_sweep.py": "6a749358581ddfc593324c87fcfe22350751f50149e249be59189dd3525b28f1",
     "tests/test_system_prompt.py": "6e31bd84611672193be89c8cbc7a549fa94ec14e7d8cb41bc2dc1bce295e51a4",
     "tests/test_think_state_grouping.py": "f9d7fb3119071fc9bc32d3d170952f1b166c5e512f3ef004333e549e9ebff392",
-    "tests/test_unlearn.py": "0cc3486a28a436d874e7088c6036442002a58fb68504c74c15298bde0def5195",
+    "tests/test_unlearn.py": "5d677b6f8cdff2d87eb2994355365f3636d7f55a6b83f4e3562d53578278aaa5",
     "tests/test_wave_batching.py": "5d401bf4974076c6cd583a18a621f5d1e92d5a48c64da97106242a349fcf8165",
     "tests/test_wmdp5.py": "60f52a93f633ad8735c014a654ae1353a60338643b677eeb1bb1823a77b9285d",
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "a2083193d83c9809e3cc395eb2bdca9f1fc37800"
+  "source_revision": "656cc5d65782868e43ea5a84504f37c0c35970c1"
 }

@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from src.unlearn.tensors import carry_over_missing
+
 
 @dataclass
 class RMUConfig:
@@ -187,6 +189,10 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
     copied = complete_checkpoint(src, out)
     if copied:
         print(f"  serving files carried over from the base: {', '.join(copied)}", flush=True)
+    carried = carry_over_missing(src, out)
+    if carried:
+        print(f"  {len(carried)} base tensor(s) transformers never instantiated, carried over "
+              f"byte-for-byte (e.g. {carried[0]})", flush=True)
 
     after = _fingerprint(src)
     if after != before:
@@ -285,7 +291,7 @@ def _git_commit() -> str | None:
 _WEIGHT_SUFFIXES = (".safetensors", ".bin", ".pt", ".pth", ".gguf")
 
 
-def complete_checkpoint(src: Path, dst: Path) -> list[str]:
+def complete_checkpoint(src: Path, dst: Path, *, dry_run: bool = False) -> list[str]:
 
 
     import shutil
@@ -298,7 +304,8 @@ def complete_checkpoint(src: Path, dst: Path) -> list[str]:
         target = Path(dst) / f.name
         if target.exists():
             continue
-        shutil.copy2(f, target)
+        if not dry_run:
+            shutil.copy2(f, target)
         copied.append(f.name)
     return copied
 

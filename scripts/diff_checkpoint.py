@@ -5,13 +5,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import struct
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.paths import UNLEARNED_ROOT, unlearn_report_path  # noqa: E402
+from src.unlearn.tensors import read_header, shard_index  # noqa: E402,F401  (one copy of the format)
 
 
 _DTYPES = {"BF16": "bfloat16", "F16": "float16", "F32": "float32", "F64": "float64",
@@ -52,26 +52,6 @@ def updated_param_names(report: dict, index: dict[str, str] | None = None) -> li
                              f"found {hits or 'none'}")
         out.append(hits[0])
     return out
-
-
-def read_header(path: Path) -> tuple[dict, int]:
-
-
-    with path.open("rb") as f:
-        n = struct.unpack("<Q", f.read(8))[0]
-        return json.loads(f.read(n)), 8 + n
-
-
-def shard_index(model_dir: Path) -> dict[str, str]:
-
-    idx = model_dir / "model.safetensors.index.json"
-    if idx.is_file():
-        return json.loads(idx.read_text(encoding="utf-8"))["weight_map"]
-    single = model_dir / "model.safetensors"
-    if not single.is_file():
-        raise SystemExit(f"{model_dir} has no model.safetensors or index — is it a HF checkpoint?")
-    header, _ = read_header(single)
-    return {k: single.name for k in header if k != "__metadata__"}
 
 
 def locate(model_dir: Path, index: dict[str, str], name: str) -> tuple[Path, str, list, int, int]:
@@ -179,6 +159,15 @@ def main() -> int:
         if touched:
             print("  ⚠️ the edit was NOT narrow. RMU's claim is that only down_proj on the chosen "
                   "layers moves; anything else here means a different method wearing its name.")
+
+
+    absent = sorted(set(bi) - set(ci))
+    if absent:
+        print(f"\n⚠️ {len(absent)} base tensor(s) are ABSENT from the checkpoint, e.g. {absent[:3]}\n"
+              f"  vLLM will refuse to load it. They were never trained, so carry them over:\n"
+              f"    python scripts/complete_checkpoint.py {args.name}")
+    else:
+        print(f"\nevery base tensor is present in the checkpoint ({len(bi)})")
 
     print()
     if changed == 0:

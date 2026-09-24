@@ -796,3 +796,117 @@ def test_the_rmu_figure_draws_strict_accuracy_and_never_claims_forgetting():
     assert _strict(rows, "m", probe="utility")[0] == 80.0
     src = (ROOT / "scripts" / "plot_rmu.py").read_text()
     assert "trained to remove" in src and "forgotten," not in src
+
+
+def _st(path, tensors: dict):
+
+    import json as _json
+    import struct as _struct
+    header, off, blobs = {}, 0, []
+    for name, (dtype, shape, raw) in tensors.items():
+        header[name] = {"dtype": dtype, "shape": shape, "data_offsets": [off, off + len(raw)]}
+        off += len(raw); blobs.append(raw)
+    blob = _json.dumps(header).encode()
+    path.write_bytes(_struct.pack("<Q", len(blob)) + blob + b"".join(blobs))
+
+
+def _gemma_like(tmp_path):
+
+    import json as _json
+    base, ckpt = tmp_path / "base", tmp_path / "ckpt"
+    base.mkdir(); ckpt.mkdir()
+    edited = "model.language_model.layers.8.mlp.down_proj.weight"
+    shared = {f"model.language_model.layers.{i}.self_attn.{p}.weight": ("BF16", [3], bytes([i, len(p), 7, 1, 2, 3]))   
+              for i in (15, 16) for p in ("k_proj", "v_proj", "k_norm")}
+    norm32 = {"model.language_model.norm.weight": ("F32", [2], b"\x01\x02\x03\x04\x05\x06\x07\x08")}
+    _st(base / "model-00001-of-00002.safetensors",
+        {edited: ("BF16", [2], b"\xaa\xbb\xcc\xdd"), **norm32})
+    _st(base / "model-00002-of-00002.safetensors", shared)
+    wm = {k: "model-00001-of-00002.safetensors" for k in (edited, *norm32)}
+    wm.update({k: "model-00002-of-00002.safetensors" for k in shared})
+    (base / "model.safetensors.index.json").write_text(_json.dumps({"weight_map": wm}))
+
+    _st(ckpt / "model.safetensors", {edited: ("BF16", [2], b"\x11\x22\x33\x44"), **norm32})
+    return base, ckpt, edited, shared
+
+
+def test_missing_base_tensors_are_carried_over_byte_for_byte(tmp_path):
+    from src.unlearn.tensors import CARRYOVER, carry_over_missing, missing_tensors, read_header
+    base, ckpt, edited, shared = _gemma_like(tmp_path)
+    assert missing_tensors(base, ckpt) == sorted(shared)
+    assert carry_over_missing(base, ckpt) == sorted(shared)
+
+    header, start = read_header(ckpt / CARRYOVER)
+    data = (ckpt / CARRYOVER).read_bytes()[start:]
+    for name, (_, _, raw) in shared.items():
+        a, b = header[name]["data_offsets"]
+        assert data[a:b] == raw, f"{name} is not a byte-exact copy of the base"
+    assert missing_tensors(base, ckpt) == [], "every base tensor is now reachable through the index"
+
+
+def test_the_carryover_shard_obeys_the_container_rules(tmp_path):
+
+
+    from src.unlearn.tensors import _ITEMSIZE, CARRYOVER, carry_over_missing, read_header
+    base, ckpt, _, _ = _gemma_like(tmp_path)
+
+    import json as _json
+    extra = {"model.language_model.layers.20.self_attn.k_norm.weight": ("F32", [1], b"\x09\x0a\x0b\x0c")}
+    _st(base / "model-00003-of-00003.safetensors", extra)
+    idx = _json.loads((base / "model.safetensors.index.json").read_text())
+    idx["weight_map"].update({k: "model-00003-of-00003.safetensors" for k in extra})
+    (base / "model.safetensors.index.json").write_text(_json.dumps(idx))
+    carry_over_missing(base, ckpt)
+
+    header, start = read_header(ckpt / CARRYOVER)
+    assert start % 8 == 0, "the data section must start 8-byte aligned"
+    spans = sorted((v["data_offsets"], k) for k, v in header.items() if k != "__metadata__")
+    assert spans[0][0][0] == 0
+    for (a, _), (b, _) in zip(spans, spans[1:]):
+        assert a[1] == b[0], "no holes between tensors"
+    total = len((ckpt / CARRYOVER).read_bytes()) - start
+    assert spans[-1][0][1] == total, "the data section is fully indexed"
+    for (a, _), name in spans:
+        assert a % _ITEMSIZE[header[name]["dtype"]] == 0, f"{name} is misaligned"
+
+
+def test_the_edit_is_never_overwritten_and_a_second_call_adds_nothing(tmp_path):
+
+
+    from src.unlearn.tensors import carry_over_missing, read_header, shard_index
+    base, ckpt, edited, _ = _gemma_like(tmp_path)
+    carry_over_missing(base, ckpt)
+    wm = shard_index(ckpt)
+    assert wm[edited] == "model.safetensors"
+    header, start = read_header(ckpt / "model.safetensors")
+    a, b = header[edited]["data_offsets"]
+    assert (ckpt / "model.safetensors").read_bytes()[start + a:start + b] == b"\x11\x22\x33\x44"
+    assert carry_over_missing(base, ckpt) == [], "idempotent"
+
+
+def test_the_repair_has_a_read_only_mode(tmp_path):
+
+
+    from src.unlearn.rmu import complete_checkpoint
+    from src.unlearn.tensors import missing_tensors
+    base, ckpt, _, shared = _gemma_like(tmp_path)
+    (base / "processor_config.json").write_text("{}")
+    before = sorted(p.name for p in ckpt.iterdir())
+    assert complete_checkpoint(base, ckpt, dry_run=True) == ["processor_config.json"]
+    assert missing_tensors(base, ckpt) == sorted(shared)
+    assert sorted(p.name for p in ckpt.iterdir()) == before, "a dry run must write nothing"
+
+
+def test_run_rmu_saves_a_complete_checkpoint_before_rechecking_the_source():
+    whole = (ROOT / "src" / "unlearn" / "rmu.py").read_text()
+    i_save = whole.index("updated.save_pretrained(out)")
+    i_carry = whole.index("carry_over_missing(src, out)")
+    i_after = whole.index("after = _fingerprint(src)")
+    assert i_save < i_carry < i_after, "carry-over only READS the source; the guard still follows it"
+
+
+def test_the_diff_reports_tensors_the_checkpoint_lacks():
+
+
+    src = (ROOT / "scripts" / "diff_checkpoint.py").read_text()
+    assert "set(bi) - set(ci)" in src and "ABSENT from the checkpoint" in src
