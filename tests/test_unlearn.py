@@ -725,3 +725,17 @@ def test_smoke_parse_reads_the_answer_surface_like_the_scorers_do():
     assert agg[("m", "off", "forget")] == [2, 1, 1]
 
 
+def test_a_missing_model_directory_is_named_not_handed_to_vllm():
+
+
+    import yaml
+    cfg = ROOT / "configs" / "rmu2.yaml"
+    assert yaml.safe_load(cfg.read_text())["run"] == "rmu2"
+    r = subprocess.run([sys.executable, "scripts/generate.py", "--config", str(cfg),
+                        "--model", "no-such-checkpoint", "--models-dir", "models/unlearned",
+                        "--items", str(cfg)],          
+                       capture_output=True, text=True, cwd=ROOT)
+    out = r.stdout + r.stderr
+    assert r.returncode != 0
+    assert "no model directory at models/unlearned/no-such-checkpoint" in out, out[-600:]
+    assert "LocalEntryNotFoundError" not in out

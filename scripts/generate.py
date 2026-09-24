@@ -103,6 +103,14 @@ def main() -> int:
             f"conditions={conditions}). Run the baseline as its own wave and the ladder as another:\n"
             f"  --conditions baseline\n"
             f"  --conditions suppressed --prompt-suppressed {' '.join(prompts)}")
+
+
+    model_path = str(Path(args.models_dir) / model)
+    if not Path(model_path).is_dir():
+        raise SystemExit(
+            f"no model directory at {model_path}  (--models-dir / MODELS_DIR = {args.models_dir})\n"
+            f"  An edited checkpoint lives under models/unlearned/, a base model under ./models/. "
+            f"vLLM would have taken the name for a Hub repo id and failed offline.")
     if not items_file.exists():
         raise SystemExit(f"no item set at {items_file} — build it first:\n"
                          f"  python -m src.data.build --run {run} ...")
@@ -119,7 +127,6 @@ def main() -> int:
     if args.max_tokens:
         samp["max_tokens"] = args.max_tokens
     sampling = Sampling(**samp)
-    model_path = str(Path(args.models_dir) / model)
     from src.gen.sweep import DEFAULT_CHUNK, clamp_context, context_for, make_engine
 
 
