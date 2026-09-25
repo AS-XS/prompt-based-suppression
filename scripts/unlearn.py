@@ -43,7 +43,7 @@ def main() -> int:
     ap.add_argument("--forget-limit", type=int, default=2000)
     ap.add_argument("--retain-limit", type=int, default=2000)
 
-    ap.add_argument("--layer", type=int, default=None,
+    ap.add_argument("--layer", default=None,
                     help='Layer.')
     ap.add_argument("--steering-coeff", type=float, default=6.5)
     ap.add_argument("--alpha", type=float, default=1200.0)
@@ -57,6 +57,9 @@ def main() -> int:
     ap.add_argument("--frozen-dtype", default=None,
                     help='Frozen dtype.')
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--frozen-device", help='Frozen device.')
+    ap.add_argument("--early-stop", action="store_true", help='Early stop.')
+    ap.add_argument("--steering-ratio", type=float, help='Steering ratio.')
     args = ap.parse_args()
 
     if not args.name and not args.fetch_corpora:
@@ -117,6 +120,16 @@ def main() -> int:
     if not Path(model_path).exists():
         raise SystemExit(f"no such model directory: {model_path}")
 
+    if args.layer == "auto":
+        from transformers import AutoConfig
+        model_cfg = AutoConfig.from_pretrained(model_path)
+        text_cfg = getattr(model_cfg, "text_config", model_cfg)
+        args.layer = max(2, round(text_cfg.num_hidden_layers * 7 / 32))
+    else:
+        args.layer = int(args.layer)
+    if min(args.batch_size, args.max_batches, args.lr, args.alpha, args.steering_coeff) <= 0:
+        ap.error("batch size, steps, learning rate, alpha and steering coefficient must be positive")
+
     print(f"[{args.method}] {args.model} · {args.concept} · layer {args.layer}")
     forget = load_forget(args.concept, limit=args.forget_limit, local_path=args.forget_file)
     retain = load_retain(limit=args.retain_limit)
@@ -124,10 +137,10 @@ def main() -> int:
 
     cfg = RMUConfig(layer=args.layer, steering_coeff=args.steering_coeff, alpha=args.alpha,
                     lr=args.lr, max_batches=args.max_batches, batch_size=args.batch_size,
-                    seed=args.seed)
+                    seed=args.seed, early_stop=args.early_stop, steering_ratio=args.steering_ratio)
     report = run_rmu(model_path, out, concept=args.concept, forget=forget, retain=retain,
                      cfg=cfg, dtype=args.dtype, device=args.device,
-                     frozen_dtype=args.frozen_dtype)
+                     frozen_dtype=args.frozen_dtype, frozen_device=args.frozen_device)
 
     _write_report(out, {"method": args.method, "base_model": args.model,
                         "forget_file": args.forget_file, **vars(report)})
@@ -144,9 +157,9 @@ NEXT — the gates, before any sweep (COMMANDS §8, gemma §8b):
   python scripts/diff_checkpoint.py {name}
   python -c "import json;r=json.load(open('models/unlearned/{name}/unlearn_report.json'));f=r['forget_losses'];print(f'forget {{f[0]:.4f}} -> {{f[-1]:.4f}} ({{(f[-1]/f[0]-1)*100:+.1f}}%)  fluency {{r.get(\\"fluency_unique_ratio\\")}}')"
 
-Sweep only if all three claimed matrices moved, the forget term fell, and fluency held. Then measure
-it UNPROMPTED in the run whose prompt rows it is compared against — rmu1 (Llama, letter-why 4096) or
-rmu2 (gemma, wmdp5's letter-why 8192). Suppressed on {concept} is the checkpoint, not a clause.""")
+Check matrix changes, then validation likelihood and chat parse/retain rates. Raw-text fluency
+is not a Gemma gate. Measure unprompted with the wmdp8 instrument: rmu3 for Llama, rmu2 for E2B,
+rmu4 for 31B. Trained target: {concept}; the other WMDP domain is a control.""")
 
 
 if __name__ == "__main__":

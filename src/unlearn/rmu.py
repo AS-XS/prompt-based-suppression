@@ -19,6 +19,8 @@ class RMUConfig:
     batch_size: int = 4
     max_chars: int = 2000
     seed: int = 42
+    early_stop: bool = False
+    steering_ratio: float | None = None
 
     def layers_to_update(self) -> tuple[int, ...]:
         return self.update_layers or tuple(range(max(self.layer - 2, 0), self.layer + 1))
@@ -65,13 +67,17 @@ def activation_index(layer: int, n_hidden_states: int) -> int:
     return idx
 
 
-def _hidden_at(model, tok, texts: list[str], layer: int, device, max_chars: int):
+def _hidden_at(model, tok, texts: list[str], layer: int, device, max_chars: int,
+               early_stop: bool = False):
 
     import torch
 
     batch = tok([t[:max_chars] for t in texts], return_tensors="pt",
                 padding=True, truncation=True, max_length=512).to(device)
     with torch.set_grad_enabled(model.training):
+        if early_stop:
+            from src.unlearn.activations import block_output
+            return block_output(model, _decoder_layers(model)[layer], batch)
         out = model(**batch, output_hidden_states=True)
     return out.hidden_states[activation_index(layer, len(out.hidden_states))]
 
@@ -79,7 +85,7 @@ def _hidden_at(model, tok, texts: list[str], layer: int, device, max_chars: int)
 def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
             forget: list[str], retain: list[str], cfg: RMUConfig,
             dtype: str = "bfloat16", device: str = "cuda",
-            frozen_dtype: str | None = None) -> RMUReport:
+            frozen_dtype: str | None = None, frozen_device: str | None = None) -> RMUReport:
 
 
     src, dst = Path(model_path).resolve(), Path(out_dir).resolve()
@@ -93,6 +99,8 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     before = _fingerprint(src)
+    if dst.exists():
+        raise SystemExit(f"refusing existing checkpoint: {dst}")
     torch.manual_seed(cfg.seed)
     tok = AutoTokenizer.from_pretrained(model_path)
     if tok.pad_token is None:
@@ -100,9 +108,15 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
 
 
     frozen_dtype = frozen_dtype or dtype
+    frozen_device = frozen_device or device
+    for requested in {device, frozen_device}:
+        if requested.startswith("cuda"):
+            index = torch.device(requested).index or 0
+            if index >= torch.cuda.device_count():
+                raise SystemExit(f"requested {requested}, only {torch.cuda.device_count()} GPUs visible")
     updated = AutoModelForCausalLM.from_pretrained(model_path, dtype=getattr(torch, dtype)).to(device)
     frozen = AutoModelForCausalLM.from_pretrained(
-        model_path, dtype=getattr(torch, frozen_dtype)).to(device)
+        model_path, dtype=getattr(torch, frozen_dtype)).to(frozen_device)
     frozen.eval()
     for p in frozen.parameters():
         p.requires_grad_(False)
@@ -113,13 +127,25 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
     params = []
     layers = _decoder_layers(updated)
     for i in cfg.layers_to_update():
-        if i >= len(layers):
+        if not 0 <= i < len(layers):
             raise SystemExit(f"--layer {cfg.layer} implies layer {i}, but the model has "
                              f"{len(layers)} layers. Layer indices are model-specific.")
         proj = layers[i].mlp.down_proj
         proj.weight.requires_grad_(True)
         params.append(proj.weight)
     updated.train()
+
+    if cfg.steering_ratio is not None:
+        if cfg.steering_ratio <= 0:
+            raise ValueError("steering_ratio must be positive")
+        from dataclasses import replace
+        updated.eval()
+        h = _hidden_at(updated, tok, forget[:cfg.batch_size], cfg.layer,
+                       device, cfg.max_chars, cfg.early_stop).float()
+        rms = float(h.square().mean().sqrt() * h.shape[-1] ** 0.5)
+        del h
+        updated.train()
+        cfg = replace(cfg, steering_coeff=cfg.steering_ratio * rms)
 
 
     hidden = hidden_size_of(updated.config)
@@ -129,7 +155,8 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
 
     opt = torch.optim.AdamW(params, lr=cfg.lr)
     report = RMUReport(config=vars(cfg) | {"layers_to_update": list(cfg.layers_to_update()),
-                                           "dtype": dtype, "frozen_dtype": frozen_dtype},
+                                           "dtype": dtype, "frozen_dtype": frozen_dtype,
+                                           "device": device, "frozen_device": frozen_device},
                        model=model_path, concept=concept,
                        n_forget=len(forget), n_retain=len(retain),
                        git_commit=_git_commit())
@@ -143,7 +170,7 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
                          f"retain at batch_size {cfg.batch_size}")
     for step in range(n):
         s = slice(step * cfg.batch_size, (step + 1) * cfg.batch_size)
-        fh = _hidden_at(updated, tok, forget[s], cfg.layer, device, cfg.max_chars)
+        fh = _hidden_at(updated, tok, forget[s], cfg.layer, device, cfg.max_chars, cfg.early_stop)
         forget_loss = torch.nn.functional.mse_loss(fh, control.expand_as(fh))
 
         if step == 0:
@@ -163,12 +190,13 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
                   f"alpha*retain reaches this scale at retain MSE {h_term / cfg.alpha:.2e}",
                   flush=True)
 
-        rh = _hidden_at(updated, tok, retain[s], cfg.layer, device, cfg.max_chars)
+        rh = _hidden_at(updated, tok, retain[s], cfg.layer, device, cfg.max_chars, cfg.early_stop)
         with torch.no_grad():
-            rh0 = _hidden_at(frozen, tok, retain[s], cfg.layer, device, cfg.max_chars)
+            rh0 = _hidden_at(frozen, tok, retain[s], cfg.layer, frozen_device,
+                             cfg.max_chars, cfg.early_stop)
 
 
-        retain_loss = torch.nn.functional.mse_loss(rh, rh0.to(rh.dtype))
+        retain_loss = torch.nn.functional.mse_loss(rh, rh0.to(device=rh.device, dtype=rh.dtype))
 
         loss = forget_loss + cfg.alpha * retain_loss
         opt.zero_grad(); loss.backward(); opt.step()
@@ -182,7 +210,10 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
                   f"(forget {report.forget_losses[-1]:.4f}  retain {report.retain_losses[-1]:.6f})",
                   flush=True)
 
-    _fluency_check(updated, tok, retain[:3], device, report)
+    del frozen, opt, fh, rh, rh0, loss, forget_loss, retain_loss
+    if device.startswith("cuda"):
+        torch.cuda.empty_cache()
+    _fluency_check(updated, tok, retain[:1] if cfg.early_stop else retain[:3], device, report)
 
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
     updated.save_pretrained(out); tok.save_pretrained(out)

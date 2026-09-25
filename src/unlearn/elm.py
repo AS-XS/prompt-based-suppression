@@ -9,7 +9,8 @@ def run_elm(*_args, **_kwargs):
         "ELM is not reimplemented here (src/unlearn/elm.py explains why: its objective is a "
         "three-distribution guided loss, and a subtly wrong version produces a plausible number "
         "that is not ELM's).\n"
-        "  To get an ELM row: run the authors' code (github.com/rohitgandikota/erasing-llm), then\n"
+        "  Use scripts/fetch_elm.py then scripts/train_elm.py (pinned author code), or\n"
+        "  run the authors' code externally (github.com/rohitgandikota/erasing-llm), then\n"
         "  measure the checkpoint through OUR pipeline so the comparison is on our items:\n"
         "      python scripts/unlearn.py --method elm --from-checkpoint <path> --name elm-llama-bio\n"
         "  That registers it and prints the sweep command; nothing else differs from the RMU path.")
