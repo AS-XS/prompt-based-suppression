@@ -45,4 +45,12 @@ def adapted_tree(source: str):
             node.body = body
         kept.append(node)
     tree.body = kept
-    return ast.fix_missing_locations(tree)
+    class AdapterTargets(ast.NodeTransformer):
+        def visit_Call(self, node):
+            self.generic_visit(node)
+            if isinstance(node.func, ast.Name) and node.func.id == "get_peft_model":
+                node.func.id = "_get_elm_peft_model"
+                node.args.append(ast.Name(id="get_peft_model", ctx=ast.Load()))
+            return node
+
+    return ast.fix_missing_locations(AdapterTargets().visit(tree))

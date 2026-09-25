@@ -104,6 +104,7 @@ def test_elm_adapter_keeps_training_loop_and_excludes_post_training_evaluation(m
 def train_elm(args):
     model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=dtype)
     model = model.to(device)
+    model = get_peft_model(model, lora_config)
     for batch in batches:
         loss = erase_loss + retain_loss + consistency_loss
         loss.backward()
@@ -123,3 +124,4 @@ if __name__ == "__main__":
     assert ast.dump(original_loop) == ast.dump(adapted_loop)
     assert "evaluate_on_test" not in ast.unparse(after)
     assert "_load_model(model_id, dtype)" in ast.unparse(after)
+    assert "_get_elm_peft_model(model, lora_config, get_peft_model)" in ast.unparse(after)

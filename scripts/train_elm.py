@@ -14,6 +14,7 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.paths import UNLEARNED_ROOT, unlearn_report_path  # noqa: E402
 from src.unlearn.elm_upstream import REVISION, SOURCE_SHA256, adapted_tree  # noqa: E402
+from src.unlearn.elm_targets import get_elm_peft_model  # noqa: E402
 from src.unlearn.rmu import _fingerprint, _git_commit, complete_checkpoint  # noqa: E402
 from src.unlearn.tensors import carry_over_missing  # noqa: E402
 
@@ -82,7 +83,8 @@ def main():
             model.to("cuda:0")
         return model
 
-    namespace = {"__name__": "elm_pinned", "_load_model": load_model}
+    namespace = {"__name__": "elm_pinned", "_load_model": load_model,
+                 "_get_elm_peft_model": get_elm_peft_model}
     exec(compile(tree, str(args.source_dir / "erase.py"), "exec"), namespace)
     original_prepare = namespace["prepare_prompts"]
     corpus_manifest = {}
