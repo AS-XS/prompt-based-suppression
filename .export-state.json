@@ -53,7 +53,7 @@
     "scripts/plan_rmu.py": "2136a3b1984e686ecc6df39092eccca36b9f26dbf4f4c4bd4e5911808b41f984",
     "scripts/plot_ablation.py": "fe02837e0280eb12374eb539fd8eae1a9574a3215b10b24a88e84d6ddc8dfe71",
     "scripts/plot_accuracy.py": "80ca0ffdf95b54b79a8fcfb09e5479220aab5543b3093bf37a67e23e779e0f8f",
-    "scripts/plot_rmu.py": "a00c35257596b6825abff6528eb695d6b8e4b77cd29f18a45673d2f8f9b8969b",
+    "scripts/plot_rmu.py": "213485329d71f81308daf6c15651a3322cf36bd6348571c34e73f54258fea6fc",
     "scripts/prepare_unlearn_likelihood.py": "e984ac7707c99116131b411036a0b00a05a46ab5d690cd2457e53f391654693c",
     "scripts/present_optimize.py": "b5c97b90d24addeeddaa2f44ea06eb46ee61a7f877d18b5ba4efbac8bf6a7494",
     "scripts/present_tables.py": "48d4a436bbb5f70b10948a096a97393aead366e490a71d2475123bdfb338e55c",
@@ -184,5 +184,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "43b547c02077b579629eb8f02a90147a12e2c4a6"
+  "source_revision": "a4e1dc57d6b993404575f5d382802a975664671a"
 }

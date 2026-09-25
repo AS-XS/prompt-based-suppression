@@ -189,7 +189,7 @@ def _draw(args, acc, tiers, models, labels, think, out: Path, t: str) -> None:
     handles = [plt.Rectangle((0, 0), 1, 1, color=col) for col in (CORRECT, WRONG, NONE)]
     bx.legend(handles, ["correct", "answered, wrong", "no answer"], loc="upper center",
               bbox_to_anchor=(0.5, 1.2), ncol=3, frameon=False, fontsize=9, handlelength=1.2)
-    bx.set_title(f"B   What the {t} answers were — the drop is the no-answer segment", loc="left",
+    bx.set_title(f"B   What the {t} answers were", loc="left",
                  fontsize=11, color=INK, pad=26)
 
 
@@ -208,8 +208,8 @@ def _draw(args, acc, tiers, models, labels, think, out: Path, t: str) -> None:
                            for k, (name, _) in enumerate(tiers))
     footer = (f"Run {args.run}: strict accuracy, a non-answer counts as wrong; forget tiers are the test "
               f"split. n: {n_by_tier}.\n"
-              f"No-answer rows are degenerate text, not missed answers — share of {t} non-answers "
-              f"that ran to the token limit: " + "; ".join(notes) + ".")
+              f"Share of unparsed {t} responses reaching the token limit (all forget items): "
+              + ("; ".join(notes) if notes else "no unparsed responses") + ".")
     fig.text(0.07, 0.012, footer, fontsize=7.8, color=INK_2, va="bottom", ha="left")
 
     out.parent.mkdir(parents=True, exist_ok=True)
