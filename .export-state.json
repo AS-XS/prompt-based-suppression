@@ -72,7 +72,7 @@
     "scripts/smoke.py": "9695f72776f8cb3f1b81f4a4842ab23c2bae6e035dea3fef8946f18c85f770be",
     "scripts/smoke_parse.py": "a4171b1ce5f22efd50d21be31da1b794cfec4abc5aec82eccba6cd786f7cec2d",
     "scripts/to_table.py": "7c6ea558e03e4f143ac52bc7e31b45370669115b4e425a7466dcabc9f718f64d",
-    "scripts/train_elm.py": "ee0b41ad10f72b6d8dfe5ee109cd3a4aa93880a6df95a8a1a10a64eb8cd9fbe1",
+    "scripts/train_elm.py": "d45df5fb22c9861b14d9cca9eff176272ce05b2ee6259e6d7418ba36c63296c2",
     "scripts/unlearn.py": "a7b6bbca1c8029ca1200d829470fa1788468fc0335390e8eeb14e218970aa20b",
     "src/__init__.py": "91447944015cec709e8aa7655f7e9d64e1e4508e7023a57fe3746911c0fc6fed",
     "src/analysis/__init__.py": "e81ed49876e09e306d40f8e829c0db21061a7303a6844871340bde9f6b7cc089",
@@ -138,8 +138,10 @@
     "src/unlearn/activations.py": "928ed60307cbf5e4ad13f61b1e7556235582baaa5f61b61ea35b3cb05486a026",
     "src/unlearn/corpora.py": "d6243e1dcd905cfc8e1f129dd5c041336b0d6e67b45a8f8f93a57d5bca8354da",
     "src/unlearn/elm.py": "51bfbb5eaa936169f5b88c02ac1cb2c902a1a8f2ff5236901539e768dee97df2",
+    "src/unlearn/elm_resume.py": "14e2ece7cf1ede376638eccf6cd697da9780525683bc64a529804d8c6a9ec68a",
+    "src/unlearn/elm_resume_ast.py": "74e7f36f9449acd18251a6bc554bfef8f0040888fb5f2ff2fc10624002e4416d",
     "src/unlearn/elm_targets.py": "7f941427147ae72bc71503ceb47749aeba2cfde885c19a5043ce5e58ba71fe8c",
-    "src/unlearn/elm_upstream.py": "a37326b0a099d72cda50ed7657fa26934788b4fbbf8bd3f79bc3c04785f4af93",
+    "src/unlearn/elm_upstream.py": "244f3dc790c5f36019b86e7be5ed51962c98fa89cfb214ea974005c8aad121f3",
     "src/unlearn/rmu.py": "ec7dfc5b54db5eb565d13681a4dabc57114710e6e9bdec1a1a55942c2f9f38a2",
     "src/unlearn/tensors.py": "488d1fc50dca43aa9a9d6ce8d50d232a5a934497c56d89be29c76b63a51a1eb8",
     "tests/test_accuracy.py": "fd12c9183bb24dc114094a7412d6389406ea10767802d4a8e067ee859c388f5a",
@@ -148,6 +150,7 @@
     "tests/test_demos.py": "7d8d5e5785cd6de6a87080940a9d0e80c1599315d17b3c82458249e8cb534582",
     "tests/test_dependency_pairwise.py": "245eb2f79ea10100d07f537afd916c58879b199a982e84a99e2887d89949669b",
     "tests/test_directed.py": "536233cd604506cf5d8d45a58763912d637d6b6386dae0f4be7f4975eb1acba8",
+    "tests/test_elm_resume.py": "f05ba020fdbec0026ad34b08e062426ec8b3afdaae1eb736280a3a110e9e6299",
     "tests/test_elm_targets.py": "6f7fc938007425b71243c10bf6fcc2688d28a763a7cfe7dafb679a0b2572207d",
     "tests/test_errors.py": "d30334102e553d0af49172dd0bb3c64b5c73f74283575d177fa0fd404b942323",
     "tests/test_grouping.py": "8b4f98e9a1dd7558ea9b541fe7b01dfcc186bcd632728d4444e969f1c813b943",
@@ -186,5 +189,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "acb921b08eb297affb49fe787b8025117e8f405e"
+  "source_revision": "6adaaa13129fc293f7b97931b9040983cc970345"
 }

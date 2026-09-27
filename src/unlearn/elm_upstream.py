@@ -5,7 +5,7 @@ REVISION = "fa3306415f7b3cd0eb37c8a2838f11bb361c3143"
 SOURCE_SHA256 = "b5af7f76d8f8d8d63b389d656e2e3d48d4afc48f320bcc0face8de86b259dd35"
 
 
-def adapted_tree(source: str):
+def adapted_tree(source: str, *, recovery=False):
     if hashlib.sha256(source.encode()).hexdigest() != SOURCE_SHA256:
         raise ValueError("ELM source hash mismatch; do not run an unreviewed revision")
     tree = ast.parse(source)
@@ -43,6 +43,9 @@ def adapted_tree(source: str):
             if not (loaded and moved and saved):
                 raise ValueError("ELM adapter no longer matches the reviewed training structure")
             node.body = body
+            if recovery:
+                from .elm_resume_ast import add_recovery
+                add_recovery(node)
         kept.append(node)
     tree.body = kept
     class AdapterTargets(ast.NodeTransformer):
