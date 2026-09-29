@@ -42,6 +42,12 @@ def primitive_judgments_dir(run: str) -> Path:
     return RESULTS_ROOT / run / "judgments_primitive"
 
 
+def judge_samples_dir(run: str) -> Path:
+
+
+    return RESULTS_ROOT / run / "judge_samples"
+
+
 def analysis_dir(run: str) -> Path:
     return RESULTS_ROOT / run / "analysis"
 

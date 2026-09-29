@@ -25,6 +25,28 @@ Begin your evaluation by providing a short explanation of how the concept is cle
 [Sentence Fragment End]"""
 
 
+JUDGE_LABEL_SCHEME = "keywords"
+
+
+def judge_concept_text(concept_id: str) -> str:
+
+
+    from src.prompts.labels import LABEL_SCHEMES, label_for
+
+    if concept_id.startswith("wmdp-") or concept_id in LABEL_SCHEMES[JUDGE_LABEL_SCHEME]:
+        return label_for(JUDGE_LABEL_SCHEME, concept_id)
+    return concept_id
+
+
+def prompt_payload(kind: str) -> str:
+
+
+    from src.prompts.labels import scheme_fingerprint_payload
+
+    body = {"rating": CONCEPT_SCORE + "\x00" + FRAMING_SCORE, "primitive": PRIMITIVE_JUDGE}[kind]
+    return body + "\x00" + scheme_fingerprint_payload(JUDGE_LABEL_SCHEME)
+
+
 def concept_messages(concept: str, sentence: str) -> list[dict]:
     return [{"role": "user", "content": CONCEPT_SCORE.format(concept=concept, sentence=sentence)}]
 

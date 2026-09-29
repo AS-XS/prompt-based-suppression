@@ -85,9 +85,11 @@ def test_engine_builds_from_the_models_own_sampling_defaults():
 
     import inspect
 
-    from src.gen import sweep
+    from src.gen import env, sweep
+
+    assert "llm.get_default_sampling_params()" in inspect.getsource(env.model_default_sampling)
     src = inspect.getsource(sweep.make_engine)
-    assert "llm.get_default_sampling_params()" in src
+    assert "model_default_sampling(llm)" in src
     assert "SamplingParams(temperature=" not in src, (
         "constructing SamplingParams with decode fields bypasses generation_config.json")
 

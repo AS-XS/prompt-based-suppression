@@ -18,9 +18,15 @@ from src.analysis.surfaces import answer_of, explanation_of, trace_of  # noqa: E
 from src.data.schema import GenerationRow  # noqa: E402
 from src.gen.env import make_llm, setup_vllm_env  # noqa: E402
 from src.gen.runner import append_jsonl, read_jsonl  # noqa: E402
-from src.judge.run import (judge_chat_kwargs, run_concept, run_framing,  # noqa: E402
-                           run_judge)
+from src.judge.prompts import concept_messages, framing_messages, judge_concept_text  # noqa: E402
+from src.judge.run import concept_scores, framing_scores  # noqa: E402
+from src.judge.settings import (JUDGE_CHAT_KWARGS, default_budget,  # noqa: E402
+                                judge_fingerprint, judge_sampling, refuse_mixed_config)
 from src.paths import generations_glob, judgments_dir  # noqa: E402
+from src.provenance import git_commit  # noqa: E402
+
+
+DEFAULT_CHUNK = 256
 
 
 def _surface_text(row, surface: str):
@@ -32,8 +38,9 @@ def _surface_text(row, surface: str):
         return explanation_of(row.raw_output)
     return trace_of(row.raw_output) or row.raw_reasoning
 
-_COLS = ["generation_id", "concept_id", "concept_class", "prompt_id", "condition", "think_state",
-         "surface", "concept_score", "framing_score"]
+
+_COLS = ["generation_id", "model", "concept_id", "concept_class", "prompt_id", "condition",
+         "think_state", "surface", "concept_score", "framing_score"]
 
 
 def _read_dicts(path: Path):
@@ -44,7 +51,7 @@ def _read_dicts(path: Path):
 
 
 def plan_file(gens_path, out_dir, suppressed_only, limit, surfaces=("explanation",),
-              shard=None, stage="both", probe_types=None) -> dict:
+              shard=None, stage="both", probe_types=None, fingerprint=None) -> dict:
 
 
     rows = list(read_jsonl(Path(gens_path), GenerationRow))
@@ -91,7 +98,9 @@ def plan_file(gens_path, out_dir, suppressed_only, limit, surfaces=("explanation
             text = _surface_text(r, surface)
             if not (text or "").strip():
                 continue
-            todo.append((r, surface, text, done))
+            todo.append((r, surface, text, done, judge_concept_text(r.concept_id)))
+    if fingerprint and todo:
+        refuse_mixed_config(prior, fingerprint, out_jsonl)
     return {"stem": stem, "out_jsonl": out_jsonl, "out_csv": out_csv, "best": best,
             "table": table, "todo": todo}
 
@@ -99,39 +108,70 @@ def plan_file(gens_path, out_dir, suppressed_only, limit, surfaces=("explanation
 def write_csv(plan: dict) -> None:
 
     with plan["out_csv"].open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=_COLS)
+        w = csv.DictWriter(f, fieldnames=_COLS, extrasaction="ignore")
         w.writeheader()
         w.writerows(plan["table"])
 
 
-def run_plan(llm, sp, plan: dict, judge_name, stage="both", chat_kw=None) -> tuple[int, Path]:
+def _record(r, surface: str, concept_text: str, judge_name: str, meta: dict, scores: dict) -> dict:
 
 
-    best, table, out_jsonl = plan["best"], plan["table"], plan["out_jsonl"]
+    return {"generation_id": r.generation_id, "model": r.model, "item_id": r.item_id,
+            "concept_id": r.concept_id, "concept_class": r.concept_class,
+            "probe_type": r.probe_type, "prompt_id": r.prompt_id, "condition": r.condition,
+            "think_state": r.think_state, "surface": surface, "judge": judge_name,
+            "judge_concept": concept_text, **meta, **scores}
+
+
+def run_plan(llm, sp, plan: dict, judge_name, stage="both", chat_kw=None,
+             chunk: int = DEFAULT_CHUNK, meta: dict | None = None) -> tuple[int, Path]:
+
+
+    meta = meta or {}
+    best, table, out_jsonl, todo = plan["best"], plan["table"], plan["out_jsonl"], plan["todo"]
     written = 0
-    for r, surface, text, done in plan["todo"]:
-        key = (r.generation_id, surface)
+    for start in range(0, len(todo), chunk):
+        part = todo[start:start + chunk]
+        pairs = [(concept_text, text) for (_, _, text, _, concept_text) in part]
         if stage == "framing":
 
 
-            j = {**done, **run_framing(llm, sp, concept=r.concept_id, sentence=text,
-                                       chat_kw=chat_kw)}
-        elif stage == "concept":
-            j = run_concept(llm, sp, concept=r.concept_id, sentence=text, chat_kw=chat_kw)
+            recs = [{**done, **f, "framing_git_commit": meta.get("git_commit")}
+                    for (_, _, _, done, _), f in zip(part, framing_scores(llm, sp, pairs, chat_kw))]
         else:
-            j = run_judge(llm, sp, concept=r.concept_id, sentence=text, chat_kw=chat_kw)
-        rec = {"generation_id": r.generation_id, "concept_id": r.concept_id,
-               "concept_class": r.concept_class, "prompt_id": r.prompt_id,
-               "condition": r.condition, "think_state": r.think_state,
-               "surface": surface, "judge": judge_name, **j}
-        append_jsonl(out_jsonl, [_Row(rec)])
-        best[key] = rec
-        table[:] = [t for t in table if (t.get("generation_id"), t.get("surface")) != key]
-        table.append({k: rec.get(k) for k in _COLS})
-        written += 1
+            scores = concept_scores(llm, sp, pairs, chat_kw)
+            if stage == "both":
+                leaked = [i for i, s in enumerate(scores) if (s["concept_score"] or 0) > 0]
+                for i, f in zip(leaked, framing_scores(llm, sp, [pairs[i] for i in leaked],
+                                                       chat_kw)):
+                    scores[i].update(f)
+            recs = [_record(r, surface, concept_text, judge_name, meta, s)
+                    for (r, surface, _, _, concept_text), s in zip(part, scores)]
+        append_jsonl(out_jsonl, [_Row(rec) for rec in recs])
+        for rec in recs:
+            key = (rec["generation_id"], rec["surface"])
+            best[key] = rec
+            table[:] = [t for t in table if (t.get("generation_id"), t.get("surface")) != key]
+            table.append({k: rec.get(k) for k in _COLS})
+        written += len(recs)
+        print(f"  {plan['stem']}: {written:,}/{len(todo):,} judged", flush=True)
 
     write_csv(plan)
     return written, out_jsonl
+
+
+def _conversations(plans: list[dict], stage: str) -> tuple[list, list]:
+
+
+    convs, labels = [], []
+    for pl in plans:
+        for r, surface, text, _, concept_text in pl["todo"]:
+            builders = {"concept": (concept_messages,), "framing": (framing_messages,),
+                        "both": (concept_messages, framing_messages)}[stage]
+            for build in builders:
+                convs.append(build(concept_text, text))
+                labels.append(f"{r.generation_id} [{surface}]")
+    return convs, labels
 
 
 def main() -> int:
@@ -152,8 +192,14 @@ def main() -> int:
                     choices=["forget", "neighbor", "retain", "utility", "dependent"],
                     help='Probe types.')
     ap.add_argument("--limit", type=int, default=None)
-    ap.add_argument("--max-tokens", type=int, default=2000,
+    ap.add_argument("--max-tokens", type=int, default=None,
                     help='Max tokens.')
+    ap.add_argument("--max-model-len", type=int, default=None,
+                    help='Max model len.')
+    ap.add_argument("--gpu-util", type=float, default=None,
+                    help='Gpu util.')
+    ap.add_argument("--chunk", type=int, default=DEFAULT_CHUNK,
+                    help='Chunk.')
     ap.add_argument("--surfaces", nargs="+", default=["explanation"],
                     choices=["answer", "explanation", "trace"],
                     help='Surfaces.')
@@ -182,8 +228,13 @@ def main() -> int:
         raise SystemExit(f"no files matched: {gen_globs}")
 
 
+    fingerprint = judge_fingerprint("rating", args.judge, quant=args.quant, tp=args.tp,
+                                    dtype=args.dtype, max_tokens=args.max_tokens,
+                                    max_model_len=args.max_model_len)
+
+
     plans = [plan_file(p, out_dir, args.suppressed_only, args.limit, args.surfaces, shard,
-                       args.stage, args.probe_types) for p in paths]
+                       args.stage, args.probe_types, fingerprint) for p in paths]
     outstanding = sum(len(pl["todo"]) for pl in plans)
     for pl in plans:
         write_csv(pl)
@@ -194,31 +245,39 @@ def main() -> int:
         return 0
     print(f"{outstanding} judgment(s) outstanding across {len(paths)} file(s)")
 
+
+    from src.gen.sweep import model_context_limit
+    from src.gen.thinkstate import needs_raw_special
+    from src.judge.preflight import load_tokenizer, run_preflight
+
+    needs_raw_special(args.judge)
+    model_dir = Path(args.models_dir) / args.judge
+    convs, labels = _conversations(plans, args.stage)
+    think = run_preflight(load_tokenizer(model_dir), convs,
+                          args.max_model_len or model_context_limit(model_dir), labels)
+    budget = args.max_tokens if args.max_tokens is not None else default_budget(model_dir)
+
     setup_vllm_env()
-    kwargs = {"max_model_len": 8192}
-    if args.quant:
-        kwargs["quantization"] = args.quant
-    if args.tp:
-        kwargs["tensor_parallel_size"] = args.tp
-    if args.dtype:
-        kwargs["dtype"] = args.dtype
+    kwargs = {k: v for k, v in (("quantization", args.quant), ("tensor_parallel_size", args.tp),
+                                ("dtype", args.dtype), ("max_model_len", args.max_model_len),
+                                ("gpu_memory_utilization", args.gpu_util)) if v}
     print(f"loading judge {args.judge}{' (' + args.quant + ')' if args.quant else ''}"
           f"{f' tp={args.tp}' if args.tp else ''} "
-          f"for {len(paths)} file(s), surfaces={args.surfaces}, stage={args.stage}")
-    llm = make_llm(str(Path(args.models_dir) / args.judge), **kwargs)
-    from vllm import SamplingParams
-
-
-    sp = SamplingParams(temperature=0.0, max_tokens=args.max_tokens)
-    chat_kw = judge_chat_kwargs(args.judge)
-    if chat_kw:
-        print(f"  judge reasoning disabled via {chat_kw} (it must answer, not deliberate)")
+          f"for {len(paths)} file(s), surfaces={args.surfaces}, stage={args.stage}, "
+          f"config {fingerprint}")
+    llm = make_llm(str(model_dir), **kwargs)
+    sp, resolved = judge_sampling(llm, args.judge, budget)
+    print("  judge decode (the model's own): " + ", ".join(f"{k}={v}" for k, v in resolved.items())
+          + ("   [max_tokens=None = the rest of the window]" if budget is None else ""), flush=True)
+    meta = {"judge_config_hash": fingerprint, "judge_sampling": resolved,
+            "judge_think_default": think, "git_commit": git_commit()}
 
     total = 0
     for pl in plans:
         if not pl["todo"]:
             continue
-        n, out = run_plan(llm, sp, pl, args.judge, args.stage, chat_kw)
+        n, out = run_plan(llm, sp, pl, args.judge, args.stage, JUDGE_CHAT_KWARGS, args.chunk,
+                          meta)
         total += n
         print(f"  {pl['stem']}: {n} judgments -> {out}")
     print(f"done — {total} judgments across {len(paths)} file(s)")
@@ -232,8 +291,6 @@ class _Row:
         self._d = d
 
     def model_dump_json(self) -> str:
-        import json
-
         return json.dumps(self._d, ensure_ascii=False)
 
 

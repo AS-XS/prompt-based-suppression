@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from src.analysis.surfaces import split_think
 from src.judge.schema import JudgeOutput
 
 _RATING = re.compile(r"Rating:\s*\[\[\s*([0-2])\s*\]\]", re.IGNORECASE)
@@ -14,44 +15,45 @@ def extract_rating(text: str) -> int | None:
     return int(ms[-1]) if ms else None
 
 
-def judge_chat_kwargs(judge_name: str) -> dict:
+def verdict_text(raw: str | None, finish_reason: str | None = None) -> str:
 
 
-    from src.gen.thinkstate import chat_kwargs
-
-    try:
-        return chat_kwargs(judge_name, "off")
-    except Exception:
-        return {}
+    trace, answer = split_think(raw)
+    if trace is not None:
+        return answer
+    return "" if finish_reason == "length" else answer
 
 
-def run_concept(llm, sampling, concept: str, sentence: str, chat_kw: dict | None = None) -> dict:
+def _scored(stage: str, out) -> dict:
+
+
+    o = out.outputs[0]
+    fin = getattr(o, "finish_reason", None)
+    ids = getattr(o, "token_ids", None)
+    return {f"{stage}_score": extract_rating(verdict_text(o.text, fin)), f"{stage}_raw": o.text,
+            f"{stage}_finish_reason": fin, f"{stage}_tokens": len(ids) if ids is not None else None}
+
+
+def concept_scores(llm, sampling, pairs, chat_kw: dict | None = None) -> list[dict]:
 
 
     from src.judge.prompts import concept_messages
 
-    raw = llm.chat([concept_messages(concept, sentence)], sampling, **(chat_kw or {}))[0].outputs[0].text
-    return {"concept_score": extract_rating(raw), "concept_raw": raw,
-            "framing_score": None, "framing_raw": None}
+    if not pairs:
+        return []
+    outs = llm.chat([concept_messages(c, s) for c, s in pairs], sampling, **(chat_kw or {}))
+    return [{**_scored("concept", o), "framing_score": None, "framing_raw": None} for o in outs]
 
 
-def run_framing(llm, sampling, concept: str, sentence: str, chat_kw: dict | None = None) -> dict:
+def framing_scores(llm, sampling, pairs, chat_kw: dict | None = None) -> list[dict]:
+
 
     from src.judge.prompts import framing_messages
 
-    raw = llm.chat([framing_messages(concept, sentence)], sampling, **(chat_kw or {}))[0].outputs[0].text
-    return {"framing_score": extract_rating(raw), "framing_raw": raw}
-
-
-def run_judge(llm, sampling, concept: str, sentence: str, chat_kw: dict | None = None) -> dict:
-
-
-    res = run_concept(llm, sampling, concept, sentence, chat_kw)
-
-
-    if res["concept_score"] and res["concept_score"] > 0:
-        res.update(run_framing(llm, sampling, concept, sentence, chat_kw))
-    return res
+    if not pairs:
+        return []
+    outs = llm.chat([framing_messages(c, s) for c, s in pairs], sampling, **(chat_kw or {}))
+    return [_scored("framing", o) for o in outs]
 
 
 def parse_primitives(raw_json: str) -> dict | None:
@@ -74,9 +76,12 @@ def run_primitive_judge(llm, sampling, concept: str, sentence: str, surface: str
 
     from src.judge.prompts import primitive_messages
 
-    raw = llm.chat([primitive_messages(concept, sentence, surface, concept_class)],
-                   sampling)[0].outputs[0].text
-    parsed = parse_primitives(raw)
+    o = llm.chat([primitive_messages(concept, sentence, surface, concept_class)],
+                 sampling)[0].outputs[0]
+    raw = o.text
+
+
+    parsed = parse_primitives(verdict_text(raw, getattr(o, "finish_reason", None)))
     res = {"surface": surface, "raw_judge_json": raw, "parsed_ok": parsed is not None}
     for k in ("semantic_leak", "leak_type", "meta_reference", "fluent", "guessing"):
         res[k] = parsed.get(k) if parsed else None

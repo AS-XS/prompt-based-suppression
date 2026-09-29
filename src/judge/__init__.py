@@ -4,7 +4,8 @@ import importlib
 
 _EXPORTS = {
     "prompts": ("concept_messages", "framing_messages", "primitive_messages"),
-    "run": ("extract_rating", "parse_primitives", "run_judge", "run_primitive_judge"),
+    "run": ("concept_scores", "extract_rating", "framing_scores", "parse_primitives",
+            "run_primitive_judge", "verdict_text"),
     "schema": ("JudgeOutput", "JudgmentRow", "judge_json_schema"),
 }
 _NAME_TO_MODULE = {name: mod for mod, names in _EXPORTS.items() for name in names}

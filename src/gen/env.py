@@ -69,25 +69,48 @@ def make_llm(model: str, backend: str = "FLASH_ATTN", **kwargs):
         return LLM(model=model, **kwargs)
 
 
-def guided_sampling(schema: dict, temperature: float = 0.0, max_tokens: int = 400):
+RESOLVED_KEYS = ("temperature", "top_p", "top_k", "min_p", "repetition_penalty",
+                 "presence_penalty", "frequency_penalty", "max_tokens", "seed", "n")
 
 
-    from vllm import SamplingParams
+def resolved_of(sp) -> dict | None:
+
+    if sp is None:
+        return None
+    return {k: getattr(sp, k, None) for k in RESOLVED_KEYS}
+
+
+def model_default_sampling(llm, *, strict: bool = False):
+
+
+    try:
+        return llm.get_default_sampling_params()
+    except Exception as e:
+        if strict:
+            raise SystemExit(f"cannot read {type(llm).__name__}'s own decode defaults "
+                             f"({type(e).__name__}: {e}); refusing to run at vLLM's bare defaults")
+        print(f"[make_engine] get_default_sampling_params unavailable ({type(e).__name__}); "
+              f"falling back to vLLM's bare defaults — decode will NOT be the model's own",
+              flush=True)
+        from vllm import SamplingParams
+
+        return SamplingParams()
+
+
+def constrain_to_schema(sp, schema: dict):
+
 
     try:
         from vllm.sampling_params import StructuredOutputsParams
 
         try:
-            so = StructuredOutputsParams(json=schema)
+            sp.structured_outputs = StructuredOutputsParams(json=schema)
         except TypeError:
-            so = StructuredOutputsParams(json_schema=schema)
-        return SamplingParams(temperature=temperature, max_tokens=max_tokens, structured_outputs=so)
+            sp.structured_outputs = StructuredOutputsParams(json_schema=schema)
+        return sp
     except ImportError:
         pass
-    try:
-        from vllm.sampling_params import GuidedDecodingParams
+    from vllm.sampling_params import GuidedDecodingParams
 
-        return SamplingParams(temperature=temperature, max_tokens=max_tokens,
-                              guided_decoding=GuidedDecodingParams(json=schema))
-    except (ImportError, TypeError):
-        return SamplingParams(temperature=temperature, max_tokens=max_tokens, guided_json=schema)
+    sp.guided_decoding = GuidedDecodingParams(json=schema)
+    return sp

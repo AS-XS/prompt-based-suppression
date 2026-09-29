@@ -100,12 +100,18 @@ def test_a_truncated_judge_response_yields_None_not_a_score():
     assert extract_rating(truncated) is None
 
 
-def test_a_reasoning_judge_is_told_not_to_think():
+def test_the_judge_thinks_at_its_templates_default_and_is_read_after_it():
 
 
-    from src.judge.run import judge_chat_kwargs
-    assert judge_chat_kwargs("Qwen3.6-27B") == {"chat_template_kwargs": {"enable_thinking": False}}
-    assert judge_chat_kwargs("not-a-registered-model") == {}      
+    from src.judge.run import extract_rating, verdict_text
+    from src.judge.settings import JUDGE_CHAT_KWARGS
+    assert JUDGE_CHAT_KWARGS == {}
+    raw = ('Exact format: "Rating: [[score]]" ... maybe Rating: [[0]]\n</think>\n\n'
+           'The concept is present.\nRating: [[2]]')
+    assert extract_rating(verdict_text(raw, "stop")) == 2
+
+    cut = "Here's a thinking process:\n1. Rating: [[1]] would fit because"
+    assert extract_rating(verdict_text(cut, "length")) is None
 
 
 def test_the_two_stages_resume_independently():

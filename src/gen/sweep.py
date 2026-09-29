@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 
 from src.data.schema import GenerationRow, Item, Sampling
-from src.gen.env import make_llm
+from src.gen.env import make_llm, model_default_sampling, resolved_of
 from src.gen.runner import append_jsonl, read_jsonl
 from src.gen.thinkstate import chat_kwargs, needs_raw_special, think_states_for
 from src.prompts import (DEFAULT_ANSWER_FORMAT, build_messages, draw_all, is_directed_prompt,
@@ -86,16 +86,9 @@ def make_engine(model_name: str, model_path: str, sampling: Sampling,
     extra = {"tensor_parallel_size": tp} if tp > 1 else {}
     llm = make_llm(model_path, dtype="auto", gpu_memory_utilization=gpu_util,
                    max_model_len=max_model_len or context_for(sampling), **extra)
-    from vllm import SamplingParams
 
 
-    try:
-        sp = llm.get_default_sampling_params()
-    except Exception as e:
-        print(f"[make_engine] get_default_sampling_params unavailable ({type(e).__name__}); "
-              f"falling back to vLLM's bare defaults — decode will NOT be the model's own",
-              flush=True)
-        sp = SamplingParams()
+    sp = model_default_sampling(llm)
 
     sp.max_tokens = sampling.max_tokens
 
@@ -107,9 +100,7 @@ def make_engine(model_name: str, model_path: str, sampling: Sampling,
         if value is not None:
             setattr(sp, field, value)
 
-    resolved = {k: getattr(sp, k, None)
-                for k in ("temperature", "top_p", "top_k", "min_p", "repetition_penalty",
-                          "presence_penalty", "frequency_penalty", "max_tokens", "seed", "n")}
+    resolved = resolved_of(sp)
     print(f"  decode ({model_name}): " + ", ".join(f"{k}={v}" for k, v in resolved.items()
                                                    if v is not None), flush=True)
     return llm, sp, resolved
@@ -169,10 +160,7 @@ def run_sweep(model_name: str, model_path: str, items: list[Item], out_path: str
     else:
 
 
-        resolved = {k: getattr(sampling_params, k, None)
-                    for k in ("temperature", "top_p", "top_k", "min_p", "repetition_penalty",
-                              "presence_penalty", "frequency_penalty", "max_tokens", "seed", "n")
-                    } if sampling_params is not None else None
+        resolved = resolved_of(sampling_params)
 
 
         sp = sampling_params if sampling_params is not None else sampling

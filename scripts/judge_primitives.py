@@ -16,12 +16,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.io import read_dicts  # noqa: E402
 from src.analysis.surfaces import answer_of, explanation_of, trace_of  # noqa: E402
 from src.data.schema import GenerationRow  # noqa: E402
-from src.gen.env import guided_sampling, make_llm, setup_vllm_env  # noqa: E402
+from src.gen.env import constrain_to_schema, make_llm, setup_vllm_env  # noqa: E402
 from src.gen.runner import append_jsonl, read_jsonl  # noqa: E402
+from src.judge.prompts import judge_concept_text  # noqa: E402
 from src.judge.run import run_primitive_judge  # noqa: E402
 from src.judge.schema import judge_json_schema  # noqa: E402
+from src.judge.settings import (default_budget, judge_fingerprint, judge_sampling,  # noqa: E402
+                                refuse_mixed_config)
 from src.paths import generations_glob, primitive_judgments_dir  # noqa: E402
-from src.provenance import select_one_config  # noqa: E402
+from src.provenance import git_commit, select_one_config  # noqa: E402
 
 _COLS = ["generation_id", "concept_id", "concept_class", "prompt_id", "condition", "think_state",
          "surface", "semantic_leak", "leak_type", "meta_reference", "fluent", "guessing",
@@ -84,7 +87,7 @@ def outstanding(gens_path, out_dir, suppressed_only, limit, surfaces, config_has
 
 
 def _judge_file(llm, sp, gens_path, out_dir, judge_name, suppressed_only, limit, surfaces,
-                config_hash=None, shard=None, probe_types=None):
+                config_hash=None, shard=None, probe_types=None, fingerprint=None, meta=None):
     rows = list(read_jsonl(Path(gens_path), GenerationRow))
     rows = select_one_config([r.model_dump() for r in rows], config_hash,
                              what=f"generations in {Path(gens_path).name}")
@@ -110,6 +113,7 @@ def _judge_file(llm, sp, gens_path, out_dir, judge_name, suppressed_only, limit,
     prior = list(_read_dicts(out_jsonl))
     done = {(d.get("generation_id"), d.get("surface")) for d in prior}
     table = [{k: d.get(k) for k in _COLS} for d in prior]
+    checked = False
     for r in rows:
         for surface in surfaces:
             if (r.generation_id, surface) in done:
@@ -124,13 +128,21 @@ def _judge_file(llm, sp, gens_path, out_dir, judge_name, suppressed_only, limit,
                 text = trace_of(r.raw_output) or r.raw_reasoning
             if not (text or "").strip():
                 continue
+            if fingerprint and not checked:
 
 
-            j = run_primitive_judge(llm, sp, concept=r.concept_id, sentence=text or "",
+                refuse_mixed_config(prior, fingerprint, out_jsonl)
+                checked = True
+
+
+            concept_text = judge_concept_text(r.concept_id)
+            j = run_primitive_judge(llm, sp, concept=concept_text, sentence=text or "",
                                     surface=surface, concept_class=r.concept_class)
-            rec = {"generation_id": r.generation_id, "concept_id": r.concept_id,
-                   "concept_class": r.concept_class, "prompt_id": r.prompt_id,
-                   "condition": r.condition, "think_state": r.think_state, "judge": judge_name, **j}
+            rec = {"generation_id": r.generation_id, "model": r.model, "item_id": r.item_id,
+                   "concept_id": r.concept_id, "concept_class": r.concept_class,
+                   "probe_type": r.probe_type, "prompt_id": r.prompt_id,
+                   "condition": r.condition, "think_state": r.think_state, "judge": judge_name,
+                   "judge_concept": concept_text, **(meta or {}), **j}
             append_jsonl(out_jsonl, [_Row(rec)])
             table.append({k: rec.get(k) for k in _COLS})
 
@@ -166,6 +178,12 @@ def main() -> int:
                     help='Shard.')
     ap.add_argument("--config-hash", default=None,
                     help='Config hash.')
+    ap.add_argument("--max-tokens", type=int, default=None,
+                    help='Max tokens.')
+    ap.add_argument("--max-model-len", type=int, default=None,
+                    help='Max model len.')
+    ap.add_argument("--gpu-util", type=float, default=None,
+                    help='Gpu util.')
     args = ap.parse_args()
 
     if not args.run and not args.generations:
@@ -194,29 +212,39 @@ def main() -> int:
         return 0
     print(f"{todo} judgment(s) outstanding across {len(paths)} file(s)")
 
+
+    fingerprint = judge_fingerprint("primitive", args.judge, quant=args.quant, tp=args.tp,
+                                    dtype=args.dtype, max_tokens=args.max_tokens,
+                                    max_model_len=args.max_model_len)
+    from src.gen.thinkstate import needs_raw_special
+    needs_raw_special(args.judge)
+    model_dir = Path(args.models_dir) / args.judge
+    budget = args.max_tokens if args.max_tokens is not None else default_budget(model_dir)
+
     setup_vllm_env()
-    kwargs = {"max_model_len": 8192}
-    if args.quant:
-        kwargs["quantization"] = args.quant
-    if args.tp:
-        kwargs["tensor_parallel_size"] = args.tp
-    if args.dtype:
-        kwargs["dtype"] = args.dtype
+    kwargs = {k: v for k, v in (("quantization", args.quant), ("tensor_parallel_size", args.tp),
+                                ("dtype", args.dtype), ("max_model_len", args.max_model_len),
+                                ("gpu_memory_utilization", args.gpu_util)) if v}
     if args.tp and args.quant:
         print("  note: --tp with --quant is unusual — 4-bit already fits one Ampere card, and "
               "sharding it adds communication for no memory win. Drop --quant if the point is to "
               "escape the Ampere requirement.")
     print(f"loading judge {args.judge}{' (' + args.quant + ')' if args.quant else ''}"
           f"{f' tp={args.tp}' if args.tp else ''} "
-          f"for {len(paths)} file(s), surfaces={args.surfaces}")
-    llm = make_llm(str(Path(args.models_dir) / args.judge), **kwargs)
-    sp = guided_sampling(judge_json_schema(), max_tokens=400)
+          f"for {len(paths)} file(s), surfaces={args.surfaces}, config {fingerprint}")
+    llm = make_llm(str(model_dir), **kwargs)
+    sp, resolved = judge_sampling(llm, args.judge, budget)
+    sp = constrain_to_schema(sp, judge_json_schema())
+    print("  judge decode (the model's own): " + ", ".join(f"{k}={v}" for k, v in resolved.items()),
+          flush=True)
+    meta = {"judge_config_hash": fingerprint, "judge_sampling": resolved,
+            "git_commit": git_commit()}
 
     total = 0
     for p in paths:
         n, out = _judge_file(llm, sp, p, out_dir, args.judge,
                              args.suppressed_only, args.limit, args.surfaces,
-                             args.config_hash, shard, args.probe_types)
+                             args.config_hash, shard, args.probe_types, fingerprint, meta)
         total += n
         print(f"  {Path(p).name}: {n} primitive judgments -> {out}")
     print(f"done — {total} primitive judgments across {len(paths)} file(s); "
