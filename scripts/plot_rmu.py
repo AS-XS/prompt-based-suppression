@@ -18,6 +18,7 @@ from src.paths import analysis_dir, generations_dir  # noqa: E402
 SURFACE, INK, INK_2, MUTED, GRID, AXIS = "#fcfcfb", "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7"
 SERIES = ("#2a78d6", "#eb6834", "#1baf7a", "#eda100")             
 CORRECT, WRONG, NONE = "#4a3aa7", "#9085e9", "#e87ba4"             
+CAPPED = "#eda100"                           
 CHANCE = 25.0
 
 
@@ -59,7 +60,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", required=True)
     ap.add_argument("--baseline-model", required=True)
-    ap.add_argument("--checkpoints", nargs="+", required=True, help='Checkpoints.')
+    ap.add_argument("--checkpoints", nargs="+", default=None,
+                    help='Checkpoints.')
     ap.add_argument("--labels", nargs="+", default=None, help='Labels.')
     ap.add_argument("--target", default="wmdp-cyber", help='Target.')
     ap.add_argument("--control", default="wmdp-bio", help='Control.')
@@ -68,21 +70,31 @@ def main() -> int:
                     help='Name.')
     ap.add_argument("--table", action="store_true",
                     help='Table.')
+    ap.add_argument("--answers", action="store_true",
+                    help='Answers.')
     args = ap.parse_args()
 
-    if len(args.checkpoints) > 3 and not args.table:
+    grid = args.table or args.answers
+    if args.table and args.answers:
+        raise SystemExit("--table and --answers are two views: run the script once for each")
+    if args.checkpoints and len(args.checkpoints) > 3 and not grid:
         raise SystemExit("at most 3 checkpoints in the figure: four series is where the validated "
                          "palette's adjacent-pair guarantee ends for grouped bars. Use --table for "
                          "the whole grid.")
-    models = [args.baseline_model, *args.checkpoints]
-    labels = ["unedited", *(args.labels or args.checkpoints)]
-    if len(labels) != len(models):
-        raise SystemExit("--labels must match --checkpoints one-for-one")
+    if not args.checkpoints and not grid:
+        raise SystemExit("--checkpoints is required for the figure (at most 3); --table and "
+                         "--answers take every checkpoint in the run without it")
 
     path = analysis_dir(args.run) / "test" / "accuracy.csv"
     if not path.is_file():
         raise SystemExit(f"no {path} — run score_accuracy.py --run {args.run} --split test first")
     rows = list(csv.DictReader(open(path, encoding="utf-8")))
+    if not args.checkpoints:
+        args.checkpoints = sorted({r["model"] for r in rows} - {args.baseline_model})
+    models = [args.baseline_model, *args.checkpoints]
+    labels = ["unedited", *(args.labels or [_row_label(m) for m in args.checkpoints])]
+    if len(labels) != len(models):
+        raise SystemExit("--labels must match --checkpoints one-for-one")
     missing = [m for m in models if not any(r["model"] == m for r in rows)]
     if missing:
         raise SystemExit(f"not scored in {args.run}: {missing}")
@@ -99,6 +111,11 @@ def main() -> int:
     if args.table:
         stem = args.name or f"{args.run}_table"
         _draw_table(rows, args, models, labels, states, Path("png") / f"{stem}.png")
+        return 0
+    if args.answers:
+        stem = args.name or f"{args.run}_answers"
+        short = ["unedited", *(args.labels or [_short_label(m) for m in args.checkpoints])]
+        _draw_answers(args, models, short, states, Path("png") / f"{stem}.png")
         return 0
     if args.out and len(states) > 1:
         raise SystemExit(f"--out names ONE file but {args.run} has think states {states}; leave "
@@ -132,7 +149,7 @@ def _print_table(acc, tiers, models, labels, think) -> None:
             change = -r.drop_pp if abs(r.drop_pp) >= 0.05 else 0.0
             cell = f"{a:.1f}% · {change:+.1f}"
             if name.startswith("forget") and r.pct_removable is not None:
-                cell += f" · {r.credited_pct:.0f}%" + (" ⚠" if r.below_chance else "")
+                cell += f" · {_pct(r.credited_pct)}" + (" ⚠" if r.below_chance else "")
             cells.append(cell)
         print(f"| {name.replace(chr(10), ' ')} | {acc[base][k][1]:,} | " + " | ".join(cells) + " |")
 
@@ -206,8 +223,8 @@ def _draw(args, acc, tiers, models, labels, think, out: Path, t: str) -> None:
     base_name = args.baseline_model
 
     state = f"  (think {think})" if think else ""
-    fig.suptitle(f"RMU on {base_name}, trained to remove {args.target} — against the unedited "
-                 f"model{state}",
+    fig.suptitle(f"{_method_of(args.checkpoints)} on {base_name}, trained to remove {args.target} — "
+                 f"against the unedited model{state}",
                  fontsize=12.5, color=INK, x=0.07, ha="left", y=0.985)
     notes = []
     for m, lab in zip(args.checkpoints, labels[1:]):
@@ -234,6 +251,147 @@ def _target_of(name: str) -> str | None:
     tokens = set(name.split("-"))
     hits = [c for c in ("bio", "cyber") if c in tokens]
     return f"wmdp-{hits[0]}" if len(hits) == 1 else None
+
+
+def _pct(value: float) -> str:
+
+    return f"{0 if abs(value) < 0.5 else value:.0f}%"
+
+
+def _method_of(checkpoints) -> str:
+
+
+    methods = {name.split("-", 1)[0] for name in checkpoints}
+    return {frozenset({"rmu"}): "RMU", frozenset({"elm"}): "ELM"}.get(frozenset(methods), "Unlearning")
+
+
+def _short_label(name: str) -> str:
+
+
+    tokens = name.split("-")
+    for i, tok in enumerate(tokens):
+        if tok in ("bio", "cyber"):
+            return "-".join(tokens[i + 1:]) or name
+    return name
+
+
+def _row_label(name: str) -> str:
+
+    target, short = _target_of(name), _short_label(name)
+    return f"{target.removeprefix('wmdp-')} · {short}" if target and short != name else name
+
+
+def _answer_split(run: str, tables: dict, model: str, concept: str, think) -> dict[str, int]:
+
+
+    n = parsed = correct = 0
+    for rows in tables.values():
+        _, n_s, p_s, c_s = _strict(rows, model, think=think, subjects={concept})
+        n, parsed, correct = n + n_s, parsed + p_s, correct + c_s
+    capped, unparsed = _cap_share(run, model, concept, think)
+    if unparsed != n - parsed:
+        raise SystemExit(f"{run} · {model} · {concept} · think {think}: the generations hold "
+                         f"{unparsed} unanswered items, the scored tables {n - parsed}. Rescore "
+                         f"(score_accuracy.py, both splits) before plotting.")
+    return {"n": n, "correct": correct, "wrong": parsed - correct, "stopped": unparsed - capped,
+            "capped": capped}
+
+
+def _draw_answers(args, models, labels, states, out: Path) -> None:
+
+
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    base = models[0]
+    unassigned = [m for m in models[1:] if _target_of(m) is None]
+    if unassigned:
+        raise SystemExit(f"cannot tell which domain these were trained to remove: {unassigned}. "
+                         f"This view groups rows by target, read off the name (…-bio-… / …-cyber-…).")
+    groups = []
+    for concept in ("wmdp-cyber", "wmdp-bio"):
+        members = [(m, lab) for m, lab in zip(models[1:], labels[1:]) if _target_of(m) == concept]
+        if members:
+            groups.append((concept, [(base, "unedited"), *members]))
+    tables = {s: list(csv.DictReader(open(analysis_dir(args.run) / s / "accuracy.csv",
+                                          encoding="utf-8"))) for s in ("val", "test")}
+    counts = {(m, c, t): _answer_split(args.run, tables, m, c, t)
+              for c, members in groups for m, _ in members for t in states}
+
+    parts = [("correct", CORRECT, "white"), ("wrong", WRONG, INK), ("stopped", NONE, INK),
+             ("capped", CAPPED, INK)]
+    print(f"\n| target | checkpoint | think | n | correct | answered, wrong | no answer, stopped "
+          f"| no answer, hit token cap |\n|---|---|---|---:|---:|---:|---:|---:|")
+    for c, members in groups:
+        for m, lab in members:
+            for t in states:
+                k = counts[(m, c, t)]
+                print(f"| {c.removeprefix('wmdp-')} | {lab} | {t} | {k['n']:,} | "
+                      + " | ".join(f"{100 * k[p] / k['n']:.1f}%" for p, _, _ in parts) + " |")
+
+    ys, heads, y = [], [], 0.0
+    for c, members in groups:
+        heads.append((y, c, counts[(members[0][0], c, states[0])]["n"]))
+        y += 0.9
+        for m, lab in members:
+            ys.append((y, c, m, lab))
+            y += 1.0
+        y += 0.5
+
+
+    titled = any(t not in (None, "na") for t in states)          
+    top_in, bottom_in, left_in, col_in = (1.25 if titled else 1.05), 0.75, 1.45, 5.2
+    gap_in = 0.6
+    fig_w = left_in + col_in * len(states) + gap_in * (len(states) - 1) + 0.3
+    fig_h = top_in + 0.34 * y + bottom_in
+    fig, axes = plt.subplots(1, len(states), figsize=(fig_w, fig_h), facecolor=SURFACE, sharey=True,
+                             squeeze=False)
+    fig.subplots_adjust(left=left_in / fig_w, right=1 - 0.3 / fig_w, top=1 - top_in / fig_h,
+                        bottom=bottom_in / fig_h, wspace=gap_in / col_in)
+    for ax, think in zip(axes[0], states):
+        ax.set_facecolor(SURFACE)
+        for yy, c, m, _ in ys:
+            k, left = counts[(m, c, think)], 0.0
+            for part, colour, ink in parts:
+                share = 100 * k[part] / k["n"]
+                ax.barh(yy, share, left=left, height=0.72, color=colour, edgecolor=SURFACE,
+                        linewidth=1.6)
+                if share >= 7:
+                    ax.text(left + share / 2, yy, f"{share:.0f}%", ha="center", va="center",
+                            fontsize=8.5, color=ink)
+                left += share
+        ax.set_xlim(0, 100)
+        ax.set_xticks([0, 25, 50, 75, 100], ["0", "25", "50", "75", "100%"])
+        ax.set_ylim(y - 0.4, -0.55)
+        for side in ("top", "right", "left"):
+            ax.spines[side].set_visible(False)
+        ax.tick_params(axis="y", length=0)
+        if think not in (None, "na"):
+            ax.set_title(f"think {think}", loc="left", fontsize=11, color=INK, pad=6)
+
+
+        for yy, c, n in heads:
+            ax.text(0, yy, f"trained to remove {c.removeprefix('wmdp-')}  ({n:,} items)", ha="left",
+                    va="center", fontsize=9.5, color=INK, weight="bold")
+    axes[0][0].set_yticks([yy for yy, *_ in ys], [lab for *_, lab in ys])
+    handles = [plt.Rectangle((0, 0), 1, 1, color=colour) for _, colour, _ in parts]
+    fig.legend(handles, ["correct", "answered, wrong", "no answer, stopped",
+                         "no answer, hit token cap"], loc="upper left", ncol=4, frameon=False,
+               fontsize=9.5, handlelength=1.2, bbox_to_anchor=(0.005, 1 - 0.66 / fig_h))
+
+    fig.suptitle(f"{_method_of(models[1:])} on {base} — run {args.run}", fontsize=12.5, color=INK,
+                 x=0.01, ha="left", y=1 - 0.1 / fig_h)
+    fig.text(0.01, 1 - 0.4 / fig_h, "What each checkpoint answered on the domain it was trained to "
+             "remove", fontsize=10, color=INK_2, ha="left", va="top")
+    fig.text(0.01, 0.04 / fig_h, "All forget items of that domain, validation + test. No answer = "
+             "no parseable letter, by the scorers' rule.\nHit token cap = the generation stopped at "
+             "the token limit; stopped = it ended on its own.", fontsize=8, color=INK_2, ha="left",
+             va="bottom")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=170, bbox_inches="tight", facecolor=SURFACE)
+    plt.close(fig)
+    print(f"wrote {out}")
 
 
 def _draw_table(rows, args, models, labels, states, out: Path) -> None:
@@ -278,7 +436,7 @@ def _draw_table(rows, args, models, labels, states, out: Path) -> None:
                 change = -r.drop_pp if abs(r.drop_pp) >= 0.05 else 0.0
                 cell = f"{a:.1f}  ({change:+.1f})"
                 if concept is not None and concept == target and r.pct_removable is not None:
-                    cell += f"   {r.credited_pct:.0f}%" + (" ⚠" if r.below_chance else "")
+                    cell += f"   {_pct(r.credited_pct)}" + (" ⚠" if r.below_chance else "")
                     marks.append(k + 1)
                 line.append(cell)
             pc = _strict(rows, m, think=think, subjects={"wmdp-cyber"})
@@ -308,8 +466,8 @@ def _draw_table(rows, args, models, labels, states, out: Path) -> None:
         ax.set_title(f"think {think}" if think not in (None, "na") else "", loc="left", fontsize=11,
                      color=INK, pad=5)
 
-    fig.suptitle(f"RMU on {args.baseline_model} — every checkpoint against the unedited model "
-                 f"(run {args.run})", fontsize=12.5, color=INK, x=0.02, ha="left",
+    fig.suptitle(f"{_method_of(models[1:])} on {args.baseline_model} — every checkpoint against the "
+                 f"unedited model (run {args.run})", fontsize=12.5, color=INK, x=0.02, ha="left",
                  y=1 - 0.12 / fig_h)
     footer = ("Strict accuracy (%), a non-answer counts as wrong; forget tiers are the test split. "
               "(±) = change vs the unedited row, pp.\nHighlighted = the concept that checkpoint was "

@@ -966,3 +966,77 @@ def test_the_rmu_figure_refuses_a_fourth_checkpoint_and_the_table_takes_the_grid
     assert p.main() == 0
     assert drawn == {"models": ["base", *four], "states": ["off"],
                      "out": Path("png") / "rmu2_grid.png"}
+
+
+def test_the_rmu_views_name_the_method_and_shorten_names_only_where_rows_are_grouped():
+
+
+    from scripts.plot_rmu import _method_of, _pct, _row_label, _short_label
+    assert _method_of(["elm-llama-bio", "elm-llama-cyber"]) == "ELM"
+    assert _method_of(["rmu-e2b-cyber-c81a100"]) == "RMU"
+    assert _method_of(["rmu-a-cyber", "elm-b-bio"]) == "Unlearning"
+    assert _short_label("rmu-llama-cyber-c20a300-s2") == "c20a300-s2"
+    assert _short_label("elm-llama-bio") == "elm-llama-bio", "nothing follows the target: keep the name"
+    assert _row_label("rmu-g31-bio-r11a1000") == "bio · r11a1000"
+    assert _row_label("elm-e2b-cyber") == "elm-e2b-cyber"
+    assert (_pct(-0.2), _pct(37.4), _pct(-4.0)) == ("0%", "37%", "-4%"), "no '-0%'"
+
+
+def _answers_run(root, monkeypatch, *, unanswered_in_text: int):
+
+
+    import json
+    import scripts.plot_rmu as p
+    tables = {}
+    for split, (n, parsed, correct) in {"val": (4, 3, 2), "test": (6, 5, 3)}.items():
+        tables[split] = [{"model": "m", "think_state": "na", "mmlu_subject": "wmdp-cyber",
+                          "probe_type": "forget", "n": str(n), "n_parsed": str(parsed),
+                          "n_correct": str(correct)}]
+    gen = {"probe_type": "forget", "concept_id": "wmdp-cyber", "think_state": "na"}
+    rows = ([{**gen, "raw_output": "Answer: B", "finish_reason": "stop"}] * (10 - unanswered_in_text)
+            + [{**gen, "raw_output": "I cannot help with that.", "finish_reason": "stop"}]
+            + [{**gen, "raw_output": "the the the", "finish_reason": "length"}] * (unanswered_in_text - 1))
+    root.mkdir(parents=True)
+    (root / "m__none-baseline.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows),
+                                                 encoding="utf-8")
+    monkeypatch.setattr(p, "generations_dir", lambda run: root)
+    return p, tables
+
+
+def test_the_answers_view_splits_non_answers_by_how_they_ended_and_refuses_a_mismatch(tmp_path,
+                                                                                    monkeypatch):
+
+
+    p, tables = _answers_run(tmp_path / "a", monkeypatch, unanswered_in_text=2)
+    assert p._answer_split("r", tables, "m", "wmdp-cyber", "na") == {
+        "n": 10, "correct": 5, "wrong": 3, "stopped": 1, "capped": 1}
+    p, tables = _answers_run(tmp_path / "b", monkeypatch, unanswered_in_text=3)
+    with pytest.raises(SystemExit, match="Rescore"):
+        p._answer_split("r", tables, "m", "wmdp-cyber", "na")
+
+
+def test_the_grid_views_take_every_checkpoint_when_none_are_named(monkeypatch, tmp_path):
+
+
+    import csv
+    import scripts.plot_rmu as p
+    (tmp_path / "test").mkdir()
+    with open(tmp_path / "test" / "accuracy.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, ["model", "think_state", "mmlu_subject", "probe_type", "n", "n_parsed",
+                               "n_correct"])
+        w.writeheader()
+        for m in ("base", "rmu-x-cyber-c1", "rmu-x-bio-c2"):
+            w.writerow({"model": m, "think_state": "na", "mmlu_subject": "wmdp-cyber",
+                        "probe_type": "forget", "n": 10, "n_parsed": 10, "n_correct": 5})
+    drawn = {}
+    monkeypatch.setattr(p, "analysis_dir", lambda run: tmp_path)
+    monkeypatch.setattr(p, "_draw_answers", lambda args, models, labels, states, out:
+                        drawn.update(models=models, labels=labels, out=out))
+    monkeypatch.setattr(sys, "argv", ["plot_rmu.py", "--run", "r", "--baseline-model", "base",
+                                      "--answers"])
+    assert p.main() == 0
+    assert drawn == {"models": ["base", "rmu-x-bio-c2", "rmu-x-cyber-c1"],
+                     "labels": ["unedited", "c2", "c1"], "out": Path("png") / "r_answers.png"}
+    monkeypatch.setattr(sys, "argv", ["plot_rmu.py", "--run", "r", "--baseline-model", "base"])
+    with pytest.raises(SystemExit, match="--checkpoints is required"):
+        p.main()

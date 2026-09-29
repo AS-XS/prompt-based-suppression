@@ -53,7 +53,7 @@
     "scripts/plan_rmu.py": "2136a3b1984e686ecc6df39092eccca36b9f26dbf4f4c4bd4e5911808b41f984",
     "scripts/plot_ablation.py": "fe02837e0280eb12374eb539fd8eae1a9574a3215b10b24a88e84d6ddc8dfe71",
     "scripts/plot_accuracy.py": "80ca0ffdf95b54b79a8fcfb09e5479220aab5543b3093bf37a67e23e779e0f8f",
-    "scripts/plot_rmu.py": "9121e3e73c59c81d842f558ecfefb72c47349e49eedabbe89380e2ace9c00528",
+    "scripts/plot_rmu.py": "bf6b7b645676df0d54560eb4c39db86ed9ea22967432078e0718108246dc61a6",
     "scripts/prepare_unlearn_likelihood.py": "e984ac7707c99116131b411036a0b00a05a46ab5d690cd2457e53f391654693c",
     "scripts/present_optimize.py": "b5c97b90d24addeeddaa2f44ea06eb46ee61a7f877d18b5ba4efbac8bf6a7494",
     "scripts/present_tables.py": "48d4a436bbb5f70b10948a096a97393aead366e490a71d2475123bdfb338e55c",
@@ -182,12 +182,12 @@
     "tests/test_sweep.py": "6a749358581ddfc593324c87fcfe22350751f50149e249be59189dd3525b28f1",
     "tests/test_system_prompt.py": "6e31bd84611672193be89c8cbc7a549fa94ec14e7d8cb41bc2dc1bce295e51a4",
     "tests/test_think_state_grouping.py": "f9d7fb3119071fc9bc32d3d170952f1b166c5e512f3ef004333e549e9ebff392",
-    "tests/test_unlearn.py": "55fe3dca9993dadd4736c991e8b2ca78cc225bf0507624bec8780cb2a8c8c8ce",
+    "tests/test_unlearn.py": "55e8a546193bf45c58e56f4acc416b565befcd3c290603263a6542430c5495e4",
     "tests/test_unlearn_next.py": "bb5bd1b984da7f70de8921f22bd6288e860c4f7b66b456abde531fc07f974024",
     "tests/test_wave_batching.py": "5d401bf4974076c6cd583a18a621f5d1e92d5a48c64da97106242a349fcf8165",
     "tests/test_wmdp5.py": "60f52a93f633ad8735c014a654ae1353a60338643b677eeb1bb1823a77b9285d",
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "86fa513208316cce349a52eddaa09244493ced90"
+  "source_revision": "e3abc2caf7258f917e0ab4b79ff740ebcd97f488"
 }
