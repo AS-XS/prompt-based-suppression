@@ -925,3 +925,44 @@ def test_the_rmu_figure_never_pools_think_states():
     src = (ROOT / "scripts" / "plot_rmu.py").read_text()
     assert 'f"_think-{think}"' in src, "one file per state"
     assert "--out names ONE file" in src, "a single --out with several states must refuse, not pool"
+
+
+def test_the_rmu_table_highlights_each_checkpoints_own_target():
+
+
+    from scripts.plot_rmu import _target_of
+    assert _target_of("rmu-e2b-bio-c81a100") == "wmdp-bio"
+    assert _target_of("rmu-gemma-cyber-lr25") == "wmdp-cyber"
+    assert _target_of("rmu-llama-cyber-c20a300-s2") == "wmdp-cyber"
+    assert _target_of("gemma-4-E2B-it") is None
+    assert _target_of("rmu-bio-cyber-mixed") is None
+    assert _target_of("rmu-e2b-biology-x") is None, "a name TOKEN, not a substring"
+
+
+def test_the_rmu_figure_refuses_a_fourth_checkpoint_and_the_table_takes_the_grid(monkeypatch, tmp_path):
+
+
+    import csv
+    import scripts.plot_rmu as p
+    four = ["rmu-a-cyber", "rmu-b-cyber", "rmu-c-cyber", "rmu-d-bio"]
+    argv = ["plot_rmu.py", "--run", "rmu2", "--baseline-model", "base", "--checkpoints", *four]
+    monkeypatch.setattr(sys, "argv", argv)
+    with pytest.raises(SystemExit, match="at most 3 checkpoints"):
+        p.main()
+
+    (tmp_path / "test").mkdir()
+    with open(tmp_path / "test" / "accuracy.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, ["model", "think_state", "mmlu_subject", "probe_type", "n", "n_parsed",
+                               "n_correct"])
+        w.writeheader()
+        for m in ["base", *four]:
+            w.writerow({"model": m, "think_state": "off", "mmlu_subject": "wmdp-cyber",
+                        "probe_type": "forget", "n": 10, "n_parsed": 10, "n_correct": 5})
+    drawn = {}
+    monkeypatch.setattr(p, "analysis_dir", lambda run: tmp_path)
+    monkeypatch.setattr(p, "_draw_table", lambda rows, args, models, labels, states, out:
+                        drawn.update(models=models, states=states, out=out))
+    monkeypatch.setattr(sys, "argv", [*argv, "--table", "--name", "rmu2_grid"])
+    assert p.main() == 0
+    assert drawn == {"models": ["base", *four], "states": ["off"],
+                     "out": Path("png") / "rmu2_grid.png"}

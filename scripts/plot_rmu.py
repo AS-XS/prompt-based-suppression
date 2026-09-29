@@ -64,11 +64,16 @@ def main() -> int:
     ap.add_argument("--target", default="wmdp-cyber", help='Target.')
     ap.add_argument("--control", default="wmdp-bio", help='Control.')
     ap.add_argument("--out", default=None)
+    ap.add_argument("--name", default=None,
+                    help='Name.')
+    ap.add_argument("--table", action="store_true",
+                    help='Table.')
     args = ap.parse_args()
 
-    if len(args.checkpoints) > 3:
-        raise SystemExit("at most 3 checkpoints: four series is where the validated palette's "
-                         "adjacent-pair guarantee ends for grouped bars")
+    if len(args.checkpoints) > 3 and not args.table:
+        raise SystemExit("at most 3 checkpoints in the figure: four series is where the validated "
+                         "palette's adjacent-pair guarantee ends for grouped bars. Use --table for "
+                         "the whole grid.")
     models = [args.baseline_model, *args.checkpoints]
     labels = ["unedited", *(args.labels or args.checkpoints)]
     if len(labels) != len(models):
@@ -91,13 +96,18 @@ def main() -> int:
 
 
     states = sorted({r.get("think_state") for r in rows if r["model"] == args.baseline_model}, key=str)
+    if args.table:
+        stem = args.name or f"{args.run}_table"
+        _draw_table(rows, args, models, labels, states, Path("png") / f"{stem}.png")
+        return 0
     if args.out and len(states) > 1:
         raise SystemExit(f"--out names ONE file but {args.run} has think states {states}; leave "
                          f"--out off and one figure is written per state")
     for think in states:
         acc = {m: [_strict(rows, m, think=think, **kw) for _, kw in tiers] for m in models}
         suffix = "" if len(states) == 1 else f"_think-{think}"
-        out = Path(args.out) if args.out else Path("png") / f"{args.run}_unlearning{suffix}.png"
+        stem = args.name or f"{args.run}_unlearning"
+        out = Path(args.out) if args.out else Path("png") / f"{stem}{suffix}.png"
         shown = think if len(states) > 1 else None
         _print_table(acc, tiers, models, labels, shown)
         _draw(args, acc, tiers, models, labels, shown, out, t)
@@ -212,6 +222,100 @@ def _draw(args, acc, tiers, models, labels, think, out: Path, t: str) -> None:
               + ("; ".join(notes) if notes else "no unparsed responses") + ".")
     fig.text(0.07, 0.012, footer, fontsize=7.8, color=INK_2, va="bottom", ha="left")
 
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=170, bbox_inches="tight", facecolor=SURFACE)
+    plt.close(fig)
+    print(f"wrote {out}")
+
+
+def _target_of(name: str) -> str | None:
+
+
+    tokens = set(name.split("-"))
+    hits = [c for c in ("bio", "cyber") if c in tokens]
+    return f"wmdp-{hits[0]}" if len(hits) == 1 else None
+
+
+def _draw_table(rows, args, models, labels, states, out: Path) -> None:
+
+
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    from src.analysis.removal import Removal
+
+    cols = [("forget\ncyber", "wmdp-cyber", dict(subjects={"wmdp-cyber"})),
+            ("forget\nbio", "wmdp-bio", dict(subjects={"wmdp-bio"})),
+            ("neighbour\ncyber", None, dict(subjects=set(NEAR_RETAIN["wmdp-cyber"]))),
+            ("neighbour\nbio", None, dict(subjects=set(NEAR_RETAIN["wmdp-bio"]))),
+            ("far\nMMLU", None, dict(probe="utility"))]
+    header = ["", *[c[0] for c in cols], "answered\ncyber · bio"]
+    base = models[0]
+    tint, head, base_bg = "#ece9fb", "#efeee9", "#f6f5f1"
+
+
+    row_h, pad = 0.33, 0.55
+    tbl_h = row_h * (len(models) + 1.4)
+    fig_h = 2 * pad + len(states) * tbl_h + (len(states) - 1) * 0.55
+    fig = plt.figure(figsize=(14.5, fig_h), facecolor=SURFACE)
+    gs = fig.add_gridspec(len(states), 1, hspace=0.55 / tbl_h, top=1 - pad / fig_h,
+                          bottom=pad / fig_h, left=0.02, right=0.98)
+    axes = [fig.add_subplot(gs[i]) for i in range(len(states))]
+    for ax, think in zip(axes, states):
+        ax.axis("off")
+        b = {k: _strict(rows, base, think=think, **kw) for k, (_, _, kw) in enumerate(cols)}
+        text, bold = [], []
+        for m, lab in zip(models, labels):
+            target = None if m == base else _target_of(m)
+            line, marks = [lab], []
+            for k, (_, concept, kw) in enumerate(cols):
+                a = _strict(rows, m, think=think, **kw)[0]
+                if m == base:
+                    line.append(f"{a:.1f}")
+                    continue
+                r = Removal(baseline=b[k][0] / 100, suppressed=a / 100)
+                change = -r.drop_pp if abs(r.drop_pp) >= 0.05 else 0.0
+                cell = f"{a:.1f}  ({change:+.1f})"
+                if concept is not None and concept == target and r.pct_removable is not None:
+                    cell += f"   {r.credited_pct:.0f}%" + (" ⚠" if r.below_chance else "")
+                    marks.append(k + 1)
+                line.append(cell)
+            pc = _strict(rows, m, think=think, subjects={"wmdp-cyber"})
+            pb = _strict(rows, m, think=think, subjects={"wmdp-bio"})
+            line.append(f"{100 * pc[2] / pc[1]:.0f} · {100 * pb[2] / pb[1]:.0f}")
+            text.append(line)
+            bold.append(marks)
+        tbl = ax.table(cellText=text, colLabels=header, cellLoc="center", bbox=[0, 0, 1, 1],
+                       colWidths=[0.25, 0.13, 0.13, 0.12, 0.12, 0.1, 0.12])
+        tbl.auto_set_font_size(False)
+        tbl.set_fontsize(9.5)
+        for (i, j), cell in tbl.get_celld().items():
+            cell.set_edgecolor(GRID)
+            cell.set_linewidth(0.8)
+            if i == 0:
+                cell.set_facecolor(head)
+                cell.set_text_props(weight="bold", color=INK, fontsize=9)
+            elif i == 1:
+                cell.set_facecolor(base_bg)
+                cell.set_text_props(weight="bold", color=INK)
+            else:
+                cell.set_facecolor(tint if j in bold[i - 1] else SURFACE)
+                cell.set_text_props(color=INK, weight="bold" if j in bold[i - 1] else "normal")
+            if j == 0 and i > 0:
+                cell.set_text_props(ha="left")
+                cell._loc = "left"
+        ax.set_title(f"think {think}" if think not in (None, "na") else "", loc="left", fontsize=11,
+                     color=INK, pad=5)
+
+    fig.suptitle(f"RMU on {args.baseline_model} — every checkpoint against the unedited model "
+                 f"(run {args.run})", fontsize=12.5, color=INK, x=0.02, ha="left",
+                 y=1 - 0.12 / fig_h)
+    footer = ("Strict accuracy (%), a non-answer counts as wrong; forget tiers are the test split. "
+              "(±) = change vs the unedited row, pp.\nHighlighted = the concept that checkpoint was "
+              "trained to remove, with its share of removable knowledge (capped at 100%; ⚠ = below "
+              "chance). Answered = share of forget items with a parseable answer.")
+    fig.text(0.02, 0.1 / fig_h, footer, fontsize=8, color=INK_2, va="bottom", ha="left")
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=170, bbox_inches="tight", facecolor=SURFACE)
     plt.close(fig)
