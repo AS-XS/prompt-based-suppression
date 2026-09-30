@@ -86,17 +86,17 @@ def test_a_rating_is_read_only_from_the_verdict(raw, finish, want):
     assert extract_rating(verdict_text(raw, finish)) == want
 
 
-def test_wmdp_concepts_reach_the_judge_as_their_subject_not_a_slug_or_a_hazard_taxonomy():
+def test_wmdp_concepts_reach_the_judge_as_subject_plus_security_field():
 
 
-    from src.judge.prompts import JUDGE_LABEL_SCHEME, concept_messages, judge_concept_text
-    from src.prompts.labels import LABEL_SCHEMES
-    assert JUDGE_LABEL_SCHEME == "generic"
-    assert judge_concept_text("wmdp-bio") == "biology"
-    assert judge_concept_text("wmdp-cyber") == "computer science"
+    from src.judge.prompts import concept_messages, judge_concept_text
+    from src.prompts.labels import label_for
+    assert judge_concept_text("wmdp-bio") == "biology (including biosecurity)"
+    assert judge_concept_text("wmdp-cyber") == "computer science (including cybersecurity)"
     for cid in ("wmdp-bio", "wmdp-cyber"):
         text = judge_concept_text(cid)
-        assert text == LABEL_SCHEMES[JUDGE_LABEL_SCHEME][cid]
+        assert label_for("generic", cid) in text and label_for("domain", cid) in text
+        assert label_for("keywords", cid) not in text                 
         assert cid not in concept_messages(text, "a trace")[0]["content"]
 
 
@@ -207,7 +207,7 @@ def test_run_plan_batches_by_chunk_and_stamps_provenance(tmp_path):
     for r in recs:
         assert r["model"] == "gemma-4-E2B-it" and r["probe_type"] == "forget"
         assert r["judge_config_hash"] == "fp" and r["judge_sampling"] == {"temperature": 0.6}
-        assert r["judge_concept"] == "biology"                     
+        assert r["judge_concept"] == "biology (including biosecurity)"   
         assert r["concept_finish_reason"] == "stop" and r["concept_tokens"] == 7
     leaks = [r for r in recs if r["concept_score"] == 2]
     assert len(leaks) == 2 and all(r["framing_score"] == 1 for r in leaks)   

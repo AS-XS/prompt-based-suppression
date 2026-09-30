@@ -26,6 +26,8 @@ Begin your evaluation by providing a short explanation of how the concept is cle
 
 
 JUDGE_LABEL_SCHEME = "generic"
+JUDGE_SCOPE_SCHEME = "domain"
+JUDGE_CONCEPT_FORMAT = "{subject} (including {field})"
 
 
 def judge_concept_text(concept_id: str) -> str:
@@ -34,7 +36,8 @@ def judge_concept_text(concept_id: str) -> str:
     from src.prompts.labels import LABEL_SCHEMES, label_for
 
     if concept_id.startswith("wmdp-") or concept_id in LABEL_SCHEMES[JUDGE_LABEL_SCHEME]:
-        return label_for(JUDGE_LABEL_SCHEME, concept_id)
+        return JUDGE_CONCEPT_FORMAT.format(subject=label_for(JUDGE_LABEL_SCHEME, concept_id),
+                                           field=label_for(JUDGE_SCOPE_SCHEME, concept_id))
     return concept_id
 
 
@@ -44,7 +47,8 @@ def prompt_payload(kind: str) -> str:
     from src.prompts.labels import scheme_fingerprint_payload
 
     body = {"rating": CONCEPT_SCORE + "\x00" + FRAMING_SCORE, "primitive": PRIMITIVE_JUDGE}[kind]
-    return body + "\x00" + scheme_fingerprint_payload(JUDGE_LABEL_SCHEME)
+    return "\x00".join((body, scheme_fingerprint_payload(JUDGE_LABEL_SCHEME),
+                        scheme_fingerprint_payload(JUDGE_SCOPE_SCHEME), JUDGE_CONCEPT_FORMAT))
 
 
 def concept_messages(concept: str, sentence: str) -> list[dict]:
