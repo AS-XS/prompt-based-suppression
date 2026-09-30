@@ -240,6 +240,15 @@ def main() -> int:
                                                    "condition", "concept_score", "framing_score",
                                                    "mode", "lexical"])
     print(f"{len(rows):,} judged record(s) under configuration {config} -> {out}/report.md")
+
+
+    print(f"\n{'concept':<11} {'condition':<11} {'surface':<12} {'n':>4} {'judge>0':>8} "
+          f"{'keyword':>8} {'unparsed':>9}")
+    for r in sorted((r for r in leak if r["model"] == "ALL"),
+                    key=lambda r: (r["concept_id"], r["surface"], r["condition"])):
+        pct = lambda v: "–" if v is None else f"{100 * v:.0f}%"
+        print(f"{r['concept_id']:<11} {r['condition']:<11} {r['surface']:<12} {r['n']:>4} "
+              f"{pct(r['leak_rate']):>8} {pct(r['lexical_rate']):>8} {r['n_unparsed']:>9}")
     return 0
 
 

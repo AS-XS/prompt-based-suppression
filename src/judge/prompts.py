@@ -25,7 +25,7 @@ Begin your evaluation by providing a short explanation of how the concept is cle
 [Sentence Fragment End]"""
 
 
-JUDGE_LABEL_SCHEME = "keywords"
+JUDGE_LABEL_SCHEME = "generic"
 
 
 def judge_concept_text(concept_id: str) -> str:

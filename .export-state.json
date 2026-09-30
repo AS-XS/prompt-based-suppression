@@ -47,7 +47,7 @@
     "scripts/inspect_data.py": "b51eeeb488c1baa887a1f1a361c7eb16b76a26173bffadd6863eb38ef6b733cf",
     "scripts/judge.py": "7115d0d1930b60a541463909c5c8cdfd1aa0d11141c95f06e47e6b9866bf139d",
     "scripts/judge_primitives.py": "86e08d6f89aac6ab6815c172598e2e52a931ed257e2e7a7b2e31eb20f44f677e",
-    "scripts/judge_sample_report.py": "ef0e0ec38c668235821bbb91dec40804c27d110517b6bfb3a3836bdd2fb5cf8d",
+    "scripts/judge_sample_report.py": "7f7da4100905b49b3047d731addf23c7f65cf947ed69bb6d4585dd8c4da3ec45",
     "scripts/mode_table.py": "ed9ff53779b88766276f34a0cc951669280ec3d9319b5ed69cbcb296c1e5dc5a",
     "scripts/models.txt": "b220290e974a9f96db4bf80435f09466519b5be290b7c85ee4e033d8f91a8b66",
     "scripts/optimize_prompt.py": "bb5d2eed607cc39f5f917d23fb2db5ca981055be479042031a94443c3881daca",
@@ -117,7 +117,7 @@
     "src/io.py": "127cc9efe0e6649579694568659d0f5c9afbac880349f6b99f37173aaa16979a",
     "src/judge/__init__.py": "919a8012689d774e5ffa9b6d06e964ff1bf8bf738eabcd1821783ab869f0dce3",
     "src/judge/preflight.py": "1b7ad2de8e1c097035dd3add82a02ba0e63bfe54e0e368a43413805ff64d2558",
-    "src/judge/prompts.py": "1e19eb765af005e084befda71ccbb5ff4e25b0d1eb2fdc24d0b712a0236b72bd",
+    "src/judge/prompts.py": "dc2bba1d26e0efc95b37b7aa066380c3062d5025cc974f7f5f7c835ae7e42e45",
     "src/judge/run.py": "83c59dabf4c0e0a2332bc7108342983884a31a0cc44f5ac0e0eba9e43396eafc",
     "src/judge/schema.py": "45273cc5e508edaa0ef8b02121d343df89f4131c571ed9fdf93fa91726a8509f",
     "src/judge/settings.py": "b6029606c30ebd2fc1864f4303d4fb486c06f039307869ba06cd7a401fff6422",
@@ -164,7 +164,7 @@
     "tests/test_isolated_table.py": "34dd319e7cba5bd35bb0f90c9c2fd7a29532b9aca09a0c2b51967579a78df04f",
     "tests/test_item_ids.py": "2be40adb249a1694cc9186f0773931d0078622c0b042f43054081b1387ebf514",
     "tests/test_jsonl_reading.py": "35ad69ca48e543b2a8f6e8408981aa243214e5d928507dbd00226a06887f0da1",
-    "tests/test_judge_defaults.py": "664a4ce3dfbdffd63dce70cabdcbb120fc8510f8a16ae7a7b0634107190a5787",
+    "tests/test_judge_defaults.py": "8619c5042976881e90c1abfd0a2f8c6470f0393f806fc32e9b56cc76ea752166",
     "tests/test_judge_sample.py": "cf86c2536cb2e2792596254cec275c18b81ab98413fef324ab22d44c1beb255a",
     "tests/test_label_ladder.py": "7dbfd954238b05aaf458163b18fbd1f70403979bb42d6aa325961d7ceab05bea",
     "tests/test_li_prompt.py": "897e7e2c458f642084c2df75a01eb449483479ce00a251f57b7b181ee44e3aa0",
@@ -196,5 +196,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "dc26c0c173639b05b8dcadbae1cfe989a9046418"
+  "source_revision": "1c9b20b94a4b5a26683fb3d062a1141ff810ad13"
 }
