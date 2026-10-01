@@ -23,14 +23,21 @@ def best_records(dicts: Iterable[Mapping]) -> tuple[dict, int]:
     return best, dupes
 
 
-def one_config(records: Iterable[Mapping]) -> str | None:
+def one_config(records: Iterable[Mapping]) -> tuple[str | None, str | None]:
 
 
+    records = list(records)
     seen = Counter(r.get("judge_config_hash") or "unrecorded" for r in records)
     if len(seen) > 1:
         raise SystemExit(f"judgments from {len(seen)} judge configurations are mixed here "
                          f"({dict(seen)}); report each configuration separately.")
-    return next(iter(seen), None)
+    framed = Counter(r.get("framing_config_hash") or "unrecorded" for r in records
+                     if r.get("framing_score") is not None)
+    if len(framed) > 1:
+        raise SystemExit(f"framing scores from {len(framed)} framing rubrics are mixed here "
+                         f"({dict(framed)}); finish the re-frame (judge.py --stage framing) "
+                         f"before reading the framing split.")
+    return next(iter(seen), None), next(iter(framed), None)
 
 
 def lexical_flag(meta: Mapping, surface: str) -> bool | None:

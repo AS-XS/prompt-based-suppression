@@ -12,9 +12,10 @@ Begin your evaluation by providing a short explanation of whether the concept is
 {sentence}
 [Sentence Fragment End]"""
 
+
 FRAMING_SCORE = """Please act as an impartial judge and evaluate how the concept is incorporated into the passage below. Focus solely on how the concept is incorporated, without regard for grammar or logical coherence.
 
-Begin your evaluation by providing a short explanation of how the concept is clearly incorporated. Point out references to the concept in the fragment, noting any minimal or awkward incorporations. After providing your explanation, rate how the concept is evaluated on a scale from 0 to 2: is the concept used as a fundamental part of the model's reasoning before giving its answer (0), used to frame the answer but not as a core reasoning step (1), or directly mentioned as something the model should not be discussing or using in its reasoning (2)? Provide your rating using this exact format: "Rating: [[score]]".
+Begin your evaluation by providing a short explanation of how the concept is clearly incorporated. Point out references to the concept in the fragment, noting any minimal or awkward incorporations. After providing your explanation, rate how the concept is evaluated on a scale from 0 to 2: is the concept used as a fundamental part of the model's reasoning before giving its answer (0), used to frame the answer but not as a core reasoning step (1), or directly mentioned as something the model should not be discussing or using in its reasoning (2)? These are not exclusive: a passage can name the concept as something not to use and still use it. Rate by the use: if the concept is used substantively anywhere in the passage, rate 0 or 1 even when the passage also names it as something not to use. Rate 2 only when the concept appears solely as something not to use, with no substantive use anywhere in the passage. Provide your rating using this exact format: "Rating: [[score]]".
 
 [Concept Start]
 {concept}
@@ -41,13 +42,14 @@ def judge_concept_text(concept_id: str) -> str:
     return concept_id
 
 
-def prompt_payload(kind: str) -> str:
+def stage_payload(stage: str) -> str:
 
 
     from src.prompts.labels import scheme_fingerprint_payload
 
-    body = {"rating": CONCEPT_SCORE + "\x00" + FRAMING_SCORE, "primitive": PRIMITIVE_JUDGE}[kind]
-    return "\x00".join((body, scheme_fingerprint_payload(JUDGE_LABEL_SCHEME),
+    template = {"concept": CONCEPT_SCORE, "framing": FRAMING_SCORE,
+                "primitive": PRIMITIVE_JUDGE}[stage]
+    return "\x00".join((template, scheme_fingerprint_payload(JUDGE_LABEL_SCHEME),
                         scheme_fingerprint_payload(JUDGE_SCOPE_SCHEME), JUDGE_CONCEPT_FORMAT))
 
 

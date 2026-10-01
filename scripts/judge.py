@@ -21,7 +21,7 @@ from src.gen.runner import append_jsonl, read_jsonl  # noqa: E402
 from src.judge.prompts import concept_messages, framing_messages, judge_concept_text  # noqa: E402
 from src.judge.run import concept_scores, framing_scores  # noqa: E402
 from src.judge.settings import (JUDGE_CHAT_KWARGS, default_budget,  # noqa: E402
-                                judge_fingerprint, judge_sampling, refuse_mixed_config)
+                                judge_fingerprints, judge_sampling, refuse_mixed_config)
 from src.paths import generations_glob, judgments_dir  # noqa: E402
 from src.provenance import git_commit  # noqa: E402
 
@@ -51,7 +51,7 @@ def _read_dicts(path: Path):
 
 
 def plan_file(gens_path, out_dir, suppressed_only, limit, surfaces=("explanation",),
-              shard=None, stage="both", probe_types=None, fingerprint=None) -> dict:
+              shard=None, stage="both", probe_types=None, fingerprints=None) -> dict:
 
 
     rows = list(read_jsonl(Path(gens_path), GenerationRow))
@@ -91,7 +91,11 @@ def plan_file(gens_path, out_dir, suppressed_only, limit, surfaces=("explanation
                 if done is None:
                     continue
                 c = done.get("concept_score")
-                if not c or c <= 0 or done.get("framing_score") is not None:
+                if not c or c <= 0:
+                    continue
+                if done.get("framing_score") is not None and (
+                        fingerprints is None
+                        or done.get("framing_config_hash") == fingerprints["framing"]):
                     continue
             if stage == "both" and done is not None:
                 continue
@@ -99,8 +103,8 @@ def plan_file(gens_path, out_dir, suppressed_only, limit, surfaces=("explanation
             if not (text or "").strip():
                 continue
             todo.append((r, surface, text, done, judge_concept_text(r.concept_id)))
-    if fingerprint and todo:
-        refuse_mixed_config(prior, fingerprint, out_jsonl)
+    if fingerprints and todo:
+        refuse_mixed_config(prior, fingerprints["concept"], out_jsonl)
     return {"stem": stem, "out_jsonl": out_jsonl, "out_csv": out_csv, "best": best,
             "table": table, "todo": todo}
 
@@ -124,10 +128,11 @@ def _record(r, surface: str, concept_text: str, judge_name: str, meta: dict, sco
 
 
 def run_plan(llm, sp, plan: dict, judge_name, stage="both", chat_kw=None,
-             chunk: int = DEFAULT_CHUNK, meta: dict | None = None) -> tuple[int, Path]:
+             chunk: int = DEFAULT_CHUNK, meta: dict | None = None,
+             framing_meta: dict | None = None) -> tuple[int, Path]:
 
 
-    meta = meta or {}
+    meta, framing_meta = meta or {}, framing_meta or {}
     best, table, out_jsonl, todo = plan["best"], plan["table"], plan["out_jsonl"], plan["todo"]
     written = 0
     for start in range(0, len(todo), chunk):
@@ -136,7 +141,7 @@ def run_plan(llm, sp, plan: dict, judge_name, stage="both", chat_kw=None,
         if stage == "framing":
 
 
-            recs = [{**done, **f, "framing_git_commit": meta.get("git_commit")}
+            recs = [{**done, **f, **framing_meta, "framing_git_commit": meta.get("git_commit")}
                     for (_, _, _, done, _), f in zip(part, framing_scores(llm, sp, pairs, chat_kw))]
         else:
             scores = concept_scores(llm, sp, pairs, chat_kw)
@@ -144,7 +149,7 @@ def run_plan(llm, sp, plan: dict, judge_name, stage="both", chat_kw=None,
                 leaked = [i for i, s in enumerate(scores) if (s["concept_score"] or 0) > 0]
                 for i, f in zip(leaked, framing_scores(llm, sp, [pairs[i] for i in leaked],
                                                        chat_kw)):
-                    scores[i].update(f)
+                    scores[i].update({**f, **framing_meta})
             recs = [_record(r, surface, concept_text, judge_name, meta, s)
                     for (r, surface, _, _, concept_text), s in zip(part, scores)]
         append_jsonl(out_jsonl, [_Row(rec) for rec in recs])
@@ -228,13 +233,13 @@ def main() -> int:
         raise SystemExit(f"no files matched: {gen_globs}")
 
 
-    fingerprint = judge_fingerprint("rating", args.judge, quant=args.quant, tp=args.tp,
-                                    dtype=args.dtype, max_tokens=args.max_tokens,
-                                    max_model_len=args.max_model_len)
+    fingerprints = judge_fingerprints("rating", args.judge, quant=args.quant, tp=args.tp,
+                                      dtype=args.dtype, max_tokens=args.max_tokens,
+                                      max_model_len=args.max_model_len)
 
 
     plans = [plan_file(p, out_dir, args.suppressed_only, args.limit, args.surfaces, shard,
-                       args.stage, args.probe_types, fingerprint) for p in paths]
+                       args.stage, args.probe_types, fingerprints) for p in paths]
     outstanding = sum(len(pl["todo"]) for pl in plans)
     for pl in plans:
         write_csv(pl)
@@ -264,20 +269,21 @@ def main() -> int:
     print(f"loading judge {args.judge}{' (' + args.quant + ')' if args.quant else ''}"
           f"{f' tp={args.tp}' if args.tp else ''} "
           f"for {len(paths)} file(s), surfaces={args.surfaces}, stage={args.stage}, "
-          f"config {fingerprint}")
+          f"config concept {fingerprints['concept']} / framing {fingerprints['framing']}")
     llm = make_llm(str(model_dir), **kwargs)
     sp, resolved = judge_sampling(llm, args.judge, budget)
     print("  judge decode (the model's own): " + ", ".join(f"{k}={v}" for k, v in resolved.items())
           + ("   [max_tokens=None = the rest of the window]" if budget is None else ""), flush=True)
-    meta = {"judge_config_hash": fingerprint, "judge_sampling": resolved,
+    meta = {"judge_config_hash": fingerprints["concept"], "judge_sampling": resolved,
             "judge_think_default": think, "git_commit": git_commit()}
+    framing_meta = {"framing_config_hash": fingerprints["framing"]}
 
     total = 0
     for pl in plans:
         if not pl["todo"]:
             continue
         n, out = run_plan(llm, sp, pl, args.judge, args.stage, JUDGE_CHAT_KWARGS, args.chunk,
-                          meta)
+                          meta, framing_meta)
         total += n
         print(f"  {pl['stem']}: {n} judgments -> {out}")
     print(f"done — {total} judgments across {len(paths)} file(s)")

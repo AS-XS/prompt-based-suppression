@@ -35,17 +35,21 @@ def judge_sampling(llm, judge_name: str, max_tokens: int | None):
     return sp, resolved_of(sp)
 
 
-def judge_fingerprint(kind: str, judge: str, *, quant=None, tp=None, dtype=None,
-                      max_tokens=None, max_model_len=None) -> str:
+STAGES = {"rating": ("concept", "framing"), "primitive": ("primitive",)}
 
 
-    from src.judge.prompts import prompt_payload
+def judge_fingerprints(kind: str, judge: str, *, quant=None, tp=None, dtype=None,
+                       max_tokens=None, max_model_len=None) -> dict[str, str]:
 
-    cfg = {"kind": kind, "judge": judge, "quant": quant, "tp": tp, "dtype": dtype,
-           "decode": "model-default", "chat_template_kwargs": JUDGE_CHAT_KWARGS,
-           "max_tokens": max_tokens, "max_model_len": max_model_len,
-           "prompts": config_hash({"payload": prompt_payload(kind)})}
-    return config_hash(cfg)
+
+    from src.judge.prompts import stage_payload
+
+    base = {"kind": kind, "judge": judge, "quant": quant, "tp": tp, "dtype": dtype,
+            "decode": "model-default", "chat_template_kwargs": JUDGE_CHAT_KWARGS,
+            "max_tokens": max_tokens, "max_model_len": max_model_len}
+    return {stage: config_hash({**base, "stage": stage,
+                                "prompt": config_hash({"payload": stage_payload(stage)})})
+            for stage in STAGES[kind]}
 
 
 def refuse_mixed_config(prior: list[dict], fingerprint: str, where) -> None:

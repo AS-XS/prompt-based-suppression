@@ -209,6 +209,24 @@ def test_the_report_refuses_judgments_from_two_configurations(run_dir):
     assert out.returncode != 0 and "configurations are mixed" in out.stderr
 
 
+def test_the_report_refuses_a_half_finished_re_frame(run_dir):
+
+
+    _draw(run_dir)
+    man = json.loads((run_dir / "results/r1/judge_samples/traces-forget-s7.manifest.json")
+                     .read_text())
+    g1, g2 = sorted(man["rows"])[:2]
+    old = dict(_judgment(g1, "trace", 2, 2), framing_config_hash="old-rubric")
+    new = dict(_judgment(g2, "trace", 2, 0), framing_config_hash="new-rubric")
+    jdir = run_dir / "results" / "r1" / "judgments"
+    jdir.mkdir(parents=True)
+    (jdir / "traces-forget-s7.jsonl").write_text(json.dumps(old) + "\n" + json.dumps(new) + "\n",
+                                                 encoding="utf-8")
+    out = _run(run_dir, ROOT / "scripts" / "judge_sample_report.py", "--run", "r1",
+               "--sample", "traces-forget-s7")
+    assert out.returncode != 0 and "framing rubrics are mixed" in out.stderr
+
+
 def test_wilson_and_kappa_at_their_edges():
     from src.analysis.judge_sample import kappa, wilson
     lo, hi = wilson(0, 20)

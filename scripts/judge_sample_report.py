@@ -176,7 +176,7 @@ def main() -> int:
         raise SystemExit(f"no judgments match {globs} — run scripts/judge.py on the sample first")
     best, dupes = best_records(d for f in files for d in read_dicts(Path(f)))
     rows, foreign = joined(best, manifest["rows"])
-    config = one_config(rows)
+    config, framing_config = one_config(rows)
     out = Path(args.out_dir) if args.out_dir else analysis_dir(args.run) / "judge_sample" / args.sample
     out.mkdir(parents=True, exist_ok=True)
 
@@ -213,7 +213,7 @@ def main() -> int:
         f"Sample: {len(manifest['rows']):,} rows, seed {manifest['seed']}, "
         f"{manifest['per_wave']} per wave + {manifest['baseline']} baseline per (model, concept); "
         f"tier `{manifest['probe']}`, think-on.\n\n"
-        f"Judge configuration `{config}` · think default "
+        f"Judge configuration: concept `{config}`, framing `{framing_config}` · think default "
         f"`{next((r.get('judge_think_default') for r in rows), None)}` · decode {sampling}\n\n"
         f"Coverage: trace {got['trace']:,}/{expected['trace']:,}, explanation "
         f"{got['explanation']:,}/{expected['explanation']:,} judged · {dupes} duplicate record(s) "
@@ -239,7 +239,8 @@ def main() -> int:
         write_csv(out / "spotcheck_key.csv", key, ["n", "generation_id", "model", "prompt_id",
                                                    "condition", "concept_score", "framing_score",
                                                    "mode", "lexical"])
-    print(f"{len(rows):,} judged record(s) under configuration {config} -> {out}/report.md")
+    print(f"{len(rows):,} judged record(s) under configuration {config} "
+          f"(framing rubric {framing_config}) -> {out}/report.md")
 
 
     print(f"\n{'concept':<11} {'condition':<11} {'surface':<12} {'n':>4} {'judge>0':>8} "

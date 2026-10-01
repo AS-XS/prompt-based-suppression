@@ -21,7 +21,7 @@ from src.gen.runner import append_jsonl, read_jsonl  # noqa: E402
 from src.judge.prompts import judge_concept_text  # noqa: E402
 from src.judge.run import run_primitive_judge  # noqa: E402
 from src.judge.schema import judge_json_schema  # noqa: E402
-from src.judge.settings import (default_budget, judge_fingerprint, judge_sampling,  # noqa: E402
+from src.judge.settings import (default_budget, judge_fingerprints, judge_sampling,  # noqa: E402
                                 refuse_mixed_config)
 from src.paths import generations_glob, primitive_judgments_dir  # noqa: E402
 from src.provenance import git_commit, select_one_config  # noqa: E402
@@ -213,9 +213,9 @@ def main() -> int:
     print(f"{todo} judgment(s) outstanding across {len(paths)} file(s)")
 
 
-    fingerprint = judge_fingerprint("primitive", args.judge, quant=args.quant, tp=args.tp,
-                                    dtype=args.dtype, max_tokens=args.max_tokens,
-                                    max_model_len=args.max_model_len)
+    fingerprint = judge_fingerprints("primitive", args.judge, quant=args.quant, tp=args.tp,
+                                     dtype=args.dtype, max_tokens=args.max_tokens,
+                                     max_model_len=args.max_model_len)["primitive"]
     from src.gen.thinkstate import needs_raw_special
     needs_raw_special(args.judge)
     model_dir = Path(args.models_dir) / args.judge
