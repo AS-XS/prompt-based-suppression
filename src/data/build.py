@@ -90,6 +90,8 @@ def main() -> int:
                     help='Near limit.')
     ap.add_argument("--wmdp-limit", type=int, default=None, metavar="N",
                     help='Wmdp limit.')
+    ap.add_argument("--rwku", action="store_true",
+                    help='Rwku.')
     ap.add_argument("--open-ended", action="store_true",
                     help='Open ended.')
     args = ap.parse_args()
@@ -97,7 +99,13 @@ def main() -> int:
     if not args.out and not args.run:
         raise SystemExit("pass --run exp1|round1 (or an explicit --out): the studies must not share "
                          "an item set")
-    if args.wmdp:
+    if args.wmdp and args.rwku:
+        raise SystemExit("--wmdp and --rwku each build a whole item set; pass one")
+    if args.rwku:
+        items, dropped = dedupe(load_rwku(n=args.entities))
+        if dropped:
+            print(f"deduped {dropped} repeated item_id(s)")
+    elif args.wmdp:
         items = build_wmdp_items(args.wmdp, near_limit=args.near_limit,
                                  forget_limit=args.wmdp_limit)
     else:

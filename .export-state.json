@@ -97,7 +97,7 @@
     "src/analysis/surface_gap.py": "b2d533825ce36587299e3e87e8eedcb6c5a69fb4a31327716a7374e1401d6367",
     "src/analysis/surfaces.py": "671a515cdc2ca3e27d5141e1a66b2dfd57aabb54888d24c3690e1432becbaa8c",
     "src/data/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "src/data/build.py": "5274bf3bbef7c15ff329cfe6f0988be6a7835b52a5034b31b3087f9390fb8a34",
+    "src/data/build.py": "d52e293efb9c11b7eef98c6c7a92aecd363aac9b2f452ed4e2ce280e0fda7ffa",
     "src/data/demo.py": "f86b76ca4a641a1ba83a212f6f4e3d58789f7848aea55a157de27a63143d6d46",
     "src/data/mmlu.py": "ca2265bb3e36ef2738c6a0a3c22a9426cd84d0a978a06274b33d0343eba18567",
     "src/data/open_quality.py": "9474877d25ed02b949086ee287584ec6a17f224ad1d78a786e5d1bad73eedc83",
@@ -128,7 +128,7 @@
     "src/opt/metrics.py": "3633b0702e8804bdb0f8334514b9bb7e32426d66f677e0841292b5b92347fbf0",
     "src/opt/program.py": "d61b7052b535dbd5d1ecee4be3ccafaf940d9f5aa875170896eb7cea38d90e45",
     "src/opt/serving.py": "f90168ea5482f73f998b7efdd65f8c7170be5d2984f6cc50ffe4c537f7a4fe98",
-    "src/paths.py": "a57d945dcc00d229500cbffc494bc17950a9b42f528e4d541632259d7254a1b2",
+    "src/paths.py": "b9ecb8b244fb333de15d6ca44858c443702f23cb33d3376c354804b49eb865a7",
     "src/prompts/__init__.py": "1e9500ba74487a6bf07378791ea08f32b75fbf5b82bdbea7840194cafbd0931f",
     "src/prompts/directed.py": "b3de1ccdbc5c85e1e9dc5386097bf29f6c5be827fc028aa3a59444ddef5107f8",
     "src/prompts/examples.py": "5527018951c9d4f064797d3bbfe5f21af1aa3e3d83661ad5ccd3ea1c54d5ed9c",
@@ -196,5 +196,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "43b3e35ad5d3a900f563ebebbcd95bbf06e0a5d7"
+  "source_revision": "8ae5c993c65fc034f1f8a0960a15f2cdb9a3b3c0"
 }
