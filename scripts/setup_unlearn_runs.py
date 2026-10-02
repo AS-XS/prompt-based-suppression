@@ -9,7 +9,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.paths import generations_dir, items_path, split_path  # noqa: E402
 
-BASES = {"rmu2": "gemma-4-E2B-it", "rmu3": "Meta-Llama-3-8B-Instruct",
+BASES = {"r2mu-e2b": "gemma-4-E2B-it", "r2mu-g31": "gemma-4-31B-it",
+         "rmu2": "gemma-4-E2B-it", "rmu3": "Meta-Llama-3-8B-Instruct",
          "rmu4": "gemma-4-31B-it", "elm1": "Meta-Llama-3-8B-Instruct",
          "elm2": "gemma-4-E2B-it", "elm3": "gemma-4-31B-it"}
 

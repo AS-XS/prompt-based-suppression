@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 RUNS = ("exp1", "exp2", "exp3", "wmdp1", "wmdp2", "wmdp3", "wmdp4", "wmdp5", "wmdp5.1",
-        "wmdp6", "wmdp7", "wmdp8", "rwku8", "rmu1", "rmu2", "rmu3", "rmu4", "elm1", "elm2", "elm3", "round1",
+        "wmdp6", "wmdp7", "wmdp8", "rwku8", "rmu1", "rmu2", "rmu3", "rmu4", "elm1", "elm2", "elm3", "r2mu-e2b", "r2mu-g31", "round1",
         "dspy-exp2", "dspy-wmdp1", "dspy-wmdp4")  
 
 DATA_ROOT = Path("data/processed")
@@ -93,3 +93,7 @@ def generations_glob(run: str) -> str:
 
 def primitive_judgments_glob(run: str) -> str:
     return str(primitive_judgments_dir(run) / "*.jsonl")
+
+
+def r2mu_training_dir(name: str) -> Path:
+    return RESULTS_ROOT / "r2mu-training" / name

@@ -23,7 +23,8 @@ def lock_work(work: Path):
 
 
 class Recovery:
-    def __init__(self, work, identity, *, resume, every=100, seconds=37800, started=None):
+    def __init__(self, work, identity, *, resume, every=100, seconds=37800, started=None, label="ELM"):
+        self.label = label
         self.path = Path(work) / 'resume.pt'
         self.identity = identity
         self.resume = resume
@@ -63,7 +64,7 @@ class Recovery:
                 raise RuntimeError('ELM recovery CUDA device count differs')
             torch.cuda.set_rng_state_all(state['cuda_rng'])
         self.last = state['next_idx']
-        print(f'ELM resumed at {self.last} samples from {self.path}', flush=True)
+        print(f'{self.label} resumed at {self.last} samples from {self.path}', flush=True)
         return self.last, state['iter_cnt'], state['dataset_cntr'], state['losses']
 
     def boundary(self, model, optimizer, next_idx, iter_cnt, dataset_cntr, losses,
@@ -92,6 +93,6 @@ class Recovery:
             os.fsync(handle.fileno())
         os.replace(temporary, self.path)
         self.last = next_idx
-        print(f'ELM recovery saved: {next_idx}/{total} samples -> {self.path}', flush=True)
+        print(f'{self.label} recovery saved: {next_idx}/{total} samples -> {self.path}', flush=True)
         if expired:
-            raise TrainingPaused(f'ELM paused at {next_idx}/{total}; resubmit with RESUME=1')
+            raise TrainingPaused(f'{self.label} paused at {next_idx}/{total}; resubmit with RESUME=1')
