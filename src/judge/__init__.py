@@ -3,9 +3,9 @@ from __future__ import annotations
 import importlib
 
 _EXPORTS = {
-    "prompts": ("concept_messages", "framing_messages", "primitive_messages"),
-    "run": ("concept_scores", "extract_rating", "framing_scores", "parse_primitives",
-            "run_primitive_judge", "verdict_text"),
+    "prompts": ("concept_messages", "framing_messages", "mention_messages", "primitive_messages"),
+    "run": ("concept_scores", "extract_rating", "framing_scores", "mention_scores",
+            "parse_primitives", "run_primitive_judge", "verdict_text"),
     "schema": ("JudgeOutput", "JudgmentRow", "judge_json_schema"),
 }
 _NAME_TO_MODULE = {name: mod for mod, names in _EXPORTS.items() for name in names}

@@ -1,19 +1,86 @@
 from __future__ import annotations
 
-from src.analysis.ratings import MODES, mode_of, rating_table
+import pytest
+
+from src.analysis.ratings import MODES, best_records, mode_of, rating_table
 
 
-def _r(concept, framing=None, cls="general", prompt="no-meta"):
-    return {"concept_class": cls, "prompt_id": prompt,
-            "concept_score": concept, "framing_score": framing}
+def _r(concept, framing=None, mention=None, cls="general", prompt="no-meta", **kw):
+    return {"concept_class": cls, "prompt_id": prompt, "concept_score": concept,
+            "framing_score": framing, "mention_score": mention, **kw}
 
 
 def test_concept_zero_is_no_leak_and_nonzero_is_leak():
 
-    assert mode_of(_r(0)) == "success"
+    assert mode_of(_r(0, mention=0)) == "success"
     assert mode_of(_r(1, 0)) == "leaked"        
     assert mode_of(_r(2, 1)) == "leaked"        
-    assert mode_of(_r(2, 2)) == "meta_framed"   
+    assert mode_of(_r(1, 2, 2)) == "meta_framed"   
+
+
+@pytest.mark.parametrize("concept,framing,mention,want", [
+    (2, 0, 2, "leaked"),          
+    (2, 0, 0, "leaked"),          
+    (0, None, 2, "meta_framed"),  
+    (0, None, 1, "meta_framed"),  
+    (0, None, 0, "success"),      
+    (1, 2, 1, "meta_framed"),     
+])
+def test_the_mode_is_derived_from_the_independent_axes_in_d4_order(concept, framing, mention,
+                                                                   want):
+    assert mode_of(_r(concept, framing, mention)) == want
+
+
+def test_fully_incorporated_and_only_named_is_refused_not_projected():
+
+
+    assert mode_of(_r(2, 2, 2)) is None
+    (row,) = rating_table([_r(2, 2, 2), _r(2, 0, 2), _r(0, None, 0)])
+    assert row["n_contradiction"] == 1
+    assert row["leak_rate"] == round(2 / 3, 4)                 
+    assert row["used_share"] == 1.0 and row["named_only_share"] == 0.0   
+    assert row["framing_coverage"] == 1.0                      
+    assert (row["leaked"], row["meta_framed"], row["success"]) == (1, 0, 1)
+
+
+def test_only_named_yet_never_named_is_refused_too():
+
+
+    assert mode_of(_r(1, 2, 0)) is None
+    (row,) = rating_table([_r(1, 2, 0), _r(2, 2, 2), _r(1, 2, 2)])
+    assert row["n_contradiction"] == 2
+    assert (row["contra_concept_framing"], row["contra_framing_mention"]) == (1, 1)
+
+    assert row["named_only_share"] == 1.0 and row["framed_n"] == 3
+    assert row["meta_framed"] == 1
+
+
+def test_a_row_judged_before_the_mention_stage_falls_back_to_framing_for_mentioned():
+
+
+    assert mode_of(_r(1, 2)) == "meta_framed"
+    assert mode_of(_r(0)) == "success"
+    (row,) = rating_table([_r(1, 0), _r(1, 2)])
+    assert row["mention_n"] == 0 and row["mention_coverage"] == 0.0
+    assert row["direct_leak"] is None and row["inadvertent_leak"] is None
+
+
+def test_incoherent_comes_after_a_leak_and_before_a_mention():
+
+
+    assert mode_of(_r(2, 0, 2, incoherent=True)) == "leaked"
+    assert mode_of(_r(0, None, 2, incoherent=True)) == "incoherent"
+    assert mode_of(_r(0, None, 2, incoherent=False)) == "meta_framed"
+
+
+def test_the_mention_axis_gives_rq3_its_conditional():
+
+    rows = [_r(2, 0, 2), _r(2, 0, 2), _r(0, None, 2), _r(1, 0, 0), _r(0, None, 0)]
+    (row,) = rating_table(rows)
+    assert row["mention_rate"] == 0.6 and row["exact_mention"] == 0.6
+    assert row["p_used_given_mentioned"] == round(2 / 3, 4)
+    assert row["direct_leak"] == 0.4 and row["inadvertent_leak"] == 0.2
+    assert (row["leaked"], row["meta_framed"], row["success"]) == (3, 1, 1)
 
 
 def test_a_leak_with_no_framing_score_still_counts_as_a_leak():
@@ -30,16 +97,16 @@ def test_unparsed_rows_are_none_not_success():
 
 
 def test_rating_table_grades_the_leak():
-    rows = [_r(0), _r(0), _r(1, 0), _r(2, 1), _r(2, 2)]
+    rows = [_r(0, mention=0), _r(0, mention=0), _r(1, 0, 0), _r(2, 1, 1), _r(1, 2, 2)]
     (row,) = rating_table(rows)
     assert row["n"] == 5
     assert row["leak_rate"] == 0.6                    
-    assert row["strong_leak"] == 0.4                  
-    assert row["mean_concept"] == 1.0                 
+    assert row["strong_leak"] == 0.2                  
+    assert row["mean_concept"] == 0.8                 
 
-    assert row["reasoned_leak"] == round(1 / 3, 4)
-    assert row["framed_leak"] == round(1 / 3, 4)
-    assert row["meta_leak"] == round(1 / 3, 4)
+    assert row["used_share"] == round(2 / 3, 4)
+    assert row["named_only_share"] == round(1 / 3, 4)
+    assert row["framing1_n"] == 1                     
     assert (row["success"], row["leaked"], row["meta_framed"]) == (2, 2, 1)
 
 
@@ -141,15 +208,15 @@ def test_the_two_stages_resume_independently():
 def test_the_most_complete_record_wins_when_a_key_repeats():
 
 
-    best = {}
-    for d in [{"generation_id": "g", "surface": "explanation", "concept_score": 2,
-               "framing_score": None},
-              {"generation_id": "g", "surface": "explanation", "concept_score": 2,
-               "framing_score": 1}]:
-        k = (d["generation_id"], d["surface"])
-        if k not in best or d.get("framing_score") is not None:
-            best[k] = d
-    assert best[("g", "explanation")]["framing_score"] == 1
+    g = {"generation_id": "g", "surface": "explanation"}
+    stage1 = {**g, "concept_score": 2, "framing_score": None}
+    old = {**g, "concept_score": 2, "framing_score": 2, "framing_config_hash": "old"}
+    new = {**g, "concept_score": 2, "framing_score": 0, "framing_config_hash": "new"}
+    full = {**new, "mention_score": 1}
+    best, dupes = best_records([stage1, old, new])
+    assert best[("g", "explanation")]["framing_config_hash"] == "new" and dupes == 2
+    best, _ = best_records([stage1, full, old])
+    assert best[("g", "explanation")]["mention_score"] == 1
 
 
 def test_concept_only_rows_give_a_final_leak_rate_but_a_PROVISIONAL_mode_split():
@@ -160,14 +227,15 @@ def test_concept_only_rows_give_a_final_leak_rate_but_a_PROVISIONAL_mode_split()
     assert row["leak_rate"] == 0.6                 
     assert row["framing_coverage"] == 0.0          
     assert row["framed_n"] == 0
-    assert row["meta_leak"] is None                
+    assert row["named_only_share"] is None         
+    assert row["mention_rate"] is None and row["mention_coverage"] == 0.0
     assert (row["leaked"], row["meta_framed"]) == (3, 0)   
 
 
-    stage2 = [_r(0), _r(0), _r(2, 2), _r(2, 0), _r(1, 1)]
-    (row2,) = rating_table(stage2)
+    stage3 = [_r(0, mention=0), _r(0, mention=0), _r(1, 2, 2), _r(2, 0, 0), _r(1, 0, 1)]
+    (row2,) = rating_table(stage3)
     assert row2["leak_rate"] == 0.6                
-    assert row2["framing_coverage"] == 1.0
+    assert row2["framing_coverage"] == 1.0 and row2["mention_coverage"] == 1.0
     assert (row2["leaked"], row2["meta_framed"]) == (2, 1)   
 
 

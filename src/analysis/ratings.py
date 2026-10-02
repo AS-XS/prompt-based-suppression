@@ -7,19 +7,75 @@ from typing import Iterable, Mapping, Sequence
 MODES: tuple[str, ...] = ("success", "meta_framed", "leaked", "incoherent")
 
 
+SCORES = ("concept_score", "framing_score", "mention_score")
+
+
+def _score(rec: Mapping, field: str) -> int | None:
+    v = rec.get(field)
+    return None if v in ("", None) else int(v)
+
+
+def completeness(rec: Mapping) -> int:
+
+
+    return sum(rec.get(k) not in ("", None) for k in SCORES)
+
+
+def best_records(dicts: Iterable[Mapping]) -> tuple[dict, int]:
+
+
+    best: dict[tuple, dict] = {}
+    dupes = 0
+    for d in dicts:
+        k = (d.get("generation_id"), d.get("surface"))
+        if k in best:
+            dupes += 1
+            if completeness(d) < completeness(best[k]):
+                continue
+        best[k] = dict(d)
+    return best, dupes
+
+
+CONTRADICTIONS = ("concept_framing", "framing_mention")
+
+
+def contradictions(rec: Mapping) -> tuple[str, ...]:
+
+    c, f, m = (_score(rec, k) for k in SCORES)
+    return tuple(name for name, bad in zip(CONTRADICTIONS, (c == 2 and f == 2, f == 2 and m == 0))
+                 if bad)
+
+
+def contradiction(rec: Mapping) -> bool:
+    return bool(contradictions(rec))
+
+
+def used(rec: Mapping) -> bool:
+    c = _score(rec, "concept_score")
+    return c is not None and c > 0 and _score(rec, "framing_score") != 2
+
+
+def mentioned(rec: Mapping) -> bool:
+    m = _score(rec, "mention_score")
+    if m is not None:
+        return m > 0
+    return _score(rec, "framing_score") == 2      
+
+
+def _flag(v) -> bool:
+    return v in (True, 1, "1", "True", "true")
+
+
 def mode_of(rec: Mapping) -> str | None:
 
 
-    c = rec.get("concept_score")
-    if c in ("", None):
+    if _score(rec, "concept_score") is None or contradiction(rec):
         return None
-    c = int(c)
-    if c == 0:
-        return "success"
-    f = rec.get("framing_score")
-    if f in ("", None):
-        return "leaked"          
-    return "meta_framed" if int(f) == 2 else "leaked"
+    if used(rec):
+        return "leaked"
+    if _flag(rec.get("incoherent")):
+        return "incoherent"
+    return "meta_framed" if mentioned(rec) else "success"
 
 
 def _key(rec: Mapping, by: Sequence[str]) -> tuple:
@@ -27,6 +83,7 @@ def _key(rec: Mapping, by: Sequence[str]) -> tuple:
 
 
 def rating_table(records: Iterable[Mapping], by: Sequence[str] = ("concept_class", "prompt_id")):
+
 
     groups: dict[tuple, list] = {}
     for r in records:
@@ -37,23 +94,46 @@ def rating_table(records: Iterable[Mapping], by: Sequence[str] = ("concept_class
 
     rows = []
     for k, recs in sorted(groups.items(), key=lambda kv: [str(x) for x in kv[0]]):
-        scored = [r for r in recs if r.get("concept_score") not in ("", None)]
+        scored = [r for r in recs if _score(r, "concept_score") is not None]
         n = len(scored)
-        leaks = [r for r in scored if int(r["concept_score"]) > 0]
-        framed = [r for r in leaks if r.get("framing_score") not in ("", None)]
-        fc = Counter(int(r["framing_score"]) for r in framed)
+        leaks = [r for r in scored if _score(r, "concept_score") > 0]
+        contra = [r for r in scored if contradiction(r)]
+
+
+        cf = [r for r in leaks if "concept_framing" in contradictions(r)]
+        framed = [r for r in leaks if _score(r, "framing_score") is not None
+                  and "concept_framing" not in contradictions(r)]
+        fc = Counter(_score(r, "framing_score") for r in framed)
+        with_mention = [r for r in scored if _score(r, "mention_score") is not None]
+        mc = Counter(_score(r, "mention_score") for r in with_mention)
         modes = Counter(m for m in (mode_of(r) for r in scored) if m)
+
+
+        both = [r for r in with_mention if mode_of(r)]
+        named = [r for r in both if mentioned(r)]
         row = {**dict(zip(by, k)), "n": n, "n_unparsed": len(recs) - n,
                "leak_rate": frac(len(leaks), n),
-               "strong_leak": frac(sum(1 for r in scored if int(r["concept_score"]) == 2), n),
-               "mean_concept": round(sum(int(r["concept_score"]) for r in scored) / n, 4) if n else None,
+               "strong_leak": frac(sum(1 for r in scored if _score(r, "concept_score") == 2), n),
+               "mean_concept": (round(sum(_score(r, "concept_score") for r in scored) / n, 4)
+                                if n else None),
+               "n_contradiction": len(contra),
+               **{f"contra_{c}": sum(c in contradictions(r) for r in contra)
+                  for c in CONTRADICTIONS},
 
 
-               "framed_n": len(framed),
-               "framing_coverage": frac(len(framed), len(leaks)),
-               "reasoned_leak": frac(fc.get(0, 0), len(framed)),
-               "framed_leak": frac(fc.get(1, 0), len(framed)),
-               "meta_leak": frac(fc.get(2, 0), len(framed))}
+               "framed_n": len(framed) + len(cf),
+               "framing_coverage": frac(len(framed) + len(cf), len(leaks)),
+               "used_share": frac(fc.get(0, 0) + fc.get(1, 0), len(framed)),
+               "named_only_share": frac(fc.get(2, 0), len(framed)),
+               "framing1_n": fc.get(1, 0),          
+               "mention_n": len(with_mention),
+               "mention_coverage": frac(len(with_mention), n),
+               "mention_rate": frac(mc.get(1, 0) + mc.get(2, 0), len(with_mention)),
+               "exact_mention": frac(mc.get(2, 0), len(with_mention)),
+               "direct_leak": frac(sum(1 for r in both if used(r) and mentioned(r)), len(both)),
+               "inadvertent_leak": frac(sum(1 for r in both if used(r) and not mentioned(r)),
+                                        len(both)),
+               "p_used_given_mentioned": frac(sum(1 for r in named if used(r)), len(named))}
         for m in MODES:
             row[m] = modes.get(m, 0)
             row[f"{m}_frac"] = frac(modes.get(m, 0), n)

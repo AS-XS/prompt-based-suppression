@@ -34,6 +34,7 @@ def main() -> int:
                          f"  run the 0-2 judge first: bash scripts/judge_all.sh")
 
 
+    from src.analysis.ratings import completeness
     best: dict[tuple, dict] = {}
     dupes = 0
     for p in paths:
@@ -41,7 +42,7 @@ def main() -> int:
             key = (r.get("generation_id"), r.get("surface"))
             if key in best:
                 dupes += 1
-                if r.get("framing_score") is None:
+                if completeness(r) < completeness(best[key]):
                     continue
             best[key] = r
     records = list(best.values())
@@ -52,8 +53,11 @@ def main() -> int:
 
     rows = rating_table(records, by=args.by)
     cols = (list(args.by) + ["n", "n_unparsed", "leak_rate", "strong_leak", "mean_concept",
-                             "framed_n", "framing_coverage",
-                             "reasoned_leak", "framed_leak", "meta_leak"]
+                             "n_contradiction", "contra_concept_framing", "contra_framing_mention",
+                             "framed_n", "framing_coverage", "used_share",
+                             "named_only_share", "framing1_n", "mention_n", "mention_coverage",
+                             "mention_rate", "exact_mention", "direct_leak", "inadvertent_leak",
+                             "p_used_given_mentioned"]
             + [c for m in MODES for c in (m, f"{m}_frac")])
 
     out = Path(args.out_dir) if args.out_dir else analysis_dir(args.run)
@@ -79,10 +83,20 @@ def main() -> int:
         print(f"  ⚠️  FRAMING INCOMPLETE — {framed}/{leaks} leaked rows have a framing score "
               f"({pct:.0f}%).")
         print(f"      leak_rate / strong_leak / mean_concept are FINAL and safe to read.")
-        print(f"      reasoned|framed|meta_leak and the mode split (leaked vs meta_framed) are "
+        print(f"      used|named_only_share and the mode split (leaked vs meta_framed) are "
               f"PROVISIONAL:")
         print(f"      an unframed leak counts as `leaked`, so `meta_framed` will grow as stage 2 runs.")
         print(f"      finish it with:  python scripts/judge.py ... --stage framing")
+    scored = sum(r["n"] for r in rows)
+    mentions = sum(r["mention_n"] for r in rows)
+    if scored and mentions < scored:
+        print(f"  ⚠️  MENTION INCOMPLETE — {mentions}/{scored} rows have a mention score. "
+              f"meta_framed vs success, direct vs inadvertent and p_used_given_mentioned are "
+              f"PROVISIONAL until it is 100%:  python scripts/judge.py ... --stage mention")
+    contra = sum(r["n_contradiction"] for r in rows)
+    if contra:
+        print(f"  ⚠️  {contra} row(s) where two stages contradict each other (concept 2 & framing 2, "
+              f"or framing 2 & mention 0) — refused: no mode (n_contradiction, contra_*).")
     return 0
 
 

@@ -115,12 +115,13 @@ def main() -> int:
     print(f"\n{'-'*78}\n  TABLE A' — recall (isolated / RWKU arm)\n{'-'*78}")
     print(_fmt(recall))
 
-    print(f"\n{'-'*78}\n  TABLE C — leakage + modes: PRIMARY judge (0-2 concept + framing)\n{'-'*78}")
+    print(f"\n{'-'*78}\n  TABLE C — leakage + modes: PRIMARY judge (0-2 concept, framing, mention)\n{'-'*78}")
     print(_fmt(rating))
     if rating:
         print("  leak_rate = P(concept_score > 0). strong_leak = P(concept_score == 2).\n"
-              "  reasoned|framed|meta_leak are conditioned on the LEAKED rows, and are PROVISIONAL\n"
-              "  until framing_coverage reaches 1.0 (an unframed leak counts as `leaked`).\n")
+              "  used|named_only_share are over the FRAMED leaks, and the modes are PROVISIONAL\n"
+              "  until framing_coverage and mention_coverage reach 1.0 (an unframed leak counts\n"
+              "  as used). n_contradiction = concept 2 & framing 2, refused: no mode (D31).\n")
     print(f"\n{'-'*78}\n  cross-check: binary-primitive judge\n{'-'*78}")
     print(_fmt(modes))
     print(_fmt(cond))

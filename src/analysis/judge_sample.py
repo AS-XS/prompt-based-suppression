@@ -4,26 +4,12 @@ import math
 from collections import Counter, defaultdict
 from typing import Iterable, Mapping, Sequence
 
-from src.analysis.ratings import mode_of, rating_table
+from src.analysis.ratings import best_records, mode_of, rating_table  # noqa: F401  (re-export)
 
 SURFACES = ("trace", "explanation")
 
 
-def best_records(dicts: Iterable[Mapping]) -> tuple[dict, int]:
-
-
-    best, dupes = {}, 0
-    for d in dicts:
-        k = (d.get("generation_id"), d.get("surface"))
-        if k in best:
-            dupes += 1
-            if d.get("framing_score") is None:
-                continue
-        best[k] = dict(d)
-    return best, dupes
-
-
-def one_config(records: Iterable[Mapping]) -> tuple[str | None, str | None]:
+def one_config(records: Iterable[Mapping]) -> tuple[str | None, str | None, str | None]:
 
 
     records = list(records)
@@ -31,13 +17,16 @@ def one_config(records: Iterable[Mapping]) -> tuple[str | None, str | None]:
     if len(seen) > 1:
         raise SystemExit(f"judgments from {len(seen)} judge configurations are mixed here "
                          f"({dict(seen)}); report each configuration separately.")
-    framed = Counter(r.get("framing_config_hash") or "unrecorded" for r in records
-                     if r.get("framing_score") is not None)
-    if len(framed) > 1:
-        raise SystemExit(f"framing scores from {len(framed)} framing rubrics are mixed here "
-                         f"({dict(framed)}); finish the re-frame (judge.py --stage framing) "
-                         f"before reading the framing split.")
-    return next(iter(seen), None), next(iter(framed), None)
+    later = []
+    for stage in ("framing", "mention"):
+        hashes = Counter(r.get(f"{stage}_config_hash") or "unrecorded" for r in records
+                         if r.get(f"{stage}_score") is not None)
+        if len(hashes) > 1:
+            raise SystemExit(f"{stage} scores from {len(hashes)} {stage} rubrics are mixed here "
+                             f"({dict(hashes)}); finish the re-run (judge.py --stage {stage}) "
+                             f"before reading it.")
+        later.append(next(iter(hashes), None))
+    return next(iter(seen), None), later[0], later[1]
 
 
 def lexical_flag(meta: Mapping, surface: str) -> bool | None:
@@ -46,7 +35,8 @@ def lexical_flag(meta: Mapping, surface: str) -> bool | None:
     return novel if novel is not None else meta.get(f"lex_{surface}")
 
 
-def joined(best: Mapping[tuple, Mapping], manifest_rows: Mapping[str, Mapping]) -> tuple[list, int]:
+def joined(best: Mapping[tuple, Mapping], manifest_rows: Mapping[str, Mapping],
+           incoherent: frozenset | set = frozenset()) -> tuple[list, int]:
 
 
     out, foreign = [], 0
@@ -55,9 +45,18 @@ def joined(best: Mapping[tuple, Mapping], manifest_rows: Mapping[str, Mapping]) 
         if meta is None:
             foreign += 1
             continue
-        out.append({**rec, **{k: v for k, v in meta.items() if k not in rec},
-                    "lexical": lexical_flag(meta, surface), "mode": mode_of(rec)})
+        rec = {**rec, **{k: v for k, v in meta.items() if k not in rec},
+               "lexical": lexical_flag(meta, surface),
+               "incoherent": surface == "trace" and gid in incoherent}
+        rec["mode"] = mode_of(rec)
+        out.append(rec)
     return out, foreign
+
+
+def is_incoherent(row: Mapping, loop_score, loop_at: float) -> bool:
+
+
+    return row.get("finish_reason") == "length" and loop_score(row.get("raw_output") or "") > loop_at
 
 
 def wilson(k: int, n: int, z: float = 1.96) -> tuple[float | None, float | None]:

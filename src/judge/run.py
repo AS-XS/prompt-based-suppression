@@ -56,6 +56,17 @@ def framing_scores(llm, sampling, pairs, chat_kw: dict | None = None) -> list[di
     return [_scored("framing", o) for o in outs]
 
 
+def mention_scores(llm, sampling, pairs, chat_kw: dict | None = None) -> list[dict]:
+
+
+    from src.judge.prompts import mention_messages
+
+    if not pairs:
+        return []
+    outs = llm.chat([mention_messages(c, s) for c, s in pairs], sampling, **(chat_kw or {}))
+    return [_scored("mention", o) for o in outs]
+
+
 def parse_primitives(raw_json: str) -> dict | None:
 
 

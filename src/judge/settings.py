@@ -35,7 +35,7 @@ def judge_sampling(llm, judge_name: str, max_tokens: int | None):
     return sp, resolved_of(sp)
 
 
-STAGES = {"rating": ("concept", "framing"), "primitive": ("primitive",)}
+STAGES = {"rating": ("concept", "framing", "mention"), "primitive": ("primitive",)}
 
 
 def judge_fingerprints(kind: str, judge: str, *, quant=None, tp=None, dtype=None,

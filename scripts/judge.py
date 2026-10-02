@@ -10,16 +10,19 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.io import read_dicts  # noqa: E402
+from src.analysis.ratings import best_records  # noqa: E402
 from src.analysis.surfaces import answer_of, explanation_of, trace_of  # noqa: E402
 from src.data.schema import GenerationRow  # noqa: E402
 from src.gen.env import make_llm, setup_vllm_env  # noqa: E402
 from src.gen.runner import append_jsonl, read_jsonl  # noqa: E402
-from src.judge.prompts import concept_messages, framing_messages, judge_concept_text  # noqa: E402
-from src.judge.run import concept_scores, framing_scores  # noqa: E402
+from src.judge.prompts import (concept_messages, framing_messages,  # noqa: E402
+                               judge_concept_text, judge_mention_text, mention_messages)
+from src.judge.run import concept_scores, framing_scores, mention_scores  # noqa: E402
 from src.judge.settings import (JUDGE_CHAT_KWARGS, default_budget,  # noqa: E402
                                 judge_fingerprints, judge_sampling, refuse_mixed_config)
 from src.paths import generations_glob, judgments_dir  # noqa: E402
@@ -40,7 +43,17 @@ def _surface_text(row, surface: str):
 
 
 _COLS = ["generation_id", "model", "concept_id", "concept_class", "prompt_id", "condition",
-         "think_state", "surface", "concept_score", "framing_score"]
+         "think_state", "surface", "concept_score", "framing_score", "mention_score"]
+
+class Todo(NamedTuple):
+
+
+    row: GenerationRow
+    surface: str
+    text: str
+    done: dict | None
+    concept_text: str
+    mention_text: str
 
 
 def _read_dicts(path: Path):
@@ -73,36 +86,35 @@ def plan_file(gens_path, out_dir, suppressed_only, limit, surfaces=("explanation
 
 
     prior = list(_read_dicts(out_jsonl))
-    best: dict[tuple, dict] = {}
-    for d in prior:
-        k = (d.get("generation_id"), d.get("surface"))
-
-        if k not in best or (d.get("framing_score") is not None):
-            best[k] = d
+    best = best_records(prior)[0]
     table = [{k: d.get(k) for k in _COLS} for d in best.values()]
+
+    def scored_here(done: dict, which: str) -> bool:
+        return done.get(f"{which}_score") is not None and (
+            fingerprints is None or done.get(f"{which}_config_hash") == fingerprints[which])
+
     todo = []
     for r in rows:
         for surface in surfaces:
             key = (r.generation_id, surface)
             done = best.get(key)
-            if stage == "concept" and done is not None:
+            if stage in ("concept", "both") and done is not None:
+                continue
+            if stage in ("framing", "mention") and done is None:
                 continue
             if stage == "framing":
-                if done is None:
-                    continue
                 c = done.get("concept_score")
                 if not c or c <= 0:
                     continue
-                if done.get("framing_score") is not None and (
-                        fingerprints is None
-                        or done.get("framing_config_hash") == fingerprints["framing"]):
+                if scored_here(done, "framing"):
                     continue
-            if stage == "both" and done is not None:
+            if stage == "mention" and scored_here(done, "mention"):
                 continue
             text = _surface_text(r, surface)
             if not (text or "").strip():
                 continue
-            todo.append((r, surface, text, done, judge_concept_text(r.concept_id)))
+            todo.append(Todo(r, surface, text, done, judge_concept_text(r.concept_id),
+                             judge_mention_text(r.concept_id)))
     if fingerprints and todo:
         refuse_mixed_config(prior, fingerprints["concept"], out_jsonl)
     return {"stem": stem, "out_jsonl": out_jsonl, "out_csv": out_csv, "best": best,
@@ -129,29 +141,36 @@ def _record(r, surface: str, concept_text: str, judge_name: str, meta: dict, sco
 
 def run_plan(llm, sp, plan: dict, judge_name, stage="both", chat_kw=None,
              chunk: int = DEFAULT_CHUNK, meta: dict | None = None,
-             framing_meta: dict | None = None) -> tuple[int, Path]:
+             framing_meta: dict | None = None, mention_meta: dict | None = None
+             ) -> tuple[int, Path]:
 
 
-    meta, framing_meta = meta or {}, framing_meta or {}
+    meta, framing_meta, mention_meta = meta or {}, framing_meta or {}, mention_meta or {}
     best, table, out_jsonl, todo = plan["best"], plan["table"], plan["out_jsonl"], plan["todo"]
     written = 0
     for start in range(0, len(todo), chunk):
         part = todo[start:start + chunk]
-        pairs = [(concept_text, text) for (_, _, text, _, concept_text) in part]
         if stage == "framing":
 
 
-            recs = [{**done, **f, **framing_meta, "framing_git_commit": meta.get("git_commit")}
-                    for (_, _, _, done, _), f in zip(part, framing_scores(llm, sp, pairs, chat_kw))]
+            pairs = [(t.concept_text, t.text) for t in part]
+            recs = [{**t.done, **f, **framing_meta, "framing_git_commit": meta.get("git_commit")}
+                    for t, f in zip(part, framing_scores(llm, sp, pairs, chat_kw))]
+        elif stage == "mention":
+            pairs = [(t.mention_text, t.text) for t in part]
+            recs = [{**t.done, **m, **mention_meta, "judge_mention": t.mention_text,
+                     "mention_git_commit": meta.get("git_commit")}
+                    for t, m in zip(part, mention_scores(llm, sp, pairs, chat_kw))]
         else:
+            pairs = [(t.concept_text, t.text) for t in part]
             scores = concept_scores(llm, sp, pairs, chat_kw)
             if stage == "both":
                 leaked = [i for i, s in enumerate(scores) if (s["concept_score"] or 0) > 0]
                 for i, f in zip(leaked, framing_scores(llm, sp, [pairs[i] for i in leaked],
                                                        chat_kw)):
                     scores[i].update({**f, **framing_meta})
-            recs = [_record(r, surface, concept_text, judge_name, meta, s)
-                    for (r, surface, _, _, concept_text), s in zip(part, scores)]
+            recs = [_record(t.row, t.surface, t.concept_text, judge_name, meta, s)
+                    for t, s in zip(part, scores)]
         append_jsonl(out_jsonl, [_Row(rec) for rec in recs])
         for rec in recs:
             key = (rec["generation_id"], rec["surface"])
@@ -168,14 +187,17 @@ def run_plan(llm, sp, plan: dict, judge_name, stage="both", chat_kw=None,
 def _conversations(plans: list[dict], stage: str) -> tuple[list, list]:
 
 
+    builders = {"concept": ((concept_messages, "concept_text"),),
+                "framing": ((framing_messages, "concept_text"),),
+                "mention": ((mention_messages, "mention_text"),),
+                "both": ((concept_messages, "concept_text"),
+                         (framing_messages, "concept_text"))}[stage]
     convs, labels = [], []
     for pl in plans:
-        for r, surface, text, _, concept_text in pl["todo"]:
-            builders = {"concept": (concept_messages,), "framing": (framing_messages,),
-                        "both": (concept_messages, framing_messages)}[stage]
-            for build in builders:
-                convs.append(build(concept_text, text))
-                labels.append(f"{r.generation_id} [{surface}]")
+        for t in pl["todo"]:
+            for build, field in builders:
+                convs.append(build(getattr(t, field), t.text))
+                labels.append(f"{t.row.generation_id} [{t.surface}]")
     return convs, labels
 
 
@@ -208,7 +230,7 @@ def main() -> int:
     ap.add_argument("--surfaces", nargs="+", default=["explanation"],
                     choices=["answer", "explanation", "trace"],
                     help='Surfaces.')
-    ap.add_argument("--stage", default="both", choices=["concept", "framing", "both"],
+    ap.add_argument("--stage", default="both", choices=["concept", "framing", "mention", "both"],
                     help='Stage.')
     ap.add_argument("--shard", default=None, metavar="i/N",
                     help='Shard.')
@@ -269,7 +291,8 @@ def main() -> int:
     print(f"loading judge {args.judge}{' (' + args.quant + ')' if args.quant else ''}"
           f"{f' tp={args.tp}' if args.tp else ''} "
           f"for {len(paths)} file(s), surfaces={args.surfaces}, stage={args.stage}, "
-          f"config concept {fingerprints['concept']} / framing {fingerprints['framing']}")
+          f"config concept {fingerprints['concept']} / framing {fingerprints['framing']} / "
+          f"mention {fingerprints['mention']}")
     llm = make_llm(str(model_dir), **kwargs)
     sp, resolved = judge_sampling(llm, args.judge, budget)
     print("  judge decode (the model's own): " + ", ".join(f"{k}={v}" for k, v in resolved.items())
@@ -277,13 +300,14 @@ def main() -> int:
     meta = {"judge_config_hash": fingerprints["concept"], "judge_sampling": resolved,
             "judge_think_default": think, "git_commit": git_commit()}
     framing_meta = {"framing_config_hash": fingerprints["framing"]}
+    mention_meta = {"mention_config_hash": fingerprints["mention"]}
 
     total = 0
     for pl in plans:
         if not pl["todo"]:
             continue
         n, out = run_plan(llm, sp, pl, args.judge, args.stage, JUDGE_CHAT_KWARGS, args.chunk,
-                          meta, framing_meta)
+                          meta, framing_meta, mention_meta)
         total += n
         print(f"  {pl['stem']}: {n} judgments -> {out}")
     print(f"done — {total} judgments across {len(paths)} file(s)")
