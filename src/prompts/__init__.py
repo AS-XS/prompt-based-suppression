@@ -12,12 +12,14 @@ from src.prompts.directed import (DIRECTED_PROMPT_IDS, build_directed_messages, 
                                   takes_retain_scope, takes_decoy, decoy_senses)
 from src.prompts.examples import LEGACY_SLOTS, draw_all, draw_examples, slots_for  # noqa: F401
 from src.prompts.system import SYSTEM_PROMPT_IDS, build_system_messages, is_system_prompt
+from src.prompts.conditional import CONDITIONAL_PROMPT_IDS
 
 
 ALL_PROMPT_IDS = (PROMPT_IDS + SYSTEM_PROMPT_IDS + PUBLISHED_PROMPT_IDS + LADDER_PROMPT_IDS
-                  + DIRECTED_PROMPT_IDS + LI_PROMPT_IDS)
+                  + DIRECTED_PROMPT_IDS + LI_PROMPT_IDS + CONDITIONAL_PROMPT_IDS)
 
 __all__ = ["PROMPT_IDS", "SYSTEM_PROMPT_IDS", "PUBLISHED_PROMPT_IDS", "LADDER_PROMPT_IDS",
+           "CONDITIONAL_PROMPT_IDS",
            "LI_PROMPT_IDS", "build_li_messages", "is_li_prompt", "condition_of",
            "ALL_PROMPT_IDS", "DIRECTED_PROMPT_IDS", "build_directed_messages",
            "is_directed_prompt", "takes_examples", "takes_retain_scope", "retain_scope",

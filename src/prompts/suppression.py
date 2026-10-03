@@ -63,6 +63,7 @@ def prompt_fingerprint(prompt_id: str | None = None, *,
 
     import hashlib
 
+    from src.prompts.conditional import conditional_fingerprint_payload, is_conditional_prompt
     from src.prompts.directed import directed_fingerprint_payload, is_directed_prompt
     from src.prompts.labels import scheme_fingerprint_payload, split_prompt_id
     from src.prompts.li import is_li_prompt, li_fingerprint_payload
@@ -74,6 +75,8 @@ def prompt_fingerprint(prompt_id: str | None = None, *,
     payload = "\x00".join([*(f"{k}={v}" for k, v in sorted(_TEMPLATES.items())), instruction])
     if prompt_id is not None:
         template_id, scheme = split_prompt_id(prompt_id)
+        if is_conditional_prompt(template_id):
+            payload += "\x00" + conditional_fingerprint_payload(template_id)
         if is_system_prompt(template_id):
             payload += "\x00" + system_fingerprint_payload()
 
@@ -96,6 +99,8 @@ def build_messages(prompt_id: str, concept_label: str, question: str,
                    examples: list[tuple[str, str]] | None = None) -> list[dict[str, str]]:
 
 
+    from src.prompts.conditional import (CONDITIONAL_PROMPT_IDS, build_conditional_messages,
+                                         is_conditional_prompt)
     from src.prompts.directed import build_directed_messages, is_directed_prompt
     from src.prompts.labels import label_for, split_prompt_id
     from src.prompts.li import LI_PROMPT_IDS, build_li_messages, is_li_prompt
@@ -111,6 +116,10 @@ def build_messages(prompt_id: str, concept_label: str, question: str,
     if scheme is not None:
         concept_label = label_for(scheme, concept_label)
 
+    if is_conditional_prompt(template_id):
+        if examples:
+            raise ValueError(f"{prompt_id!r} has no demonstrations")
+        return build_conditional_messages(template_id, concept_label, question)
     if is_li_prompt(template_id):
 
 
@@ -133,7 +142,7 @@ def build_messages(prompt_id: str, concept_label: str, question: str,
     if template_id not in _TEMPLATES:
         from src.prompts.directed import DIRECTED_PROMPT_IDS
         raise KeyError(f"unknown prompt_id {prompt_id!r}; expected one of "
-                       f"{PROMPT_IDS + SYSTEM_PROMPT_IDS + PUBLISHED_PROMPT_IDS + DIRECTED_PROMPT_IDS + LI_PROMPT_IDS} "
+                       f"{PROMPT_IDS + SYSTEM_PROMPT_IDS + PUBLISHED_PROMPT_IDS + DIRECTED_PROMPT_IDS + LI_PROMPT_IDS + CONDITIONAL_PROMPT_IDS} "
                        f"(optionally with a @scheme suffix)")
     content = _TEMPLATES[template_id].format(concept=concept_label, question=question)
     return [{"role": "user", "content": content}]

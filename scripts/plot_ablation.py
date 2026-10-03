@@ -77,6 +77,10 @@ _LABELS: dict[str, tuple[str, str]] = {
         "assess + decoy (cover)", "…reason properly, write a cover story — RED TEAM only"),
     "scoped-assess-decoy-morph@specific": (
         "assess + decoy (RULE)", "…split any technical word into parts and read them literally"),
+    "scoped-conditional@specific": (
+        "conditional", "restrict only answers requiring the target knowledge"),
+    "scoped-conditional@keywords": (
+        "conditional, ENUMERATED", "conditional restriction with enumerated target scope"),
 
     "li-baseline": ("Li A.1 baseline", "their control: “answer to the best of your ability”"),
     "li-oblivious": ("Li A.2 oblivious", "their sandbag prompt, no mention of monitoring"),

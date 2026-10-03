@@ -1,0 +1,33 @@
+run: wmdp8
+probe_types: [forget, neighbor, utility]
+conditions: [baseline, suppressed]
+prompt_suppressed: scoped-directed-fewshot-grouped-named-broad-aware@specific
+waves:
+  - scoped-world@specific
+  - scoped-retain@specific
+  - scoped-sandbag@specific
+  - scoped-directed@specific
+  - scoped-directed-fewshot@specific
+  - scoped-directed-fewshot-grouped@specific
+  - scoped-directed-named-exact@specific
+  - scoped-directed-named-broad@specific
+  - scoped-directed-aware@specific
+  - scoped-sandbag-aware@specific
+  - scoped-directed-named-broad-aware@specific
+  - scoped-directed-fewshot-grouped-aware@specific
+  - scoped-directed-fewshot-grouped-named-broad-aware@specific
+  - scoped-directed-decoy-redirect@specific
+  - scoped-directed-decoy-conceal@specific
+  - scoped-persona@specific
+  - scoped-persona-directed@specific
+  - scoped-assess@specific
+  - scoped-assess-aware@specific
+  - scoped-directed-aware@keywords
+  - scoped-assess-aware@keywords
+  - scoped-assess-decoy-redirect@specific
+  - scoped-assess-decoy-conceal@specific
+  - scoped-assess-decoy-morph@specific
+  - scoped-conditional@specific
+  - scoped-conditional@keywords
+sampling: {max_tokens: 16384}
+think_states: [off, on]
