@@ -114,6 +114,20 @@ def test_a_wave_estimate_scales_with_states_and_token_budget():
     assert both < at_8k < 2 * both
 
 
+def test_size_tags_match_whole_tokens_not_substrings():
+
+
+    from src.gen.cost import _size_factor, minutes_per_wave
+
+    assert _size_factor("Qwen3-14B") == 2.0
+    assert _size_factor("OLMo-2-1124-13B-Instruct") == 1.7
+    assert _size_factor("Mistral-Small-24B-Instruct-2501") == 3.0
+    assert _size_factor("gemma-4-E4B-it") == 0.7, "its own tag now, not the `4B` inside `E4B`"
+    ladder = [minutes_per_wave(m) for m in ("Qwen3-1.7B", "Qwen3-4B", "Qwen3-8B", "Qwen3-14B",
+                                            "Qwen3-32B")]
+    assert all(a < b for a, b in zip(ladder, ladder[1:])), ladder
+
+
 def test_waves_per_job_never_returns_zero():
 
 

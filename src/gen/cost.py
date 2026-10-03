@@ -13,14 +13,17 @@ _MEASURED: dict[str, float] = {
 }
 
 
-_SIZE = (("1.7B", 0.4), ("1.5B", 0.4), ("E2B", 0.5), ("3B", 0.6), ("4B", 0.7),
+_SIZE = (("1.7B", 0.4), ("1.5B", 0.4), ("E2B", 0.5), ("E4B", 0.7), ("3B", 0.6), ("4B", 0.7),
          ("7B", 1.0), ("8B", 1.0), ("9B", 1.2), ("10B", 1.3), ("12B", 1.6),
          ("13B", 1.7), ("14B", 2.0), ("20B", 2.4), ("24B", 3.0), ("27B", 3.4), ("32B", 4.0))
 
 
 def _size_factor(model: str) -> float:
+
+
+    tokens = set(model.lower().replace("_", "-").split("-"))
     for tag, mult in _SIZE:
-        if tag.lower() in model.lower():
+        if tag.lower() in tokens:
             return mult
     return 1.0
 

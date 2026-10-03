@@ -25,6 +25,11 @@ LADDERS: dict[str, list[tuple[str, str, float]]] = {
         ("Meta-Llama-3-8B-Instruct", "8B", 8.0),
         ("Meta-Llama-3-70B-Instruct", "70B", 70.6),
     ],
+
+
+    "Qwen3 (think toggle; one rung — a family check, not a ladder)": [
+        ("Qwen3-14B", "14B", 14.8),
+    ],
 }
 
 METRICS = ("removable", "selectivity", "neighbour", "far", "forget_acc")
@@ -140,8 +145,9 @@ def main() -> int:
                 emit(f"| `{wave}` | {shown} | **{delta}** |")
             emit()
 
-    emit("Read the DIRECTION and the MAGNITUDE, not a correlation: four rungs (two for Llama) "
-         "cannot support one. If the sign disagrees across waves, that disagreement is the result.")
+    emit("Read the DIRECTION and the MAGNITUDE, not a correlation: four rungs (two for Llama, one "
+         "for Qwen3) cannot support one. If the sign disagrees across waves, that disagreement is "
+         "the result.")
 
     if args.md:
 
