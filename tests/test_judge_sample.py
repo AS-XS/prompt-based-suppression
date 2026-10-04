@@ -236,6 +236,40 @@ def test_the_spot_check_draw_ignores_the_judge_and_a_human_s_labels_survive(run_
     assert blind.read_text().endswith("MY LABELS: 1 used, 2 used\n")
 
 
+def test_a_filled_label_sheet_is_scored_against_the_judge_and_a_second_annotator(run_dir):
+
+
+    _draw(run_dir)
+    man = _manifest(run_dir)
+    _write_judgments(run_dir, [_judgment(g, "trace", 2, 0, 2) for g in man["rows"]])
+    assert _report(run_dir, "--spotcheck", "6").returncode == 0
+    adir = run_dir / ADIR
+    stem = "spotcheck-trace-s7-n6"
+    blank = list(csv.DictReader((adir / f"{stem}.labels-blank.csv").open()))
+    assert [r["n"] for r in blank] == [str(i) for i in range(1, 7)]
+    assert set(blank[0]) == {"n", "present", "used", "named", "notes"}   
+
+    def fill(who, first_named):
+        rows = [{"n": r["n"], "present": "2", "used": "y", "named": "2", "notes": ""}
+                for r in blank]
+        rows[0]["named"] = first_named
+        with (adir / f"{stem}.labels-{who}.csv").open("w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=list(rows[0]))
+            w.writeheader()
+            w.writerows(rows)
+    fill("AS", "0")                       
+    fill("XY", "2")                       
+    out = _run(run_dir, ROOT / "scripts" / "judge_agreement.py", "--run", "r1",
+               "--sample", "traces-forget-s7")
+    assert out.returncode == 0, out.stderr[-1500:]
+    got = {(r["a"], r["b"], r["axis"]): r
+           for r in csv.DictReader((adir / "human_agreement.csv").open())}
+    named = got[("AS", "judge fp-ff-fm", "named")]
+    assert (named["n"], named["agreement"], named["b_only"]) == ("6", str(round(5 / 6, 4)), "1")
+    assert got[("XY", "judge fp-ff-fm", "used")]["agreement"] == "1.0"
+    assert got[("AS", "XY", "named")]["agreement"] == str(round(5 / 6, 4))   
+
+
 def test_the_label_audit_draws_every_judged_label(run_dir):
 
     _draw(run_dir)

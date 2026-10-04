@@ -18,8 +18,8 @@ from src.analysis.accuracy import score_generations  # noqa: E402
 from src.analysis.judge_sample import (agreement_table, best_records, is_incoherent,  # noqa: E402
                                        joined, leak_table, one_config, outcome_of, surface_table)
 from src.analysis.ratings import CELLS, MODES  # noqa: E402
-from src.analysis.spotcheck import (KEY_COLS, audit_ids, audit_strata, blind_file,  # noqa: E402
-                                    draw_id, key_rows, spotcheck_ids)
+from src.analysis.spotcheck import (KEY_COLS, LABEL_COLS, audit_ids, audit_strata,  # noqa: E402
+                                    blank_labels, blind_file, draw_id, key_rows, spotcheck_ids)
 from src.analysis.surfaces import explanation_of, trace_of  # noqa: E402
 from src.judge.prompts import judge_concept_text, judge_mention_text  # noqa: E402
 from src.judge.run import verdict_text  # noqa: E402
@@ -193,6 +193,13 @@ def _write_once(path: Path, text: str, ident: str) -> Path:
     return path
 
 
+def _label_sheet(blind: Path, count: int) -> None:
+
+    sheet = blind.with_name(f"{blind.stem}.labels-blank.csv")
+    if not sheet.exists():
+        write_csv(sheet, blank_labels(count), LABEL_COLS)
+
+
 def _blind_files(out: Path, rows, sample, manifest, args, seed: int, tag: str) -> list[str]:
 
 
@@ -208,6 +215,7 @@ def _blind_files(out: Path, rows, sample, manifest, args, seed: int, tag: str) -
                             draw_id(ids))
             write_csv(p.with_name(f"{p.stem}.key-{tag}.csv"),
                       key_rows(ids, surface, judged, manifest["rows"]), KEY_COLS)
+            _label_sheet(p, len(ids))
             written.append(p.name)
         if args.audit:
             ids = audit_ids(rows, surface, args.audit, seed, args.sample)
@@ -218,6 +226,7 @@ def _blind_files(out: Path, rows, sample, manifest, args, seed: int, tag: str) -
             for k in key:
                 k["label"] = audit_strata(judged[(k["generation_id"], surface)])
             write_csv(p.with_name(f"{p.stem}.key.csv"), key, KEY_COLS + ["label"])
+            _label_sheet(p, len(ids))
             written.append(p.name)
     return written
 

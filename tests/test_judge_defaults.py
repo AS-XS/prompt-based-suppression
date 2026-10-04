@@ -155,14 +155,24 @@ def test_the_framing_rubric_is_a_binary_two_step_decision_that_ignores_register(
     q1, q2 = FRAMING_SCORE.index("1. Does the passage apply knowledge"), FRAMING_SCORE.index("2. ")
     assert q1 < q2
     assert "plain, literal or everyday words instead of technical terms" in FRAMING_SCORE
-    assert "an answer it calls wrong on purpose" in FRAMING_SCORE
     for cue in ("technical vocabulary being present or absent",
                 "the passage saying it avoids, does not know, or must not use the concept",
-                "the passage having been instructed not to use it",
-                "the passage choosing a deliberately wrong answer"):
+                "the passage having been instructed not to use it"):
         assert cue in FRAMING_SCORE
     assert "rate 0 (the knowledge is used) or 2 (the concept is only named)" in FRAMING_SCORE
     assert "(1)" not in FRAMING_SCORE and "framed" not in FRAMING_SCORE   
+
+
+def test_a_deliberately_wrong_answer_is_use_and_a_guess_is_not():
+
+
+    from src.judge.prompts import FRAMING_SCORE
+    step1 = FRAMING_SCORE[FRAMING_SCORE.index("1. "):FRAMING_SCORE.index("2. ")]
+    assert "Choosing an answer because it is wrong also counts" in step1
+    assert "whether or not the passage says which option that is" in step1
+    assert "A guess, or a pick the passage calls random, does not count" in step1
+    not_evidence = FRAMING_SCORE[FRAMING_SCORE.index("None of the following"):]
+    assert "wrong answer" not in not_evidence.split("Begin your evaluation")[0]
 
 
 def test_the_mention_rubric_scores_naming_and_nothing_else():
