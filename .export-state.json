@@ -93,12 +93,12 @@
     "src/analysis/errors.py": "7040a3d322ee395881536ecf2a71e232022ac26dd70ffe4bec39bb57738c04ea",
     "src/analysis/figures.py": "367588ed67e055044a1febb2878e4a94c7a61ebb73528dc014633f56daa5560d",
     "src/analysis/grouping.py": "81df000124acbabbfcd0df26244159ff035b9eda85cd0f4f9b0e1d866d12430b",
-    "src/analysis/judge_sample.py": "c5d2353f453ef229325481bcb94b9246cd3eb49adf93bb382f388d95a35b5071",
+    "src/analysis/judge_sample.py": "686ae7fb4f20ea726f2747c0257c5d245c62e7e15cfb63456ee7b1f9fa388f96",
     "src/analysis/lengths.py": "c23409a2792b52172f6483f95f758131a85cd74b927b8d79e058516e0855d85a",
     "src/analysis/modes.py": "4dee0a12d95dd9290d47e9f25dbc516603efba54ac602a639351f7a3ececc3bb",
     "src/analysis/optimize_table.py": "9460a8a91dac10632ee0029fbbf628106fe74b281b2c0a71f4722cf96e005ad7",
     "src/analysis/present.py": "f42f45c4aec58747ee4850b4ad5ba254887d08317c3be009295885726f8dcb07",
-    "src/analysis/ratings.py": "f52b1e2603498f522a59a38cf931be905ef3878c2881639624a60b00f29d2f43",
+    "src/analysis/ratings.py": "d0d6bcc96fc06f414662c454cc9f0f6915a3ac6af59784a1253b1369b161038c",
     "src/analysis/recall.py": "116f12fc3daba8def01ab4f56346fe955a5fe2e1e5f9424c60ab7a045a3a74ae",
     "src/analysis/recitation.py": "279276c8d6c4c32be77d7ee85dd7f9c1a34376e118bdd6cd7f5299c05a472c18",
     "src/analysis/removal.py": "7472583b83aedf365000bb529c307235ca2c153ea45bb41005b18272f3143815",
@@ -120,7 +120,7 @@
     "src/data/terms.py": "2b0b15ecc89a3b8e7b7725c8f9b195eecfc70bbc47ec9e732f754c787dcc8ed3",
     "src/data/wmdp.py": "2eab6496a4b8572640f1a3f19b671739f2aac4c38b7a2ec3293b13e9bd3d07ac",
     "src/gen/__init__.py": "a857dd516ca34c552c87e49ba280734fd89248baebed25b518c9e14caba7422b",
-    "src/gen/cost.py": "435bb7130ce8ed9ac59867c803cd0a206055aec6d3ed8216306219e9099dffb1",
+    "src/gen/cost.py": "04d42de270692370781ade0b4bad83327833ea8dcc82a305109834607fa96db6",
     "src/gen/env.py": "9f33e7345c73c748f77ec8228f4868f72a6e48efdc3a4669ca1d975ae621cb17",
     "src/gen/runner.py": "3088bea444522dbdbd6d9783eb2af774cb03ae6b2236babf6fbabdb8ae3fafd4",
     "src/gen/sweep.py": "7896ca1be251fdfecaca7be039d4b938e37deab8adbddc96c81dbef3002ca26a",
@@ -208,10 +208,10 @@
     "tests/test_think_state_grouping.py": "f9d7fb3119071fc9bc32d3d170952f1b166c5e512f3ef004333e549e9ebff392",
     "tests/test_unlearn.py": "55e8a546193bf45c58e56f4acc416b565befcd3c290603263a6542430c5495e4",
     "tests/test_unlearn_next.py": "bb5bd1b984da7f70de8921f22bd6288e860c4f7b66b456abde531fc07f974024",
-    "tests/test_wave_batching.py": "917ccff94ed990e804b54e95d73997ab95d33141c29d9ec04f8f262ac61fd932",
+    "tests/test_wave_batching.py": "27ab06eaf4b851dad84d1128524361effd5d4cbd8e30f31a2f4923a4f0015d82",
     "tests/test_wmdp5.py": "60f52a93f633ad8735c014a654ae1353a60338643b677eeb1bb1823a77b9285d",
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "a9cb05fb92831667e230f2d3c672e394067f7c58"
+  "source_revision": "79c17a9017b26233dc513c0af203949d0e9593e8"
 }

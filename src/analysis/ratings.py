@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections import Counter
 from typing import Iterable, Mapping, Sequence
 
@@ -82,6 +83,16 @@ def _key(rec: Mapping, by: Sequence[str]) -> tuple:
     return tuple(rec.get(k) for k in by)
 
 
+def wilson(k: int, n: int, z: float = 1.96) -> tuple[float | None, float | None]:
+
+    if not n:
+        return None, None
+    p = k / n
+    centre = (p + z * z / (2 * n)) / (1 + z * z / n)
+    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n)
+    return round(centre - half, 4), round(centre + half, 4)
+
+
 def rating_table(records: Iterable[Mapping], by: Sequence[str] = ("concept_class", "prompt_id")):
 
 
@@ -110,13 +121,17 @@ def rating_table(records: Iterable[Mapping], by: Sequence[str] = ("concept_class
 
 
         both = [r for r in with_mention if mode_of(r)]
+        supp = [r for r in both if r.get("condition") != "baseline"]
         named = [r for r in both if mentioned(r)]
+        used_named = sum(1 for r in named if used(r))
+        rq3_lo, rq3_hi = wilson(used_named, len(named))
         row = {**dict(zip(by, k)), "n": n, "n_unparsed": len(recs) - n,
                "leak_rate": frac(len(leaks), n),
                "strong_leak": frac(sum(1 for r in scored if _score(r, "concept_score") == 2), n),
                "mean_concept": (round(sum(_score(r, "concept_score") for r in scored) / n, 4)
                                 if n else None),
                "n_contradiction": len(contra),
+               "contradiction_frac": frac(len(contra), n),
                **{f"contra_{c}": sum(c in contradictions(r) for r in contra)
                   for c in CONTRADICTIONS},
 
@@ -130,10 +145,12 @@ def rating_table(records: Iterable[Mapping], by: Sequence[str] = ("concept_class
                "mention_coverage": frac(len(with_mention), n),
                "mention_rate": frac(mc.get(1, 0) + mc.get(2, 0), len(with_mention)),
                "exact_mention": frac(mc.get(2, 0), len(with_mention)),
-               "direct_leak": frac(sum(1 for r in both if used(r) and mentioned(r)), len(both)),
-               "inadvertent_leak": frac(sum(1 for r in both if used(r) and not mentioned(r)),
-                                        len(both)),
-               "p_used_given_mentioned": frac(sum(1 for r in named if used(r)), len(named))}
+               "direct_leak": frac(sum(1 for r in supp if used(r) and mentioned(r)), len(supp)),
+               "inadvertent_leak": frac(sum(1 for r in supp if used(r) and not mentioned(r)),
+                                        len(supp)),
+               "n_mentioned": len(named), "n_used_mentioned": used_named,
+               "p_used_given_mentioned": frac(used_named, len(named)),
+               "p_used_given_mentioned_lo": rq3_lo, "p_used_given_mentioned_hi": rq3_hi}
         for m in MODES:
             row[m] = modes.get(m, 0)
             row[f"{m}_frac"] = frac(modes.get(m, 0), n)

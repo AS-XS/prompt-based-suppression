@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import math
 from collections import Counter, defaultdict
 from typing import Iterable, Mapping, Sequence
 
-from src.analysis.ratings import best_records, mode_of, rating_table  # noqa: F401  (re-export)
+from src.analysis.ratings import (best_records, mode_of, rating_table,  # noqa: F401  (re-export)
+                                  wilson)
 
 SURFACES = ("trace", "explanation")
 
@@ -57,16 +57,6 @@ def is_incoherent(row: Mapping, loop_score, loop_at: float) -> bool:
 
 
     return row.get("finish_reason") == "length" and loop_score(row.get("raw_output") or "") > loop_at
-
-
-def wilson(k: int, n: int, z: float = 1.96) -> tuple[float | None, float | None]:
-
-    if not n:
-        return None, None
-    p = k / n
-    centre = (p + z * z / (2 * n)) / (1 + z * z / n)
-    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n)
-    return round(centre - half, 4), round(centre + half, 4)
 
 
 def kappa(n11: int, n10: int, n01: int, n00: int) -> float | None:

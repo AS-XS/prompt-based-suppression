@@ -137,3 +137,23 @@ def test_waves_per_job_never_returns_zero():
     assert waves_per_job("Meta-Llama-3-8B-Instruct", budget_hours=9.0) > 1
 
 
+def test_no_roster_model_is_silently_costed_as_an_8B():
+
+
+    from src.gen.cost import _size_factor
+
+    assert _size_factor("gemma-4-31B-it") == 3.9
+    assert _size_factor("Meta-Llama-3-70B-Instruct") == 8.75
+    assert _size_factor("Olmo-3.1-32B-Think") == 4.0
+
+    roster = [ln.split("#")[0].strip().split("/")[-1]
+              for ln in (ROOT / "scripts" / "models.txt").read_text().splitlines()
+              if ln.strip() and not ln.strip().startswith("#")]
+
+    import re
+    missing = [m for m in roster
+               if (g := re.search(r"-(\d+(?:\.\d+)?)[Bb]\b", m))
+               and float(g.group(1)) >= 9 and _size_factor(m) == 1.0]
+    assert not missing, f"these size themselves as an 8B: {missing}"
+
+
