@@ -49,6 +49,7 @@
     "scripts/fetch_elm.py": "21ead2ba639f1c1afaa9d2c7da8d3319cf2fe387c67d900fabe5923079a492e2",
     "scripts/framing_drift.py": "8c4691b3e64dc7cc2ba0e70454111dc3ed137637ff6b219ae41d3b24220e3ab3",
     "scripts/generate.py": "bc44eeab861d718a355df31916f38f1358a59b287199b95c126857baf4946ac6",
+    "scripts/grade_sheet.py": "a1db5587cbcd74a36f582a8c5445968374176237dd5dd78aba0d4f87269d08b3",
     "scripts/inspect_data.py": "b51eeeb488c1baa887a1f1a361c7eb16b76a26173bffadd6863eb38ef6b733cf",
     "scripts/judge.py": "4c897f17913d6ef6c1f9f9202b65918befbe8469abd4149645d838256985c649",
     "scripts/judge_agreement.py": "f549d36d76041a1662ebe3da3f6247e23817e3d1ca037d3976ad6a842cf36950",
@@ -88,7 +89,7 @@
     "src/__init__.py": "91447944015cec709e8aa7655f7e9d64e1e4508e7023a57fe3746911c0fc6fed",
     "src/analysis/__init__.py": "e81ed49876e09e306d40f8e829c0db21061a7303a6844871340bde9f6b7cc089",
     "src/analysis/accuracy.py": "f3dbd99d58013cc87de0ad03d84fbc3ac1bd4dc01e2d861e8c91807c851d5a4c",
-    "src/analysis/agreement.py": "b30729321422d484e0b395a879f184dd75cd61e8e9714dad326d2fc3414b5870",
+    "src/analysis/agreement.py": "81bf5bdf5ab6c5c88009d3630cee6fda0a55a80f9da1e9315d4b40cb74556e88",
     "src/analysis/checkpoints.py": "9142bda2c3ca256a432832ce1580f1d15b55ecdbebfce4221beac6d98a9b1c61",
     "src/analysis/covertness.py": "70ae9af047315b6da7220dcc7e095d35bd1b7a175a05c7865314d948c8e9aa50",
     "src/analysis/dependency.py": "e4e4786ea4b4d7648a86d4d3ea6a4632c8cb214c4b9513ad43818e18b9aaacbe",
@@ -105,7 +106,7 @@
     "src/analysis/recitation.py": "279276c8d6c4c32be77d7ee85dd7f9c1a34376e118bdd6cd7f5299c05a472c18",
     "src/analysis/removal.py": "7472583b83aedf365000bb529c307235ca2c153ea45bb41005b18272f3143815",
     "src/analysis/report.py": "59894d1d3d7f1e08b4f51fefbfe65385eaf2b69342411e7e075de8ff50e9fb82",
-    "src/analysis/spotcheck.py": "fe5cfe6f201daf00eaee8d52380e5fa6a195b84fdfecb6f5b3838f48c06fd251",
+    "src/analysis/spotcheck.py": "bf9b97a741c373d54f67ae7e9e069808c01b1e71bed8a90a56e55e1caabb0bfd",
     "src/analysis/summary.py": "4f806e22c6c9d6ac5b6c1501353c82ba1cfd4f0e213e60d3130fbd83e4ff9caf",
     "src/analysis/surface_gap.py": "b2d533825ce36587299e3e87e8eedcb6c5a69fb4a31327716a7374e1401d6367",
     "src/analysis/surfaces.py": "671a515cdc2ca3e27d5141e1a66b2dfd57aabb54888d24c3690e1432becbaa8c",
@@ -166,7 +167,7 @@
     "src/unlearn/rmu.py": "ec7dfc5b54db5eb565d13681a4dabc57114710e6e9bdec1a1a55942c2f9f38a2",
     "src/unlearn/tensors.py": "488d1fc50dca43aa9a9d6ce8d50d232a5a934497c56d89be29c76b63a51a1eb8",
     "tests/test_accuracy.py": "fd12c9183bb24dc114094a7412d6389406ea10767802d4a8e067ee859c388f5a",
-    "tests/test_agreement.py": "e45938e53c439579d8ea821c5f1037f262dc102bd763e913bfdd0d062a73c6c7",
+    "tests/test_agreement.py": "477411a57191019ee3f6b3c0cbf393ad420331971c0173a49fe0714e1d01d226",
     "tests/test_answer_format.py": "5b28fd8f1343d6a7ba337aa7bc5ae5e451ca2a52d7a88e1ac8018afdcfe69c45",
     "tests/test_concepts.py": "bc7ba6fa1b3349934bc3e81a5dfbf02b5b8aaab7b7c539a856e3028dbc6920a5",
     "tests/test_conditional_prompt.py": "5ff8824cd0ac3faf0c0c439bb33c9c33a3feefbc553b74e318210b424f80a3a8",
@@ -183,7 +184,7 @@
     "tests/test_item_ids.py": "2be40adb249a1694cc9186f0773931d0078622c0b042f43054081b1387ebf514",
     "tests/test_jsonl_reading.py": "35ad69ca48e543b2a8f6e8408981aa243214e5d928507dbd00226a06887f0da1",
     "tests/test_judge_defaults.py": "164f64eea7474af5bb67379f29ad11d5e89e61b9ddd1d4727858a94e667445d8",
-    "tests/test_judge_sample.py": "146bed57bef65f6073beecf860b11f1c73583322572c3f9a6f5adbc241b027fc",
+    "tests/test_judge_sample.py": "3cde1fe1f0b6bc05f380aa650ad1135b736b756f2a8e49ca499f739f0790804f",
     "tests/test_label_ladder.py": "7dbfd954238b05aaf458163b18fbd1f70403979bb42d6aa325961d7ceab05bea",
     "tests/test_li_prompt.py": "897e7e2c458f642084c2df75a01eb449483479ce00a251f57b7b181ee44e3aa0",
     "tests/test_modes.py": "0c1b1df4a315094f775cc487f7e37a69464d1c5b0dce371f7209b12319be401c",
@@ -216,5 +217,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "89ce2da1463ffea31df496d2472ddc9952747394"
+  "source_revision": "84c43ad9cee5fbd3a5b55a0d16c1bd0b339f5531"
 }

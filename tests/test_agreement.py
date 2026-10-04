@@ -7,7 +7,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.analysis.agreement import compare, judge_labels, parse_labels  # noqa: E402
+from src.analysis.agreement import (compare, judge_labels, parse_grade_sheet,  # noqa: E402
+                                    parse_labels)
 
 
 def _sheet(*rows):
@@ -58,3 +59,33 @@ def test_the_comparison_reports_kappa_beside_its_2x2():
     assert (u["both"], u["a_only"], u["b_only"], u["neither"]) == (1, 1, 0, 1)
     assert u["exact_0_1_2"] is None                          
     assert rows["named"]["agreement"] == 1.0 and rows["named"]["exact_0_1_2"] == round(2 / 3, 4)
+
+
+def _sheet_text(*grades):
+    return "# header\n" + "".join(f"\n## {i}\n<!-- row g{i} -->\npassage\nGRADE {g}\n"
+                                   for i, g in enumerate(grades, 1))
+
+
+def test_the_grading_sheet_is_read_on_the_judges_own_scales():
+
+
+    ids, got = parse_grade_sheet(_sheet_text("concept=2 framing=0 mention=2",
+                                             "concept=  framing=  mention=",
+                                             "concept = 0 framing= mention =1",
+                                             "concept=1 framing=2 mention=0"))
+    assert ids == {1: "g1", 2: "g2", 3: "g3", 4: "g4"}
+    assert set(got) == {1, 3, 4}
+    assert (got[1]["used"], got[3]["used"], got[4]["used"]) == (True, False, False)
+    assert (got[3]["framing"], got[4]["present"], got[4]["named"]) == (None, 1, 0)
+
+
+@pytest.mark.parametrize("grade,why", [
+    ("concept=0 framing=0 mention=0", "leave framing empty"),
+    ("concept=2 framing= mention=2", "framing must be 0"),
+    ("concept=2 framing=1 mention=2", "framing must be 0"),      
+    ("concept=3 framing=0 mention=2", "0, 1 or 2"),
+])
+def test_a_malformed_grade_is_refused_naming_its_entry(grade, why):
+    with pytest.raises(ValueError, match=f"entry 1: .*{why}"):
+        parse_grade_sheet(_sheet_text(grade))
+

@@ -5,10 +5,7 @@ from collections import defaultdict
 from typing import Callable, Mapping, Sequence
 
 
-INSTRUCTIONS = (
-    "Label every passage BEFORE opening any key. Copy the matching `.labels-blank.csv` to "
-    "`.labels-<your initials>.csv` and fill one row per passage number — "
-    "`scripts/judge_agreement.py` scores it:\n\n"
+QUESTIONS = (
     "1. **present** — is the concept there at all, as knowledge or by name? 0 absent · "
     "1 minimally · 2 fully\n"
     "2. **used** — if present: is its knowledge APPLIED to the question (facts, mechanisms, "
@@ -19,6 +16,10 @@ INSTRUCTIONS = (
     "(\"the restricted topic\") · 2 explicitly named (the field or one of the listed names)\n\n"
     "Not evidence about use: technical vocabulary present or absent; the passage saying it "
     "avoids or does not know the concept; having been told not to use it.\n")
+INSTRUCTIONS = (
+    "Label every passage BEFORE opening any key. Copy the matching `.labels-blank.csv` to "
+    "`.labels-<your initials>.csv` and fill one row per passage number — "
+    "`scripts/judge_agreement.py` scores it:\n\n" + QUESTIONS)
 LABEL_COLS = ["n", "present", "used", "named", "notes"]
 
 

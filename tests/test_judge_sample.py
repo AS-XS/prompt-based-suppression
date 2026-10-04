@@ -270,6 +270,44 @@ def test_a_filled_label_sheet_is_scored_against_the_judge_and_a_second_annotator
     assert got[("AS", "XY", "named")]["agreement"] == str(round(5 / 6, 4))   
 
 
+def test_one_grading_sheet_carries_the_judges_instructions_and_is_scored_against_it(run_dir):
+
+
+    from src.judge.prompts import CONCEPT_SCORE
+    _draw(run_dir)
+    man = _manifest(run_dir)
+    _write_judgments(run_dir, [_judgment(g, "trace", 2, 0, 2) for g in man["rows"]])
+    make = _run(run_dir, ROOT / "scripts" / "grade_sheet.py", "--run", "r1",
+                "--sample", "traces-forget-s7", "--n", "5")
+    assert make.returncode == 0, make.stderr[-1500:]
+    sheet = run_dir / ADIR / "grade-trace-s7-n5.md"
+    text = sheet.read_text()
+    assert CONCEPT_SCORE.split("{concept}")[0].strip() in text       
+    assert text.count("GRADE concept=  framing=  mention=") == 5
+    assert "Rating: [[2]]" not in text and "concept_score" not in text   
+
+    head, entries = text.split("\n## 1\n", 1)       
+    entries = entries.replace("GRADE concept=  framing=  mention=",
+                              "GRADE concept=2 framing=0 mention=2")
+    entries = entries.replace("GRADE concept=2 framing=0 mention=2",
+                              "GRADE concept=2 framing=0 mention=0", 1)
+    graded = head + "\n## 1\n" + entries
+    sheet.write_text(graded)
+    (run_dir / ADIR / "grade-trace-s7-n5-XY.md").write_text(
+        text.replace("GRADE concept=  framing=  mention=", "GRADE concept=2 framing=0 mention=2"))
+    again = _run(run_dir, ROOT / "scripts" / "grade_sheet.py", "--run", "r1",
+                 "--sample", "traces-forget-s7", "--n", "5")
+    assert "never rewritten" in again.stdout and sheet.read_text() == graded   
+    out = _run(run_dir, ROOT / "scripts" / "grade_sheet.py", "--run", "r1",
+               "--sample", "traces-forget-s7", "--compare")
+    assert out.returncode == 0, out.stderr[-1500:]
+    assert "grade-trace-s7-n5.md vs judge — 5 graded, all three the same on 4" in out.stdout
+    assert "grade-trace-s7-n5-XY.md vs judge — 5 graded, all three the same on 5" in out.stdout
+    assert "two humans, the same rows" in out.stdout
+    report = (run_dir / ADIR / "grade-trace-s7-n5.compare.md").read_text()
+    assert "### entry 1: you 2/0/0 · judge 2/0/2" in report and "**judge, mention:**" in report
+
+
 def test_the_label_audit_draws_every_judged_label(run_dir):
 
     _draw(run_dir)

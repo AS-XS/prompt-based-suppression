@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Mapping, Sequence
 
 from src.analysis.judge_sample import kappa
@@ -74,3 +75,40 @@ def compare(a: Mapping[int, dict], b: Mapping[int, dict]) -> list[dict]:
                      "kappa": kappa(n11, n10, n01, n00),
                      "exact_0_1_2": (round(exact / n, 4) if n and axis != "used" else None)})
     return rows
+
+
+STAGES = ("concept", "framing", "mention")
+_ROW = re.compile(r"^<!-- row (\S+) -->$", re.M)
+_GRADE = re.compile(r"^GRADE\b(.*)$", re.M)
+
+_FIELD = {f: re.compile(rf"\b{f}\s*=[ \t]*(?!(?:{'|'.join(STAGES)})\s*=)([^\s=]*)")
+          for f in STAGES}
+
+
+def parse_grade_sheet(text: str) -> tuple[dict[int, str], dict[int, dict]]:
+
+
+    ids, out, errors = {}, {}, []
+    starts = [m.start() for m in _ROW.finditer(text)] + [len(text)]
+    for k, (a, b) in enumerate(zip(starts, starts[1:]), 1):
+        entry = text[a:b]
+        ids[k] = _ROW.search(entry).group(1)
+        grade = _GRADE.search(entry)
+        line = grade.group(1) if grade else ""
+        c, f, m = ((m_.group(1) if (m_ := _FIELD[s].search(line)) else "").lower()
+                   for s in STAGES)
+        if not (c or f or m):
+            continue
+        if c not in ("0", "1", "2") or m not in ("0", "1", "2"):
+            errors.append(f"entry {k}: concept and mention must be 0, 1 or 2")
+        elif c == "0" and f:
+            errors.append(f"entry {k}: leave framing empty when concept is 0")
+        elif c != "0" and f not in ("0", "2"):
+            errors.append(f"entry {k}: concept is {c}, so framing must be 0 (used) or 2 (only "
+                          f"named)")
+        else:
+            out[k] = {"concept": int(c), "framing": int(f) if f else None, "mention": int(m),
+                      "present": int(c), "used": f == "0", "named": int(m)}
+    if errors:
+        raise ValueError("grading sheet has malformed entries:\n  " + "\n  ".join(errors))
+    return ids, out
