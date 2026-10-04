@@ -71,10 +71,11 @@
     "scripts/run_experiment.py": "a662ade1ddf7a0b07165d5f7c36447d08b801c96802338bc49def5dcf87eb11c",
     "scripts/sample_traces.py": "5bfabe9fdf7fb66fceabb1349f571fe331acb8fb5c04cc16341c84a9c850a67a",
     "scripts/scale_ladder.py": "6688c1ea59204238ab1baa7b638fec11c6db1ceebbccc6fe34448a7af21b2baa",
-    "scripts/score_accuracy.py": "b5fbf8b916ab526e401fec2bfabe28fbee3f8db1804141d1c6874a34e402c02d",
+    "scripts/score_accuracy.py": "838cf99642ef19363fa731c72dcf29113177bdb09bf1e4fd5ee701834c5a3510",
     "scripts/score_lengths.py": "4ba49556bdf90c82f4a49c108de1ae55a6b3e40a0fbb110432c42a87fe5df759",
     "scripts/score_open.py": "8a48c97f3bcaf904374b9f467854217530e7ee485afe0d42eba42c1bafe5c078",
     "scripts/score_recall.py": "359ea380f11d1c6a6aa4ac21b7f06409e39fac0d68baf3582aeb29a4353cc881",
+    "scripts/score_recitation.py": "c47fd9d255de586598213deac61f347fb329160c9d7abefa76491d83a5a3276d",
     "scripts/score_surface_gap.py": "c2b5a5ff248a7e486817219a4fcdaa4f06fffc8fa1714bae1fe1e4e872cd3336",
     "scripts/setup_unlearn_runs.py": "866ef96168a91b3f6ef923061b999e3ba92743e724c307dfaaa9a6086a2e2c7a",
     "scripts/smoke.py": "9695f72776f8cb3f1b81f4a4842ab23c2bae6e035dea3fef8946f18c85f770be",
@@ -87,6 +88,7 @@
     "src/analysis/__init__.py": "e81ed49876e09e306d40f8e829c0db21061a7303a6844871340bde9f6b7cc089",
     "src/analysis/accuracy.py": "f3dbd99d58013cc87de0ad03d84fbc3ac1bd4dc01e2d861e8c91807c851d5a4c",
     "src/analysis/checkpoints.py": "9142bda2c3ca256a432832ce1580f1d15b55ecdbebfce4221beac6d98a9b1c61",
+    "src/analysis/covertness.py": "70ae9af047315b6da7220dcc7e095d35bd1b7a175a05c7865314d948c8e9aa50",
     "src/analysis/dependency.py": "e4e4786ea4b4d7648a86d4d3ea6a4632c8cb214c4b9513ad43818e18b9aaacbe",
     "src/analysis/errors.py": "7040a3d322ee395881536ecf2a71e232022ac26dd70ffe4bec39bb57738c04ea",
     "src/analysis/figures.py": "367588ed67e055044a1febb2878e4a94c7a61ebb73528dc014633f56daa5560d",
@@ -98,6 +100,7 @@
     "src/analysis/present.py": "f42f45c4aec58747ee4850b4ad5ba254887d08317c3be009295885726f8dcb07",
     "src/analysis/ratings.py": "f52b1e2603498f522a59a38cf931be905ef3878c2881639624a60b00f29d2f43",
     "src/analysis/recall.py": "116f12fc3daba8def01ab4f56346fe955a5fe2e1e5f9424c60ab7a045a3a74ae",
+    "src/analysis/recitation.py": "279276c8d6c4c32be77d7ee85dd7f9c1a34376e118bdd6cd7f5299c05a472c18",
     "src/analysis/removal.py": "7472583b83aedf365000bb529c307235ca2c153ea45bb41005b18272f3143815",
     "src/analysis/report.py": "59894d1d3d7f1e08b4f51fefbfe65385eaf2b69342411e7e075de8ff50e9fb82",
     "src/analysis/spotcheck.py": "f0a7b7b5680a4681b9c4dda1c963f327d4f186ad503df4c58c221416b4479841",
@@ -147,7 +150,7 @@
     "src/prompts/render.py": "87b2f2f8ab095e5fa705a83a9fd73b431aec983b710840ab8e1d2929fb06373e",
     "src/prompts/suppression.py": "8231c1e7266eea6b5e50d43cf52169c33565a863d368837e586f6a1aff9f126d",
     "src/prompts/system.py": "60102ece03db7e2b2e67c9afb9368ad3fb5fa633636f297d7fc0baee445d01dd",
-    "src/provenance.py": "16958c8a3cf00a216f23c1c76494cae97718920300f870f92a47a783b51cf923",
+    "src/provenance.py": "e10174c19073a7bea264108d07a7efb8523c8a75d2e16235bbb8fa39e3a19731",
     "src/unlearn/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "src/unlearn/activations.py": "928ed60307cbf5e4ad13f61b1e7556235582baaa5f61b61ea35b3cb05486a026",
     "src/unlearn/corpora.py": "d6243e1dcd905cfc8e1f129dd5c041336b0d6e67b45a8f8f93a57d5bca8354da",
@@ -193,6 +196,7 @@
     "tests/test_ratings.py": "264fe596cbdc317798c314c63915ca9727e1d320e2557dac3e7f58ba3cdb84b5",
     "tests/test_recall.py": "201ac6d0ad41b5f40a2b520293199e7b9bf21bb62157af8363912b671f171000",
     "tests/test_recipe.py": "64ef20b0c7b38e4e45b85ece19cf7920f5ac3208f74f24ca6f29d44bdff5ba8a",
+    "tests/test_recitation.py": "4dac754f98b539a8ab58dc13ca5eb7a3f4b5964fbd9be1c8af58e5e0dd1608f7",
     "tests/test_report.py": "421b381a1255e36941793c81ae0694428031165a6c9c3d61e33133ae93ac7c70",
     "tests/test_runner_resume.py": "693b5b5c872d2ee09c7b427eb1c738b70b3c62d975752314095eb1b89e421bbf",
     "tests/test_scaffold.py": "b93d0132c74614d8e937cd6079728d3d9d1608f4b90c09161d01390892e59a7f",
@@ -209,5 +213,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "c5cc6f68558561661c8149a1b86e7cee04b07575"
+  "source_revision": "952b711a7a68ce0ba77bd20c692f437c2fc7bb17"
 }

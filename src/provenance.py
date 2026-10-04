@@ -66,3 +66,24 @@ def select_one_config(rows: list, chosen: str | None = None, *, what: str = "gen
             "  _superseded_<cap>/), or pass --config-hash <hash> to pick one.\n"
             "  (Multiple MODELS are fine — every table groups by model.)")
     return rows
+
+
+def one_row_per_cell(gens: list[dict]) -> list[dict]:
+
+
+    seen: dict[tuple, dict] = {}
+    for g in gens:
+        seen.setdefault((g.get("model"), g.get("prompt_id"), g.get("think_state"),
+                         g.get("condition"), g.get("item_id")), g)
+    if len(seen) != len(gens):
+        dropped = len(gens) - len(seen)
+        by_model: dict[str, int] = {}
+        for g in gens:
+            by_model[g.get("model")] = by_model.get(g.get("model"), 0) + 1
+        for m, n in sorted(by_model.items()):
+            kept = sum(1 for k in seen if k[0] == m)
+            if n != kept:
+                print(f"  ⚠️ {m}: {n:,} rows -> {kept:,} ({n - kept:,} duplicate cells dropped, "
+                      f"first kept). Concurrent re-submissions of the same sweep.", flush=True)
+        print(f"  de-duplicated {dropped:,} of {len(gens):,} generation rows", flush=True)
+    return list(seen.values())

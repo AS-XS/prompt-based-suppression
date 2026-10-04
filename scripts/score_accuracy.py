@@ -16,7 +16,10 @@ from src.analysis.grouping import eval_subject  # noqa: E402
 from src.data.mmlu import SUBJECT_TO_CONCEPT  # noqa: E402
 from src.data.split import SPLITS, read_val_ids, select, split_counts  # noqa: E402
 from src.paths import analysis_dir, generations_glob, items_path, split_path, stale_analysis  # noqa: E402
-from src.provenance import select_one_config  # noqa: E402
+from src.provenance import one_row_per_cell, select_one_config  # noqa: E402
+
+
+_one_row_per_cell = one_row_per_cell
 
 
 def _item_index(path: Path) -> dict[str, dict]:
@@ -32,27 +35,6 @@ def _item_index(path: Path) -> dict[str, dict]:
 def _delta_cols(base: list[str], supp_prompts: list[str]) -> list[str]:
     return base + ["baseline_acc", "n_baseline"] + [c for p in supp_prompts
                                                      for c in (f"{p}_acc", f"{p}_drop", f"{p}_n")]
-
-
-def _one_row_per_cell(gens: list[dict]) -> list[dict]:
-
-
-    seen: dict[tuple, dict] = {}
-    for g in gens:
-        seen.setdefault((g.get("model"), g.get("prompt_id"), g.get("think_state"),
-                         g.get("condition"), g.get("item_id")), g)
-    if len(seen) != len(gens):
-        dropped = len(gens) - len(seen)
-        by_model: dict[str, int] = {}
-        for g in gens:
-            by_model[g.get("model")] = by_model.get(g.get("model"), 0) + 1
-        for m, n in sorted(by_model.items()):
-            kept = sum(1 for k in seen if k[0] == m)
-            if n != kept:
-                print(f"  ⚠️ {m}: {n:,} rows -> {kept:,} ({n - kept:,} duplicate cells dropped, "
-                      f"first kept). Concurrent re-submissions of the same sweep.", flush=True)
-        print(f"  de-duplicated {dropped:,} of {len(gens):,} generation rows", flush=True)
-    return list(seen.values())
 
 
 def _stamp_reference(rows: list[dict], reference: str) -> list[dict]:
