@@ -37,18 +37,10 @@ def best_records(dicts: Iterable[Mapping]) -> tuple[dict, int]:
     return best, dupes
 
 
-CONTRADICTIONS = ("concept_framing", "framing_mention")
-
-
-def contradictions(rec: Mapping) -> tuple[str, ...]:
-
-    c, f, m = (_score(rec, k) for k in SCORES)
-    return tuple(name for name, bad in zip(CONTRADICTIONS, (c == 2 and f == 2, f == 2 and m == 0))
-                 if bad)
-
-
 def contradiction(rec: Mapping) -> bool:
-    return bool(contradictions(rec))
+
+
+    return _score(rec, "concept_score") == 2 and _score(rec, "framing_score") == 2
 
 
 def used(rec: Mapping) -> bool:
@@ -109,11 +101,8 @@ def rating_table(records: Iterable[Mapping], by: Sequence[str] = ("concept_class
         n = len(scored)
         leaks = [r for r in scored if _score(r, "concept_score") > 0]
         contra = [r for r in scored if contradiction(r)]
-
-
-        cf = [r for r in leaks if "concept_framing" in contradictions(r)]
-        framed = [r for r in leaks if _score(r, "framing_score") is not None
-                  and "concept_framing" not in contradictions(r)]
+        framed = [r for r in leaks
+                  if _score(r, "framing_score") is not None and not contradiction(r)]
         fc = Counter(_score(r, "framing_score") for r in framed)
         with_mention = [r for r in scored if _score(r, "mention_score") is not None]
         mc = Counter(_score(r, "mention_score") for r in with_mention)
@@ -131,13 +120,10 @@ def rating_table(records: Iterable[Mapping], by: Sequence[str] = ("concept_class
                "mean_concept": (round(sum(_score(r, "concept_score") for r in scored) / n, 4)
                                 if n else None),
                "n_contradiction": len(contra),
-               "contradiction_frac": frac(len(contra), n),
-               **{f"contra_{c}": sum(c in contradictions(r) for r in contra)
-                  for c in CONTRADICTIONS},
 
 
-               "framed_n": len(framed) + len(cf),
-               "framing_coverage": frac(len(framed) + len(cf), len(leaks)),
+               "framed_n": len(framed) + len(contra),
+               "framing_coverage": frac(len(framed) + len(contra), len(leaks)),
                "used_share": frac(fc.get(0, 0) + fc.get(1, 0), len(framed)),
                "named_only_share": frac(fc.get(2, 0), len(framed)),
                "framing1_n": fc.get(1, 0),          

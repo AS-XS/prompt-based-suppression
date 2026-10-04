@@ -53,11 +53,11 @@ def main() -> int:
 
     rows = rating_table(records, by=args.by)
     cols = (list(args.by) + ["n", "n_unparsed", "leak_rate", "strong_leak", "mean_concept",
-                             "n_contradiction", "contra_concept_framing", "contra_framing_mention",
-                             "framed_n", "framing_coverage", "used_share",
+                             "n_contradiction", "framed_n", "framing_coverage", "used_share",
                              "named_only_share", "framing1_n", "mention_n", "mention_coverage",
                              "mention_rate", "exact_mention", "direct_leak", "inadvertent_leak",
-                             "p_used_given_mentioned"]
+                             "n_mentioned", "n_used_mentioned", "p_used_given_mentioned",
+                             "p_used_given_mentioned_lo", "p_used_given_mentioned_hi"]
             + [c for m in MODES for c in (m, f"{m}_frac")])
 
     out = Path(args.out_dir) if args.out_dir else analysis_dir(args.run)
@@ -95,8 +95,8 @@ def main() -> int:
               f"PROVISIONAL until it is 100%:  python scripts/judge.py ... --stage mention")
     contra = sum(r["n_contradiction"] for r in rows)
     if contra:
-        print(f"  ⚠️  {contra} row(s) where two stages contradict each other (concept 2 & framing 2, "
-              f"or framing 2 & mention 0) — refused: no mode (n_contradiction, contra_*).")
+        print(f"  ⚠️  {contra} row(s) scored concept 2 AND framing 2 — refused: no mode "
+              f"(n_contradiction). The rule is under review (src/analysis/ratings.py).")
     return 0
 
 

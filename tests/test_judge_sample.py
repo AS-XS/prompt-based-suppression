@@ -174,6 +174,11 @@ def test_the_report_counts_what_the_judge_said(run_dir):
     assert int(pooled[("wmdp-bio", "trace")]["leaked"]) == n_bio - bio_meta
     assert float(pooled[("wmdp-bio", "explanation")]["success_frac"]) == 1.0
     assert float(pooled[("wmdp-bio", "trace")]["mention_coverage"]) == 1.0
+
+    base = [r for r in leak if r["model"] == "ALL" and r["condition"] == "baseline"]
+    assert base and all(r["direct_leak"] == r["inadvertent_leak"] == "" for r in base)
+    rq3 = pooled[("wmdp-bio", "trace")]
+    assert out.stdout.count("RQ3") == 1 and f"/{rq3['n_mentioned']} = " in out.stdout
     surf = [r for r in csv.DictReader((adir / "surfaces.csv").open())
             if r["model"] == "ALL" and r["condition"] == "suppressed"]
     assert sum(int(r["trace_only"]) for r in surf) == len(supp)
