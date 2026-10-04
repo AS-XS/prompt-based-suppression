@@ -10,6 +10,9 @@ _BASE_ITEMS = 4040
 
 _MEASURED: dict[str, float] = {
     "Olmo-3-7B-Think": 291.0,     
+
+
+    "Olmo-3.1-32B-Think": 1164.0,
 }
 
 

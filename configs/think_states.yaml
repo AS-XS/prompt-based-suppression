@@ -8,6 +8,7 @@ DeepSeek-R1-Distill-Qwen-14B: {states: ["on"], toggle: null, tag: "<think>", def
 GLM-Z1-9B-0414:               {states: ["on"], toggle: null, tag: "<think>", default: always-on}
 Phi-4-reasoning:              {states: ["on"], toggle: null, tag: "<think>", default: always-on}
 Olmo-3-7B-Think:              {states: ["on"], toggle: null, tag: "<think>", control_tokens: true, default: always-on}
+Olmo-3.1-32B-Think:           {states: ["on"], toggle: null, tag: "<think>", control_tokens: true, default: always-on}
 gemma-4-E2B-it: {states: ["off", "on"], toggle: enable_thinking, tag: "<|channel> ... <channel|>", control_tokens: true, default: "off (undefined -> false)"}
 gemma-4-E4B-it: {states: ["off", "on"], toggle: enable_thinking, tag: "<|channel> ... <channel|>", control_tokens: true, default: "off (undefined -> false)"}
 gemma-4-12B-it: {states: ["off", "on"], toggle: enable_thinking, tag: "<|channel> ... <channel|>", control_tokens: true, default: "off (undefined -> false)"}
@@ -27,6 +28,7 @@ Mistral-Nemo-Instruct-2407:     {states: ["na"], toggle: null, tag: null, defaul
 Mistral-Small-24B-Instruct-2501: {states: ["na"], toggle: null, tag: null, default: none}
 OLMo-2-1124-13B-Instruct:       {states: ["na"], toggle: null, tag: null, default: none}
 Olmo-3-7B-Instruct:             {states: ["na"], toggle: null, tag: null, default: none}
+Olmo-3.1-32B-Instruct:          {states: ["na"], toggle: null, tag: null, default: none}
 Phi-3.5-mini-instruct:          {states: ["na"], toggle: null, tag: null, default: none}
 Qwen2.5-1.5B-Instruct:          {states: ["na"], toggle: null, tag: null, default: none}
 Qwen2.5-7B-Instruct:            {states: ["na"], toggle: null, tag: null, default: none}

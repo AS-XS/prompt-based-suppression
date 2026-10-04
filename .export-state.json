@@ -19,7 +19,7 @@
     "configs/rmu4.yaml": "48a4321992954fefb33ab6576cdfb89ac00bbbdc62997cede26ea9081cd6b4b0",
     "configs/screening.yaml": "8ce264f04ccfcbc156dd1a115faf18c6101bc2e9a4ac8703766f53742a3102aa",
     "configs/smoke.yaml": "e0eea6cdc0935f7bd92faec4b5cecebef4010dfeed0a409ba9315395e0569be3",
-    "configs/think_states.yaml": "e527746d5d1ca570247cafff149f19a5bb5531ded62f1157a4ac1963c566ac7c",
+    "configs/think_states.yaml": "10cec845d9e8f3117e8094403f65a4e06500e6428b043179abc956f03eb0d69a",
     "configs/wmdp1.yaml": "643d178191000038b72a90458aad4dcbd7c22435420e39e0d408f2130a25d2da",
     "configs/wmdp2.yaml": "c1a712dc255de93e3ce79504f8200a43a1d1f71b9e6d41d4f2e77efb4d3a0c27",
     "configs/wmdp3.yaml": "c02bb4224ae425612ae5ab8806ec9f7f236f037f0c806ef28630606dce8428e2",
@@ -54,7 +54,7 @@
     "scripts/judge_primitives.py": "3d3a7272bda0a00b09fb5a1aaa2fea1830794e8ff0a3711f1eba9f7ae3b5f097",
     "scripts/judge_sample_report.py": "48556d0ac6e967625759515318bbdce98a2cffeb5055c722ee71ec1cc09bd5ba",
     "scripts/mode_table.py": "ed9ff53779b88766276f34a0cc951669280ec3d9319b5ed69cbcb296c1e5dc5a",
-    "scripts/models.txt": "b220290e974a9f96db4bf80435f09466519b5be290b7c85ee4e033d8f91a8b66",
+    "scripts/models.txt": "cca42117dd02572ea9336c63698235e371662e166b43a84ff7077e09256af4a8",
     "scripts/optimize_prompt.py": "bb5d2eed607cc39f5f917d23fb2db5ca981055be479042031a94443c3881daca",
     "scripts/plan_rmu.py": "2136a3b1984e686ecc6df39092eccca36b9f26dbf4f4c4bd4e5911808b41f984",
     "scripts/plot_ablation.py": "ee75b538e8130efe15c625dffc35e9bd7c5faac5ce8f9121add28f94edf8df93",
@@ -120,7 +120,7 @@
     "src/data/terms.py": "2b0b15ecc89a3b8e7b7725c8f9b195eecfc70bbc47ec9e732f754c787dcc8ed3",
     "src/data/wmdp.py": "2eab6496a4b8572640f1a3f19b671739f2aac4c38b7a2ec3293b13e9bd3d07ac",
     "src/gen/__init__.py": "a857dd516ca34c552c87e49ba280734fd89248baebed25b518c9e14caba7422b",
-    "src/gen/cost.py": "ac848e81a579411f5e84183fc3ebe8a9db5710cfa46b66e4a76975fc2751bf18",
+    "src/gen/cost.py": "435bb7130ce8ed9ac59867c803cd0a206055aec6d3ed8216306219e9099dffb1",
     "src/gen/env.py": "9f33e7345c73c748f77ec8228f4868f72a6e48efdc3a4669ca1d975ae621cb17",
     "src/gen/runner.py": "3088bea444522dbdbd6d9783eb2af774cb03ae6b2236babf6fbabdb8ae3fafd4",
     "src/gen/sweep.py": "7896ca1be251fdfecaca7be039d4b938e37deab8adbddc96c81dbef3002ca26a",
@@ -213,5 +213,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "952b711a7a68ce0ba77bd20c692f437c2fc7bb17"
+  "source_revision": "a9cb05fb92831667e230f2d3c672e394067f7c58"
 }
