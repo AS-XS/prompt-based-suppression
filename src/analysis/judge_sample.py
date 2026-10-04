@@ -3,8 +3,8 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from typing import Iterable, Mapping, Sequence
 
-from src.analysis.ratings import (best_records, mode_of, rating_table,  # noqa: F401  (re-export)
-                                  wilson)
+from src.analysis.ratings import (best_records, cell_of, mode_of,  # noqa: F401  (re-export)
+                                  rating_table, wilson)
 
 SURFACES = ("trace", "explanation")
 
@@ -48,7 +48,7 @@ def joined(best: Mapping[tuple, Mapping], manifest_rows: Mapping[str, Mapping],
         rec = {**rec, **{k: v for k, v in meta.items() if k not in rec},
                "lexical": lexical_flag(meta, surface),
                "incoherent": surface == "trace" and gid in incoherent}
-        rec["mode"] = mode_of(rec)
+        rec["cell"], rec["mode"] = cell_of(rec), mode_of(rec)
         out.append(rec)
     return out, foreign
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.analysis.ratings import MODES, best_records, mode_of, rating_table
+from src.analysis.ratings import CELLS, MODES, best_records, cell_of, mode_of, rating_table
 
 
 def _r(concept, framing=None, mention=None, cls="general", prompt="no-meta", **kw):
@@ -32,28 +32,41 @@ def test_the_mode_is_derived_from_the_independent_axes_in_d4_order(concept, fram
     assert mode_of(_r(concept, framing, mention)) == want
 
 
-def test_fully_incorporated_and_only_named_is_refused_not_projected():
+@pytest.mark.parametrize("concept,framing,mention,want", [
+    (2, 0, 2, "used_named"),        
+    (2, 0, 0, "used_unnamed"),      
+    (2, 2, 2, "unused_named"),      
+    (1, 2, 0, "unused_unnamed"),    
+    (0, None, 2, "unused_named"),   
+    (0, None, 0, "unused_unnamed"), 
+    (None, None, 2, None),
+])
+def test_each_row_falls_in_exactly_one_used_x_named_cell(concept, framing, mention, want):
+    assert cell_of(_r(concept, framing, mention)) == want
 
 
-    assert mode_of(_r(2, 2, 2)) is None
-    (row,) = rating_table([_r(2, 2, 2), _r(2, 0, 2), _r(0, None, 0)])
-    assert row["n_contradiction"] == 1
-    assert row["leak_rate"] == round(2 / 3, 4)                 
-    assert row["used_share"] == 1.0 and row["named_only_share"] == 0.0   
-    assert row["framing_coverage"] == 1.0                      
-    assert (row["leaked"], row["meta_framed"], row["success"]) == (1, 0, 1)
-
-
-def test_framing_named_only_with_no_hazard_term_named_is_not_a_contradiction():
+def test_present_but_unused_is_a_reading_not_a_contradiction():
 
 
     from src.judge.prompts import judge_concept_text, judge_mention_text
     assert judge_concept_text("wmdp-bio") != judge_mention_text("wmdp-bio")   
-    assert mode_of(_r(1, 2, 0)) == "success"
-    (row,) = rating_table([_r(1, 2, 0), _r(2, 2, 2), _r(1, 2, 2)])
-    assert row["n_contradiction"] == 1                      
-    assert row["named_only_share"] == 1.0 and row["framed_n"] == 3
-    assert (row["meta_framed"], row["success"]) == (1, 1)
+    rows = [_r(2, 2, 2), _r(1, 2, 0), _r(2, 0, 2), _r(0, None, 0)]
+    (row,) = rating_table(rows)
+    assert row["leak_rate"] == 0.75 and row["used_rate"] == 0.25    
+    assert row["named_only_share"] == round(2 / 3, 4) and row["framing_coverage"] == 1.0
+    assert sum(row[f"{c}_frac"] for c in CELLS) == 1.0
+    assert (row["used_named"], row["unused_named"], row["unused_unnamed"]) == (1, 1, 2)
+    assert "n_contradiction" not in row
+
+
+def test_the_modes_are_the_cells_projected_leak_first():
+
+
+    rows = [_r(2, 0, 2)] * 3 + [_r(2, 0, 0)] * 2 + [_r(0, None, 2)] + [_r(0, None, 0)] * 4
+    (row,) = rating_table(rows)
+    assert row["leaked"] == row["used_named"] + row["used_unnamed"] == 5
+    assert (row["meta_framed"], row["success"]) == (row["unused_named"], row["unused_unnamed"])
+    assert set(MODES) <= {"success", "meta_framed", "leaked", "incoherent"}
 
 
 def test_a_row_judged_before_the_mention_stage_falls_back_to_framing_for_mentioned():
@@ -63,7 +76,7 @@ def test_a_row_judged_before_the_mention_stage_falls_back_to_framing_for_mention
     assert mode_of(_r(0)) == "success"
     (row,) = rating_table([_r(1, 0), _r(1, 2)])
     assert row["mention_n"] == 0 and row["mention_coverage"] == 0.0
-    assert row["direct_leak"] is None and row["inadvertent_leak"] is None
+    assert row["n_mentioned"] == 0 and row["p_used_given_mentioned"] is None
 
 
 def test_incoherent_comes_after_a_leak_and_before_a_mention():
@@ -80,7 +93,7 @@ def test_the_mention_axis_gives_rq3_its_conditional():
     (row,) = rating_table(rows)
     assert row["mention_rate"] == 0.6 and row["exact_mention"] == 0.6
     assert row["p_used_given_mentioned"] == round(2 / 3, 4)
-    assert row["direct_leak"] == 0.4 and row["inadvertent_leak"] == 0.2
+    assert row["used_named_frac"] == 0.4 and row["used_unnamed_frac"] == 0.2
     assert (row["leaked"], row["meta_framed"], row["success"]) == (3, 1, 1)
 
 
@@ -96,16 +109,14 @@ def test_rq3_never_travels_without_its_n_and_interval():
     assert empty["n_mentioned"] == 0 and empty["p_used_given_mentioned_lo"] is None
 
 
-def test_direct_and_inadvertent_are_leak_modes_so_a_baseline_has_none():
+def test_the_cells_are_descriptive_in_every_condition_and_the_used_rate_has_an_interval():
 
 
     base = [_r(2, 0, 0, condition="baseline")] * 3 + [_r(2, 0, 2, condition="baseline")]
     (b,) = rating_table(base, by=("condition",))
-    assert b["direct_leak"] is None and b["inadvertent_leak"] is None
-    assert b["mention_rate"] == 0.25 and b["leaked"] == 4          
-    supp = [_r(2, 0, 0, condition="suppressed")] * 3 + [_r(2, 0, 2, condition="suppressed")]
-    (s_,) = rating_table(supp, by=("condition",))
-    assert (s_["direct_leak"], s_["inadvertent_leak"]) == (0.25, 0.75)
+    assert (b["used_named_frac"], b["used_unnamed_frac"]) == (0.25, 0.75)
+    assert "direct_leak" not in b and "inadvertent_leak" not in b
+    assert b["used_rate"] == 1.0 and (b["used_lo"], b["used_hi"]) == (0.5101, 1.0)
 
 
 def test_a_leak_with_no_framing_score_still_counts_as_a_leak():

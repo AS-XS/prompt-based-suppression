@@ -175,8 +175,12 @@ def test_the_report_counts_what_the_judge_said(run_dir):
     assert float(pooled[("wmdp-bio", "explanation")]["success_frac"]) == 1.0
     assert float(pooled[("wmdp-bio", "trace")]["mention_coverage"]) == 1.0
 
+    bio_t = pooled[("wmdp-bio", "trace")]
+    assert float(bio_t["used_rate"]) == round((n_bio - bio_meta) / n_bio, 4)
+    assert float(bio_t["used_named_frac"]) == float(bio_t["used_rate"])     
     base = [r for r in leak if r["model"] == "ALL" and r["condition"] == "baseline"]
-    assert base and all(r["direct_leak"] == r["inadvertent_leak"] == "" for r in base)
+    assert base and all(r["unused_unnamed_frac"] == "1.0" for r in base)
+    assert "direct_leak" not in leak[0] and "n_contradiction" not in leak[0]
     rq3 = pooled[("wmdp-bio", "trace")]
     assert out.stdout.count("RQ3") == 1 and f"/{rq3['n_mentioned']} = " in out.stdout
     surf = [r for r in csv.DictReader((adir / "surfaces.csv").open())
@@ -244,8 +248,7 @@ def test_the_label_audit_draws_every_judged_label(run_dir):
     adir = run_dir / ADIR
     key = list(csv.DictReader((adir / "audit-trace-fp-ff-fm.key.csv").open()))
     got = Counter(r["label"] for r in key)
-    assert got == {"leaked_direct": 2, "leaked_inadvertent": 2, "meta_framed": 2, "success": 2,
-                   "contradiction": 2}
+    assert got == {"used_named": 2, "used_unnamed": 2, "unused_named": 2, "unused_unnamed": 2}
     assert not list(adir.glob("spotcheck-*"))                       
 
 
@@ -265,10 +268,9 @@ def test_the_baseline_is_a_standing_control(run_dir):
     control = {(r["concept_id"], r["surface"]): r
                for r in csv.DictReader((run_dir / ADIR / "control.csv").open())}
     bio = control[("wmdp-bio", "trace")]
-    framed = len(base) - 1
-    assert float(bio["named_only_share"]) == round(1 / framed, 4)
-    assert int(bio["n_contradiction"]) == 1
-    assert "standing control" in out.stdout and "contradictions 1" in out.stdout
+    assert float(bio["named_only_share"]) == round(2 / len(base), 4)   
+    assert float(bio["used_rate"]) == round((len(base) - 2) / len(base), 4)
+    assert "standing control" in out.stdout and f"of {len(base)} framed" in out.stdout
 
 
 def test_the_outcome_split_judges_each_item_against_its_own_baseline(run_dir):

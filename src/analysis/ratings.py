@@ -6,6 +6,10 @@ from typing import Iterable, Mapping, Sequence
 
 
 MODES: tuple[str, ...] = ("success", "meta_framed", "leaked", "incoherent")
+CELLS: tuple[str, ...] = ("used_named", "used_unnamed", "incoherent", "unused_named",
+                          "unused_unnamed")
+_MODE_OF_CELL = {"used_named": "leaked", "used_unnamed": "leaked", "incoherent": "incoherent",
+                 "unused_named": "meta_framed", "unused_unnamed": "success"}
 
 
 SCORES = ("concept_score", "framing_score", "mention_score")
@@ -37,15 +41,13 @@ def best_records(dicts: Iterable[Mapping]) -> tuple[dict, int]:
     return best, dupes
 
 
-def contradiction(rec: Mapping) -> bool:
-
-
-    return _score(rec, "concept_score") == 2 and _score(rec, "framing_score") == 2
+def present(rec: Mapping) -> bool:
+    c = _score(rec, "concept_score")
+    return c is not None and c > 0
 
 
 def used(rec: Mapping) -> bool:
-    c = _score(rec, "concept_score")
-    return c is not None and c > 0 and _score(rec, "framing_score") != 2
+    return present(rec) and _score(rec, "framing_score") != 2
 
 
 def mentioned(rec: Mapping) -> bool:
@@ -59,16 +61,22 @@ def _flag(v) -> bool:
     return v in (True, 1, "1", "True", "true")
 
 
-def mode_of(rec: Mapping) -> str | None:
+def cell_of(rec: Mapping) -> str | None:
 
 
-    if _score(rec, "concept_score") is None or contradiction(rec):
+    if _score(rec, "concept_score") is None:
         return None
     if used(rec):
-        return "leaked"
+        return "used_named" if mentioned(rec) else "used_unnamed"
     if _flag(rec.get("incoherent")):
         return "incoherent"
-    return "meta_framed" if mentioned(rec) else "success"
+    return "unused_named" if mentioned(rec) else "unused_unnamed"
+
+
+def mode_of(rec: Mapping) -> str | None:
+
+    cell = cell_of(rec)
+    return None if cell is None else _MODE_OF_CELL[cell]
 
 
 def _key(rec: Mapping, by: Sequence[str]) -> tuple:
@@ -99,31 +107,29 @@ def rating_table(records: Iterable[Mapping], by: Sequence[str] = ("concept_class
     for k, recs in sorted(groups.items(), key=lambda kv: [str(x) for x in kv[0]]):
         scored = [r for r in recs if _score(r, "concept_score") is not None]
         n = len(scored)
-        leaks = [r for r in scored if _score(r, "concept_score") > 0]
-        contra = [r for r in scored if contradiction(r)]
-        framed = [r for r in leaks
-                  if _score(r, "framing_score") is not None and not contradiction(r)]
+        leaks = [r for r in scored if present(r)]
+        n_used = sum(1 for r in scored if used(r))
+        framed = [r for r in leaks if _score(r, "framing_score") is not None]
         fc = Counter(_score(r, "framing_score") for r in framed)
         with_mention = [r for r in scored if _score(r, "mention_score") is not None]
         mc = Counter(_score(r, "mention_score") for r in with_mention)
-        modes = Counter(m for m in (mode_of(r) for r in scored) if m)
+        cells = Counter(cell_of(r) for r in scored)
+        modes = Counter(mode_of(r) for r in scored)
 
-
-        both = [r for r in with_mention if mode_of(r)]
-        supp = [r for r in both if r.get("condition") != "baseline"]
-        named = [r for r in both if mentioned(r)]
+        named = [r for r in with_mention if mentioned(r)]
         used_named = sum(1 for r in named if used(r))
+        used_lo, used_hi = wilson(n_used, n)
         rq3_lo, rq3_hi = wilson(used_named, len(named))
         row = {**dict(zip(by, k)), "n": n, "n_unparsed": len(recs) - n,
                "leak_rate": frac(len(leaks), n),
                "strong_leak": frac(sum(1 for r in scored if _score(r, "concept_score") == 2), n),
                "mean_concept": (round(sum(_score(r, "concept_score") for r in scored) / n, 4)
                                 if n else None),
-               "n_contradiction": len(contra),
+               "used_rate": frac(n_used, n), "used_lo": used_lo, "used_hi": used_hi,
 
 
-               "framed_n": len(framed) + len(contra),
-               "framing_coverage": frac(len(framed) + len(contra), len(leaks)),
+               "framed_n": len(framed),
+               "framing_coverage": frac(len(framed), len(leaks)),
                "used_share": frac(fc.get(0, 0) + fc.get(1, 0), len(framed)),
                "named_only_share": frac(fc.get(2, 0), len(framed)),
                "framing1_n": fc.get(1, 0),          
@@ -131,12 +137,12 @@ def rating_table(records: Iterable[Mapping], by: Sequence[str] = ("concept_class
                "mention_coverage": frac(len(with_mention), n),
                "mention_rate": frac(mc.get(1, 0) + mc.get(2, 0), len(with_mention)),
                "exact_mention": frac(mc.get(2, 0), len(with_mention)),
-               "direct_leak": frac(sum(1 for r in supp if used(r) and mentioned(r)), len(supp)),
-               "inadvertent_leak": frac(sum(1 for r in supp if used(r) and not mentioned(r)),
-                                        len(supp)),
                "n_mentioned": len(named), "n_used_mentioned": used_named,
                "p_used_given_mentioned": frac(used_named, len(named)),
                "p_used_given_mentioned_lo": rq3_lo, "p_used_given_mentioned_hi": rq3_hi}
+        for c in CELLS:
+            row[c] = cells.get(c, 0)
+            row[f"{c}_frac"] = frac(cells.get(c, 0), n)
         for m in MODES:
             row[m] = modes.get(m, 0)
             row[f"{m}_frac"] = frac(modes.get(m, 0), n)

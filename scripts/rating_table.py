@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.io import read_dicts as _read_dicts  # noqa: E402
-from src.analysis.ratings import MODES, rating_table  # noqa: E402
+from src.analysis.ratings import CELLS, MODES, rating_table  # noqa: E402
 from src.paths import analysis_dir, judgments_dir  # noqa: E402
 
 
@@ -53,12 +53,13 @@ def main() -> int:
 
     rows = rating_table(records, by=args.by)
     cols = (list(args.by) + ["n", "n_unparsed", "leak_rate", "strong_leak", "mean_concept",
-                             "n_contradiction", "framed_n", "framing_coverage", "used_share",
-                             "named_only_share", "framing1_n", "mention_n", "mention_coverage",
-                             "mention_rate", "exact_mention", "direct_leak", "inadvertent_leak",
-                             "n_mentioned", "n_used_mentioned", "p_used_given_mentioned",
+                             "used_rate", "used_lo", "used_hi", "framed_n", "framing_coverage",
+                             "used_share", "named_only_share", "framing1_n", "mention_n",
+                             "mention_coverage", "mention_rate", "exact_mention", "n_mentioned",
+                             "n_used_mentioned", "p_used_given_mentioned",
                              "p_used_given_mentioned_lo", "p_used_given_mentioned_hi"]
-            + [c for m in MODES for c in (m, f"{m}_frac")])
+            + [c for x in CELLS for c in (x, f"{x}_frac")]
+            + [c for m in MODES if m not in CELLS for c in (m, f"{m}_frac")])
 
     out = Path(args.out_dir) if args.out_dir else analysis_dir(args.run)
     out.mkdir(parents=True, exist_ok=True)
@@ -83,20 +84,15 @@ def main() -> int:
         print(f"  ⚠️  FRAMING INCOMPLETE — {framed}/{leaks} leaked rows have a framing score "
               f"({pct:.0f}%).")
         print(f"      leak_rate / strong_leak / mean_concept are FINAL and safe to read.")
-        print(f"      used|named_only_share and the mode split (leaked vs meta_framed) are "
-              f"PROVISIONAL:")
-        print(f"      an unframed leak counts as `leaked`, so `meta_framed` will grow as stage 2 runs.")
+        print(f"      used_rate, used|named_only_share and the cells are PROVISIONAL:")
+        print(f"      an unframed leak counts as used, so the unused cells will grow as stage 2 runs.")
         print(f"      finish it with:  python scripts/judge.py ... --stage framing")
     scored = sum(r["n"] for r in rows)
     mentions = sum(r["mention_n"] for r in rows)
     if scored and mentions < scored:
         print(f"  ⚠️  MENTION INCOMPLETE — {mentions}/{scored} rows have a mention score. "
-              f"meta_framed vs success, direct vs inadvertent and p_used_given_mentioned are "
+              f"the named/unnamed split of the cells and p_used_given_mentioned are "
               f"PROVISIONAL until it is 100%:  python scripts/judge.py ... --stage mention")
-    contra = sum(r["n_contradiction"] for r in rows)
-    if contra:
-        print(f"  ⚠️  {contra} row(s) scored concept 2 AND framing 2 — refused: no mode "
-              f"(n_contradiction). The rule is under review (src/analysis/ratings.py).")
     return 0
 
 

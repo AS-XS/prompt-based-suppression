@@ -118,10 +118,9 @@ def main() -> int:
     print(f"\n{'-'*78}\n  TABLE C — leakage + modes: PRIMARY judge (0-2 concept, framing, mention)\n{'-'*78}")
     print(_fmt(rating))
     if rating:
-        print("  leak_rate = P(concept_score > 0). strong_leak = P(concept_score == 2).\n"
-              "  used|named_only_share are over the FRAMED leaks, and the modes are PROVISIONAL\n"
-              "  until framing_coverage and mention_coverage reach 1.0 (an unframed leak counts\n"
-              "  as used). n_contradiction = concept 2 & framing 2, refused: no mode (D31).\n")
+        print("  leak_rate = P(present) = P(concept_score > 0); used_rate = P(knowledge used).\n"
+              "  The cells (used/unused x named/unnamed) and the modes are PROVISIONAL until\n"
+              "  framing_coverage and mention_coverage reach 1.0 (an unframed leak counts as used).\n")
     print(f"\n{'-'*78}\n  cross-check: binary-primitive judge\n{'-'*78}")
     print(_fmt(modes))
     print(_fmt(cond))

@@ -55,16 +55,9 @@ def spotcheck_ids(manifest_rows: Mapping[str, Mapping], surface: str, n: int, se
 def audit_strata(rec: Mapping) -> str:
 
 
-    from src.analysis.ratings import contradiction, mentioned
+    from src.analysis.ratings import cell_of
 
-    if rec.get("concept_score") in ("", None):
-        return "unparsed"
-    if contradiction(rec):
-        return "contradiction"
-    mode = rec.get("mode")
-    if mode == "leaked":
-        return "leaked_direct" if mentioned(rec) else "leaked_inadvertent"
-    return mode or "unparsed"
+    return cell_of(rec) or "unparsed"
 
 
 def audit_ids(records: Sequence[Mapping], surface: str, per_label: int, seed: int,
