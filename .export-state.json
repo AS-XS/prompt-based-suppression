@@ -53,6 +53,7 @@
     "scripts/inspect_data.py": "b51eeeb488c1baa887a1f1a361c7eb16b76a26173bffadd6863eb38ef6b733cf",
     "scripts/judge.py": "4c897f17913d6ef6c1f9f9202b65918befbe8469abd4149645d838256985c649",
     "scripts/judge_agreement.py": "f549d36d76041a1662ebe3da3f6247e23817e3d1ca037d3976ad6a842cf36950",
+    "scripts/judge_coverage.py": "f72a871aaba017b952b0ea42af4ccca3c5015dadf4cfe9df85d5df8a17aed87f",
     "scripts/judge_primitives.py": "3d3a7272bda0a00b09fb5a1aaa2fea1830794e8ff0a3711f1eba9f7ae3b5f097",
     "scripts/judge_sample_report.py": "6e8e70a3cb8650a3f4b10b02209a3e6549be2cb9f0fba5c43e38e827c4eb79a2",
     "scripts/mode_table.py": "ed9ff53779b88766276f34a0cc951669280ec3d9319b5ed69cbcb296c1e5dc5a",
@@ -183,6 +184,7 @@
     "tests/test_isolated_table.py": "34dd319e7cba5bd35bb0f90c9c2fd7a29532b9aca09a0c2b51967579a78df04f",
     "tests/test_item_ids.py": "2be40adb249a1694cc9186f0773931d0078622c0b042f43054081b1387ebf514",
     "tests/test_jsonl_reading.py": "35ad69ca48e543b2a8f6e8408981aa243214e5d928507dbd00226a06887f0da1",
+    "tests/test_judge_coverage.py": "80841dff9a1405fabfb6c806d91cbdd5f4a0d78103994cd3783c928a240fa2d3",
     "tests/test_judge_defaults.py": "164f64eea7474af5bb67379f29ad11d5e89e61b9ddd1d4727858a94e667445d8",
     "tests/test_judge_sample.py": "3cde1fe1f0b6bc05f380aa650ad1135b736b756f2a8e49ca499f739f0790804f",
     "tests/test_label_ladder.py": "7dbfd954238b05aaf458163b18fbd1f70403979bb42d6aa325961d7ceab05bea",
@@ -217,5 +219,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "84c43ad9cee5fbd3a5b55a0d16c1bd0b339f5531"
+  "source_revision": "d0f2e92caf5f45d18de788e074ca55a309faa59a"
 }
