@@ -13,7 +13,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 CHANCE = 0.25
 
 
-TIERS = [("hazard", "#2a78d6"), ("neighbour", "#eb6834"), ("far MMLU", "#1baf7a")]
+TIERS = [("hazard", "#2a78d6"), ("near neighbour", "#eb6834"), ("general neighbours", "#1baf7a"),
+         ("far MMLU", "#eda100")]
+_TIER_OF = {"near": "near neighbour", "general": "general neighbours", "far": "far MMLU"}
 
 BASELINE_FILL = "#8a8a85"        
 ABOVE_FILL = "#2a78d6"           
@@ -57,7 +59,7 @@ def _cells(run: str):
 def _tier_levels(run: str):
 
 
-    from src.data.wmdp import NEAR_RETAIN
+    from src.analysis.retain_tiers import retain_tier
 
     d = Path("results") / run / "analysis" / "test"
     fwd = list(csv.DictReader(open(d / "accuracy_delta.csv")))
@@ -67,12 +69,11 @@ def _tier_levels(run: str):
     out = []
     for r in fwd:
         key = (r["model"], r["think_state"], r["mmlu_subject"])
-        near = set(NEAR_RETAIN.get(r["mmlu_subject"], ()))
         rows = [x for x in ret if (x["model"], x["think_state"], x["concept_id"]) == key]
         tiers = {"hazard": (float(r["baseline_acc"]),
                             {w: float(r[f"{w}_acc"]) for w in waves if r.get(f"{w}_acc")})}
-        for name, want_near in (("neighbour", True), ("far MMLU", False)):
-            sub = [x for x in rows if (x["mmlu_subject"] in near) == want_near]
+        for tier, name in _TIER_OF.items():
+            sub = [x for x in rows if retain_tier(r["mmlu_subject"], x["mmlu_subject"]) == tier]
             if not sub:
                 continue
             mean = lambda xs: sum(xs) / len(xs) if xs else None
@@ -87,7 +88,7 @@ def _tier_levels(run: str):
 def _draw_tiers(ax, r, tiers, waves, fs: float = 1.0):
 
 
-    h = 0.26
+    h = 0.2
     ax.set_facecolor(SURFACE)
     labels = ["baseline (no prompt)"] + [LABELS.get(w, w) for w in waves]
     ys = list(range(len(labels)))[::-1]
@@ -97,7 +98,7 @@ def _draw_tiers(ax, r, tiers, waves, fs: float = 1.0):
             continue
         base, per_wave = tiers[tier]
         vals = [base] + [per_wave.get(w) for w in waves]
-        offset = (1 - ti) * h
+        offset = (1.5 - ti) * h
         for y, v in zip(ys, vals):
             if v is None:
                 continue
@@ -166,9 +167,9 @@ def _plot_tiers(plt, Patch, run: str, out_dir: Path, split: bool = False):
     fig.suptitle(f"{run} — blast radius as accuracy LEVELS, test split",
                  fontsize=14, fontweight="bold", x=0.010, ha="left", y=0.996, color=INK)
     fig.text(0.010, 0.977,
-             "Three tiers per prompt, each against its own baseline (top row, faded). Targeted "
-             "suppression = the hazard bar falls to the floor while neighbour and far MMLU stay up. "
-             "All three falling together is a model answering worse at everything.",
+             "Four tiers per prompt, each against its own baseline (top row, faded). Targeted "
+             "suppression = the hazard bar falls to the floor while the neighbours and far MMLU stay up. "
+             "All four falling together is a model answering worse at everything.",
              fontsize=9.5, ha="left", color=INK_SOFT)
     fig.legend(handles=[Patch(facecolor=c, label=n) for n, c in TIERS]
                        + [Patch(facecolor="#ffffff", edgecolor=INK_SOFT, hatch="///",

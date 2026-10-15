@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.analysis.removal import Removal  # noqa: E402
-from src.data.wmdp import NEAR_RETAIN  # noqa: E402
+from src.analysis.retain_tiers import near_label, retain_tier  # noqa: E402
 
 
 _LABELS: dict[str, tuple[str, str]] = {
@@ -91,8 +91,10 @@ _LABELS: dict[str, tuple[str, str]] = {
 _ORDER = [p for p in _LABELS]
 
 CELLS: list[tuple[str, str, str]] = []
-TIERS = ["HAZARD (target)", "NEIGHBOUR subjects", "FAR MMLU (general)"]
-COLOURS = ["#b2182b", "#ef8a62", "#2166ac"]      
+TIERS = ["HAZARD (target)", "NEAR neighbour", "GENERAL neighbours", "FAR MMLU (general)"]
+TIER_KEYS = ("hazard", "near", "general", "far")
+
+COLOURS = ["#b2182b", "#ef8a62", "#fdb863", "#2166ac"]
 
 
 def _load(run: str):
@@ -131,11 +133,11 @@ def _drops(run: str, vs: str | None = None):
     tiers = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(list)))
     for r in retain:
         key = (r["model"], r["think_state"], r["concept_id"])
-        near = r["mmlu_subject"] in NEAR_RETAIN.get(r["concept_id"], ())
+        tier = retain_tier(r["concept_id"], r["mmlu_subject"])
         for pid, _, _ in CELLS:
             d = drop(r, pid)
             if d is not None:
-                tiers[key][pid]["near" if near else "far"].append(d)
+                tiers[key][pid][tier].append(d)
     out = {}
     for key, byp in tiers.items():
         row = forget.get(key)
@@ -146,10 +148,9 @@ def _drops(run: str, vs: str | None = None):
             d = drop(row, pid)
             if d is None or pid not in byp:
                 continue
-            near, far = byp[pid].get("near", []), byp[pid].get("far", [])
-            cells[pid] = [d,
-                          sum(near) / len(near) if near else 0.0,
-                          sum(far) / len(far) if far else 0.0]
+
+            cells[pid] = [d] + [sum(v) / len(v) if (v := byp[pid].get(t)) else None
+                                for t in TIER_KEYS[1:]]
         if cells:
             out[key] = cells
     return out
@@ -192,12 +193,12 @@ def _render_table_fig(plt, args, keys, data, suffix: str | None = None):
     hz_base = _hazard(args.run, args.vs)
     ncol = 2
     nrow = (len(keys) + ncol - 1) // ncol
-    foot_in = 0.17 * (len(CELLS) + 10) + 0.4
+    foot_in = 0.17 * (len(CELLS) + 12) + 0.4
 
 
     per_sub = max(2.5, 0.20 * len(CELLS) + 0.9)
     fig_h = per_sub * nrow + foot_in + 1.6
-    fig, axes = plt.subplots(nrow, ncol, figsize=(17, fig_h), squeeze=False)
+    fig, axes = plt.subplots(nrow, ncol, figsize=(18.5, fig_h), squeeze=False)
     flat = [a for row in axes for a in row]
     thin_any: list[tuple[str, int, int]] = []
 
@@ -215,10 +216,14 @@ def _render_table_fig(plt, args, keys, data, suffix: str | None = None):
                 thin.append((lbl, n, nb))
             rows.append(lbl)
             line = []
-            for t, tier in enumerate(("hazard", "near", "far")):
+            for t, tier in enumerate(TIER_KEYS):
                 b0 = hb if tier == "hazard" and hb is not None else b.get(tier)
                 drop = cells[pid][t]
-                line.append(f"{b0:.0f}% → {b0 - drop:.0f}%" if b0 is not None else f"−{drop:.0f} pp")
+                if drop is None:
+                    line.append("—")
+                else:
+                    line.append(f"{b0:.0f}% → {b0 - drop:.0f}%" if b0 is not None
+                                else f"−{drop:.0f} pp")
 
 
             hz = hz_base.get((key, pid), (b.get("hazard"), 0, 0))[0]
@@ -233,14 +238,17 @@ def _render_table_fig(plt, args, keys, data, suffix: str | None = None):
 
 
         tbl = ax.table(cellText=text, rowLabels=rows,
-                       colLabels=["HAZARD", "NEIGHBOUR", "FAR MMLU", "% REMOVED"],
-                       colWidths=[0.21, 0.21, 0.21, 0.16],
+                       colLabels=["HAZARD", f"NEAR\n{near_label(concept)}", "GENERAL\nNEIGHBOURS",
+                                  "FAR\nMMLU", "%\nREMOVED"],
+                       colWidths=[0.14, 0.23, 0.15, 0.14, 0.12],
                        cellLoc="center", rowLoc="right", loc="center")
         tbl.auto_set_font_size(False); tbl.set_fontsize(9.5); tbl.scale(1, 1.55)
         for (r, c), cell in tbl.get_celld().items():
             cell.set_edgecolor("#cccccc")
             if r == 0:
-                cell.set_facecolor("#eeeeee"); cell.set_text_props(weight="bold", fontsize=9)
+
+                cell.set_facecolor("#eeeeee"); cell.set_text_props(weight="bold", fontsize=8)
+                cell.set_height(cell.get_height() * 1.9)
             elif c == -1:
                 cell.set_text_props(weight="bold", fontsize=9)
             elif c >= len(TIERS):
@@ -250,7 +258,8 @@ def _render_table_fig(plt, args, keys, data, suffix: str | None = None):
                 drop = data[key][[p for p, _, _ in CELLS if p in data[key]][r - 1]][c]
 
 
-                cell.set_facecolor(plt.cm.Reds(min(max(drop, 0) / 55.0, 0.75)) if drop > 2 else "white")
+                cell.set_facecolor(plt.cm.Reds(min(max(drop, 0) / 55.0, 0.75))
+                                   if drop is not None and drop > 2 else "white")
         thin_any += thin
         state = "thinking on" if think == "on" else ("thinking off" if think == "off" else "no reasoning mode")
 
@@ -270,11 +279,14 @@ def _render_table_fig(plt, args, keys, data, suffix: str | None = None):
             f"\u2021 SCORED ON FEWER THAN {THIN:.0%} OF THE ITEMS — the rest of that wave's "
             "generations did not parse (gemma-4-12B-it think-on truncates). The number after "
             "\u2021 is how many items survived. Do not read those rows as results.", 104) + "\n"
-    footer = (warn + "HAZARD = the WMDP questions being suppressed  ·  NEIGHBOUR = the concept's declared "
-              "near subjects  ·  FAR MMLU = general capability\n"
+    footer = (warn + "HAZARD = the WMDP questions being suppressed  ·  NEAR = the declared neighbour "
+              "WMDP's topic reaches into (virology / computer security)\n"
+              "GENERAL NEIGHBOURS = the other declared neighbours  ·  FAR MMLU = general capability\n"
+              "NEAR + GENERAL is the declared neighbour set the headline selectivity is read against; "
+              "the split is for reading only.\n"
               "Chance is 25% on every tier: an accuracy below it means the model still knows the "
               "answer and is avoiding it.\nDarker shading = more accuracy destroyed. That is GOOD in "
-              "the first column and BAD in the other two.\n\n")
+              "the first column and BAD in the other three.\n\n")
 
 
     footer += "WHAT EACH PROMPT SAYS\n"
@@ -302,7 +314,7 @@ def _baselines(run: str, vs: str | None = None):
     acc = collections.defaultdict(lambda: collections.defaultdict(lambda: [0.0, 0]))
     for r in retain:
         key = (r["model"], r["think_state"], r["concept_id"])
-        tier = "near" if r["mmlu_subject"] in NEAR_RETAIN.get(r["concept_id"], ()) else "far"
+        tier = retain_tier(r["concept_id"], r["mmlu_subject"])
         n = int(r["n_baseline"])
         if not r.get(col):
             continue
@@ -374,7 +386,7 @@ def main() -> int:
     ncol = 2
     nrow = (len(keys) + ncol - 1) // ncol
     fig, axes = plt.subplots(nrow, ncol, figsize=(13, 3.6 * nrow + 2.6), squeeze=False)
-    width = 0.26
+    width = 0.2
 
     for ax, key in zip([a for row in axes for a in row], keys):
         model, think, concept = key
@@ -383,14 +395,16 @@ def main() -> int:
         xs = range(len(labels))
         for t, (tier, colour) in enumerate(zip(TIERS, COLOURS)):
             vals = [cells[pid][t] for pid, _, _ in CELLS if pid in cells]
-            ax.bar([x + (t - 1) * width for x in xs], vals, width,
+            if all(v is None for v in vals):
+                continue
+            vals = [0.0 if v is None else v for v in vals]
+            ax.bar([x + (t - 1.5) * width for x in xs], vals, width,
                    label=tier if ax is axes[0][0] else None, color=colour,
                    edgecolor="white", linewidth=0.5)
             for x, v in zip(xs, vals):
-                ax.text(x + (t - 1) * width, v + (0.9 if v >= 0 else -2.2), f"{v:.0f}",
+                ax.text(x + (t - 1.5) * width, v + (0.9 if v >= 0 else -2.2), f"{v:.0f}",
                         ha="center", va="bottom" if v >= 0 else "top", fontsize=7.5)
-        thin_any += thin
-        state = "thinking on" if think == "on" else ("thinking off" if think == "off" else "no reasoning mode")
+        state ="thinking on" if think == "on" else ("thinking off" if think == "off" else "no reasoning mode")
         ax.set_title(f"{model}  ·  {concept}  ({state})", fontsize=10.5, pad=8)
         ax.set_xticks(list(xs)); ax.set_xticklabels(labels, fontsize=9)
         ax.set_ylabel("accuracy lost (pp)", fontsize=9)
@@ -405,16 +419,16 @@ def main() -> int:
 
 
     fig.suptitle(f"{args.run} — how far the damage reaches", fontsize=14, y=0.998)
-    fig.legend(loc="upper center", bbox_to_anchor=(0.5, 0.963), ncol=3, frameon=False, fontsize=10.5)
+    fig.legend(loc="upper center", bbox_to_anchor=(0.5, 0.963), ncol=4, frameon=False, fontsize=10.5)
 
     legend = "Taller bar = more accuracy destroyed.  Only the dark red bar is the target.\n\n"
     legend += "WHAT EACH PROMPT SAYS  (all four share the same “respond from within a world "
     legend += "where {concept} does not exist” scope)\n"
     for _, lbl, gloss in CELLS:
         legend += f"     {lbl:<20s} {gloss}\n"
-    legend += ("\nHAZARD = the WMDP questions being suppressed  ·  NEIGHBOUR = adjacent subjects "
-               "(College Bio, Virology, …)  ·  FAR MMLU = unrelated subjects (marketing, philosophy)\n"
-               "A prompt that worked would show a tall dark-red bar and two short ones. "
+    legend += ("\nHAZARD = the WMDP questions being suppressed  ·  NEAR = virology / computer security"
+               "  ·  GENERAL = the other declared neighbours  ·  FAR MMLU = unrelated subjects\n"
+               "A prompt that worked would show a tall dark-red bar and three short ones. "
                "Chance on every tier is 25%, so a drop that takes the target below its baseline-minus-"
                "the-floor is going below guessing.")
     fig.text(0.012, 0.005, legend, fontsize=8.6, va="bottom", family="monospace")
