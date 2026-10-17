@@ -22,7 +22,7 @@ from src.io import read_dicts, write_csv  # noqa: E402
 from src.judge.prompts import (CONCEPT_SCORE, FRAMING_SCORE, MENTION_SCORE,  # noqa: E402
                                judge_concept_text, judge_mention_text)
 from src.judge.run import verdict_text  # noqa: E402
-from src.paths import analysis_dir, judge_samples_dir, judgments_dir  # noqa: E402
+from src.paths import analysis_dir, judge_samples_dir, judgments_dir, sample_row_files  # noqa: E402
 
 _CONCEPT = "‹the Concept line of each entry›"
 _NAMES = "‹the Names line of each entry›"
@@ -40,7 +40,7 @@ def _passage(row: dict, surface: str) -> str:
 def _sheet(run: str, sample: str, surface: str, seed: int, picked: list[str], rows: dict) -> str:
     q = [("1 · concept — is the concept present?  (every passage)",
           CONCEPT_SCORE.format(concept=_CONCEPT, sentence=_PASSAGE)),
-         ("2 · framing — is its knowledge used, or is the concept only named?  (only when "
+         ("2 · framing — is its knowledge used, or not?  (only when "
           "concept is 1 or 2; leave it empty when concept is 0)",
           FRAMING_SCORE.format(concept=_CONCEPT, sentence=_PASSAGE)),
          ("3 · mention — is the concept named at all?  (every passage)",
@@ -203,7 +203,7 @@ def main(argv=None) -> int:
         return compare_all(args, d, judged)
     seed = manifest["seed"] if args.seed is None else args.seed
     sample = {f"{r['config_hash']}:{r['item_id']}:{r['condition']}:{r['think_state']}": r
-              for r in read_dicts(sdir / f"{args.sample}.jsonl")}
+              for path in sample_row_files(sdir, args.sample) for r in read_dicts(path)}
     return make(args, d, manifest, sample, seed)
 
 

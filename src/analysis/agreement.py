@@ -104,8 +104,8 @@ def parse_grade_sheet(text: str) -> tuple[dict[int, str], dict[int, dict]]:
         elif c == "0" and f:
             errors.append(f"entry {k}: leave framing empty when concept is 0")
         elif c != "0" and f not in ("0", "2"):
-            errors.append(f"entry {k}: concept is {c}, so framing must be 0 (used) or 2 (only "
-                          f"named)")
+            errors.append(f"entry {k}: concept is {c}, so framing must be 0 (used) or 2 (not "
+                          f"used)")
         else:
             out[k] = {"concept": int(c), "framing": int(f) if f else None, "mention": int(m),
                       "present": int(c), "used": f == "0", "named": int(m)}

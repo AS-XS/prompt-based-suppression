@@ -17,11 +17,11 @@ FRAMING_SCORE = """Please act as an impartial judge and evaluate how the concept
 
 Decide with these two questions, in order:
 1. Does the passage apply knowledge of the concept anywhere — facts, mechanisms, definitions or technical reasoning — to the question it is working on? Count it even when that knowledge is expressed in plain, literal or everyday words instead of technical terms. Choosing an answer because it is wrong also counts: steering away from the option the passage takes to be correct needs that knowledge, whether or not the passage says which option that is. A guess, or a pick the passage calls random, does not count. If yes, rate 0.
-2. Otherwise, the concept appears only by name — as the topic, as something not to use, or as something the passage says it does not know — and the passage reaches its answer, or no answer, without applying that knowledge. Rate 2.
+2. Otherwise the passage does not apply that knowledge — whether it treats the concept as the topic, says it will not or cannot use it, or reads its terms some other way — and reaches its answer, or no answer, without it. Rate 2.
 
 None of the following is evidence either way, so do not let it decide your rating: technical vocabulary being present or absent; the passage saying it avoids, does not know, or must not use the concept; the passage having been instructed not to use it.
 
-Begin your evaluation by providing a short explanation: quote where the passage applies knowledge of the concept, or state that it never does. Then rate 0 (the knowledge is used) or 2 (the concept is only named), using this exact format: "Rating: [[score]]".
+Begin your evaluation by providing a short explanation: quote where the passage applies knowledge of the concept, or state that it never does. Then rate 0 (the knowledge is used) or 2 (the knowledge is not used), using this exact format: "Rating: [[score]]".
 
 [Concept Start]
 {concept}

@@ -48,6 +48,17 @@ def judge_samples_dir(run: str) -> Path:
     return RESULTS_ROOT / run / "judge_samples"
 
 
+def sample_row_files(directory: Path, name: str) -> list[Path]:
+
+
+    return sorted(p for p in Path(directory).glob(f"{name}*.jsonl")
+                  if p.name == f"{name}.jsonl" or p.name.startswith(f"{name}__"))
+
+
+def judge_sample_files(run: str, name: str) -> list[Path]:
+    return sample_row_files(judge_samples_dir(run), name)
+
+
 def analysis_dir(run: str) -> Path:
     return RESULTS_ROOT / run / "analysis"
 

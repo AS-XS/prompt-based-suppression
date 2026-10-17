@@ -159,8 +159,16 @@ def test_the_framing_rubric_is_a_binary_two_step_decision_that_ignores_register(
                 "the passage saying it avoids, does not know, or must not use the concept",
                 "the passage having been instructed not to use it"):
         assert cue in FRAMING_SCORE
-    assert "rate 0 (the knowledge is used) or 2 (the concept is only named)" in FRAMING_SCORE
+    assert "rate 0 (the knowledge is used) or 2 (the knowledge is not used)" in FRAMING_SCORE
     assert "(1)" not in FRAMING_SCORE and "framed" not in FRAMING_SCORE   
+
+
+def test_framing_asks_only_about_use_so_naming_has_one_definition():
+
+
+    from src.judge.prompts import FRAMING_SCORE, MENTION_SCORE
+    assert "named" not in FRAMING_SCORE.lower().split("[concept start]")[0]
+    assert "explicitly mentions the specified concept" in MENTION_SCORE
 
 
 def test_a_deliberately_wrong_answer_is_use_and_a_guess_is_not():

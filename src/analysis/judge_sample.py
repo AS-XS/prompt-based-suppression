@@ -48,6 +48,10 @@ def joined(best: Mapping[tuple, Mapping], manifest_rows: Mapping[str, Mapping],
         rec = {**rec, **{k: v for k, v in meta.items() if k not in rec},
                "lexical": lexical_flag(meta, surface),
                "incoherent": surface == "trace" and gid in incoherent}
+
+
+        if meta.get("arm"):
+            rec["condition"] = meta["arm"]
         rec["cell"], rec["mode"] = cell_of(rec), mode_of(rec)
         out.append(rec)
     return out, foreign

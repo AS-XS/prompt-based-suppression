@@ -24,7 +24,7 @@ from src.analysis.surfaces import explanation_of, trace_of  # noqa: E402
 from src.judge.prompts import judge_concept_text, judge_mention_text  # noqa: E402
 from src.judge.run import verdict_text  # noqa: E402
 from src.paths import (analysis_dir, generations_dir, items_path,  # noqa: E402
-                       judge_samples_dir, judgments_dir)
+                       judge_samples_dir, judgments_dir, sample_row_files)
 
 STAGES = ("concept", "framing", "mention")
 
@@ -75,6 +75,15 @@ def md_table(rows: list[dict], cols: list[str]) -> str:
     head = "| " + " | ".join(cols) + " |\n|" + "---|" * len(cols) + "\n"
     return head + "".join("| " + " | ".join(cell(c, r.get(c)) for c in cols) + " |\n"
                           for r in rows)
+
+
+def _design(manifest: dict) -> str:
+
+    if manifest.get("design") == "panel":
+        return (f"the same {manifest['per_concept']} items per concept in every model × prompt cell "
+                f"and every unlearned checkpoint (panel)")
+    return (f"{manifest['per_wave']} per wave + {manifest['baseline']} baseline per (model, concept), "
+            f"think-on")
 
 
 def _pct(v) -> str:
@@ -268,8 +277,9 @@ def main() -> int:
     manifest = json.loads((sdir / f"{args.sample}.manifest.json").read_text(encoding="utf-8"))
     seed = manifest["seed"] if args.seed is None else args.seed
     sample = {}
-    for r in read_dicts(sdir / f"{args.sample}.jsonl"):
-        sample[f"{r['config_hash']}:{r['item_id']}:{r['condition']}:{r['think_state']}"] = r
+    for path in sample_row_files(sdir, args.sample):
+        for r in read_dicts(path):
+            sample[f"{r['config_hash']}:{r['item_id']}:{r['condition']}:{r['think_state']}"] = r
     globs = args.judgments or [str(judgments_dir(args.run) / f"{args.sample}*.jsonl")]
     files = sorted({f for g in globs for f in glob.glob(g)})
     if not files:
@@ -316,9 +326,8 @@ def main() -> int:
                     key=lambda r: (r["surface"] != "explanation", r["concept_id"], r["condition"]))
     report = (
         f"# Judge on `{args.run}` traces — sample `{args.sample}`\n\n"
-        f"Sample: {len(manifest['rows']):,} rows, seed {manifest['seed']}, "
-        f"{manifest['per_wave']} per wave + {manifest['baseline']} baseline per (model, concept); "
-        f"tier `{manifest['probe']}`, think-on.\n\n"
+        f"Sample: {len(manifest['rows']):,} rows, seed {manifest['seed']}, {_design(manifest)}; "
+        f"tier `{manifest['probe']}`.\n\n"
         f"Judge configuration: concept `{config}`, framing `{framing_config}`, mention "
         f"`{mention_config}` · think default "
         f"`{next((r.get('judge_think_default') for r in rows), None)}` · decode {sampling}\n\n"
