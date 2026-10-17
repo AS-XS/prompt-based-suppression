@@ -210,3 +210,8 @@ def test_the_report_reads_a_checkpoint_as_its_own_arm(tree):
     assert sum(int(r["n"]) for r in control) == n_base + sum(
         1 for v in m["rows"].values() if v["arm"] == "baseline" and v["think_state"] == "on")
     assert "panel" in (adir / "report.md").read_text()
+    cells = list(csv.DictReader((adir / "cells.csv").open()))      
+    keys = {(r["model"], r["prompt_id"], r["concept_id"], r["surface"]) for r in cells}
+    assert ("gemma-a", "w1", "wmdp-bio", "trace") in keys
+    assert ("rmu-a-bio-u1", "none-baseline", "wmdp-bio", "explanation") in keys
+    assert len(keys) == len(cells)

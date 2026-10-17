@@ -37,6 +37,7 @@ _RATES = ["n", "n_unparsed", "leak_rate", "leak_lo", "leak_hi", "strong_leak", "
           *_COUNTS, *(f"{c}_frac" for c in _COUNTS)]
 _LEAK_COLS = ["model", "concept_id", "condition", "surface", *_RATES]
 _WAVE_COLS = ["concept_id", "condition", "prompt_id", "surface", *_RATES]
+_CELL_COLS = ["model", "concept_id", "condition", "prompt_id", "surface", *_RATES]
 _CONTROL_COLS = ["concept_id", "surface", *_RATES]
 _SURF_COLS = ["model", "concept_id", "condition", "n_paired", "both", "trace_only",
               "explanation_only", "neither", "lex_n", "lex_both", "lex_trace_only",
@@ -295,6 +296,7 @@ def main() -> int:
     by = ["model", "concept_id", "condition", "surface"]
     leak = leak_table(rows, by) + leak_table(_pooled(rows), by)
     waves = leak_table(rows, ["concept_id", "condition", "prompt_id", "surface"])
+    cells = leak_table(rows, ["model", "concept_id", "condition", "prompt_id", "surface"])
     control = leak_table([r for r in rows if r["condition"] == "baseline"],
                          ["concept_id", "surface"])
     surf = (surface_table(rows, ["model", "concept_id", "condition"])
@@ -302,6 +304,7 @@ def main() -> int:
     agree = agreement_table(rows)
     write_csv(out / "leak.csv", leak, _LEAK_COLS)
     write_csv(out / "waves.csv", waves, _WAVE_COLS)
+    write_csv(out / "cells.csv", cells, _CELL_COLS)
     write_csv(out / "control.csv", control, _CONTROL_COLS)
     write_csv(out / "surfaces.csv", surf, _SURF_COLS)
     write_csv(out / "agreement.csv", agree, _AGREE_COLS)
