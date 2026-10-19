@@ -47,7 +47,12 @@ def present(rec: Mapping) -> bool:
 
 
 def used(rec: Mapping) -> bool:
-    return present(rec) and _score(rec, "framing_score") != 2
+
+
+    f = _score(rec, "framing_score")
+    if f is not None:
+        return f != 2
+    return present(rec)
 
 
 def mentioned(rec: Mapping) -> bool:
@@ -109,7 +114,7 @@ def rating_table(records: Iterable[Mapping], by: Sequence[str] = ("concept_class
         n = len(scored)
         leaks = [r for r in scored if present(r)]
         n_used = sum(1 for r in scored if used(r))
-        framed = [r for r in leaks if _score(r, "framing_score") is not None]
+        framed = [r for r in scored if _score(r, "framing_score") is not None]
         fc = Counter(_score(r, "framing_score") for r in framed)
         with_mention = [r for r in scored if _score(r, "mention_score") is not None]
         mc = Counter(_score(r, "mention_score") for r in with_mention)
@@ -126,10 +131,11 @@ def rating_table(records: Iterable[Mapping], by: Sequence[str] = ("concept_class
                "mean_concept": (round(sum(_score(r, "concept_score") for r in scored) / n, 4)
                                 if n else None),
                "used_rate": frac(n_used, n), "used_lo": used_lo, "used_hi": used_hi,
+               "n_used_not_present": sum(1 for r in framed if used(r) and not present(r)),
 
 
                "framed_n": len(framed),
-               "framing_coverage": frac(len(framed), len(leaks)),
+               "framing_coverage": frac(len(framed), n),
                "used_share": frac(fc.get(0, 0) + fc.get(1, 0), len(framed)),
                "named_only_share": frac(fc.get(2, 0), len(framed)),
                "framing1_n": fc.get(1, 0),          

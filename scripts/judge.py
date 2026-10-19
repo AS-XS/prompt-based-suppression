@@ -102,13 +102,9 @@ def plan_file(gens_path, out_dir, suppressed_only, limit, surfaces=("explanation
                 continue
             if stage in ("framing", "mention") and done is None:
                 continue
-            if stage == "framing":
-                c = done.get("concept_score")
-                if not c or c <= 0:
-                    continue
-                if scored_here(done, "framing"):
-                    continue
-            if stage == "mention" and scored_here(done, "mention"):
+
+
+            if stage in ("framing", "mention") and scored_here(done, stage):
                 continue
             text = _surface_text(r, surface)
             if not (text or "").strip():
@@ -165,10 +161,8 @@ def run_plan(llm, sp, plan: dict, judge_name, stage="both", chat_kw=None,
             pairs = [(t.concept_text, t.text) for t in part]
             scores = concept_scores(llm, sp, pairs, chat_kw)
             if stage == "both":
-                leaked = [i for i, s in enumerate(scores) if (s["concept_score"] or 0) > 0]
-                for i, f in zip(leaked, framing_scores(llm, sp, [pairs[i] for i in leaked],
-                                                       chat_kw)):
-                    scores[i].update({**f, **framing_meta})
+                for s, f in zip(scores, framing_scores(llm, sp, pairs, chat_kw)):
+                    s.update({**f, **framing_meta})
             recs = [_record(t.row, t.surface, t.concept_text, judge_name, meta, s)
                     for t, s in zip(part, scores)]
         append_jsonl(out_jsonl, [_Row(rec) for rec in recs])

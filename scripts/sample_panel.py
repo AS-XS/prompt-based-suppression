@@ -23,7 +23,7 @@ from src.provenance import git_commit  # noqa: E402
 UNLEARN_RUNS = ("rmu1", "rmu2", "rmu3", "rmu4", "elm1", "elm2", "elm3", "r2mu-e2b", "r2mu-g31")
 
 
-CALLS_PER_SURFACE, TOKENS_PER_CALL, TOKENS_PER_SECOND = 2.97, 1480, 937
+CALLS_PER_SURFACE, TOKENS_PER_CALL, TOKENS_PER_SECOND = 3, 1480, 937
 
 
 def _gid(r: dict) -> str:

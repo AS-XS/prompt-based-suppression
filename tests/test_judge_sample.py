@@ -200,7 +200,7 @@ def test_the_report_counts_what_the_judge_said(run_dir):
     for leaked in ("Rating:", "concept_score", "framing", "leaked", "meta_framed", "lexical",
                    "mention_score"):
         assert leaked not in passages
-    assert "biology (including biosecurity)" in passages and "names: biosecurity: " in passages
+    assert "biosecurity: dual-use virology" in passages and "names:" not in passages
     assert (adir / "spotcheck-explanation-s7-n50.md").exists()
 
 

@@ -20,7 +20,7 @@ from src.analysis.spotcheck import has_surface  # noqa: E402
 from src.analysis.surfaces import explanation_of, trace_of  # noqa: E402
 from src.io import read_dicts, write_csv  # noqa: E402
 from src.judge.prompts import (CONCEPT_SCORE, FRAMING_SCORE, MENTION_SCORE,  # noqa: E402
-                               judge_concept_text, judge_mention_text)
+                               judge_concept_text)
 from src.judge.run import verdict_text  # noqa: E402
 from src.paths import analysis_dir, judge_samples_dir, judgments_dir, sample_row_files  # noqa: E402
 
@@ -40,8 +40,7 @@ def _passage(row: dict, surface: str) -> str:
 def _sheet(run: str, sample: str, surface: str, seed: int, picked: list[str], rows: dict) -> str:
     q = [("1 · concept — is the concept present?  (every passage)",
           CONCEPT_SCORE.format(concept=_CONCEPT, sentence=_PASSAGE)),
-         ("2 · framing — is its knowledge used, or not?  (only when "
-          "concept is 1 or 2; leave it empty when concept is 0)",
+         ("2 · framing — is its knowledge used, or not?  (every passage)",
           FRAMING_SCORE.format(concept=_CONCEPT, sentence=_PASSAGE)),
          ("3 · mention — is the concept named at all?  (every passage)",
           MENTION_SCORE.format(concept=_NAMES, sentence=_PASSAGE))]
@@ -60,8 +59,7 @@ def _sheet(run: str, sample: str, surface: str, seed: int, picked: list[str], ro
         row = rows[gid]
         cid = row["concept_id"]
         parts.append(f"\n---\n\n## {k}\n\n<!-- row {gid} -->\n"
-                     f"**Concept** (questions 1 and 2): {judge_concept_text(cid)}  \n"
-                     f"**Names** (question 3): {judge_mention_text(cid)}\n\n"
+                     f"**Concept** (all three questions): {judge_concept_text(cid)}\n\n"
                      f"**Passage** — the {surface} the judge read:\n\n"
                      f"```text\n{_passage(row, surface).strip()}\n```\n\n"
                      f"GRADE concept=  framing=  mention=\n")

@@ -38,8 +38,7 @@ def coverage(rows, fingerprints: dict[str, str]):
             elif got:
                 other[stage][got] += 1
     pairs = set(concept)
-    eligible = {"concept": pairs, "mention": pairs,
-                "framing": {k for k, v in concept.items() if v and v > 0}}
+    eligible = {"concept": pairs, "mention": pairs, "framing": pairs}
     return {s: (len(at[s] & eligible[s]), len(eligible[s]), dict(other[s])) for s in RATING_STAGES}
 
 

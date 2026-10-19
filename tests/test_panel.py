@@ -68,7 +68,7 @@ def test_an_unlearning_run_is_taken_only_on_the_prompt_runs_instrument():
     assert not same_instrument({"olmo": {"x"}}, prompt)[0]
 
 
-def _row(model, concept, item, prompt, *, think="on", cfg=None, probe="forget"):
+def _row(model, concept, item, prompt, *, think="on", cfg=None, probe="forget", answer="B"):
     trace = f"<|channel>thought\nweighing {concept} item {item}<channel|>" if think == "on" else ""
     return {"schema_version": "1", "git_commit": "x", "config_hash": cfg or f"h-{model}-{prompt}",
             "config_id": model, "model": model, "prompt_id": prompt,
@@ -77,7 +77,7 @@ def _row(model, concept, item, prompt, *, think="on", cfg=None, probe="forget"):
             "sampling": {"temperature": None, "top_p": None, "max_tokens": 16384, "seed": None},
             "item_id": f"{concept}-{item}", "concept_id": concept, "concept_class": "general",
             "concept_subtype": "hazard", "probe_type": probe,
-            "raw_output": trace + "Answer: B\nWhy: a reason.", "raw_reasoning": None,
+            "raw_output": trace + f"Answer: {answer}\nWhy: a reason.", "raw_reasoning": None,
             "finish_reason": "stop"}
 
 
@@ -93,7 +93,10 @@ def tree(tmp_path):
     g = tmp_path / "results"
     for model, think in (("gemma-a", "on"), ("llama-x", "na")):
         for prompt in ("none-baseline", "w1", "w2"):
-            rows = [_row(model, c, i, prompt, think=think) for c in CONCEPTS for i in range(6)]
+
+            rows = [_row(model, c, i, prompt, think=think,
+                         answer="C" if (prompt == "w1" and i == 0) else "B")
+                    for c in CONCEPTS for i in range(6)]
             if think == "on":
                 rows += [_row(model, c, i, prompt, think="off") for c in CONCEPTS for i in range(6)]
             rows += [_row(model, "wmdp-bio", 0, prompt, think=think, probe="neighbor")]
@@ -105,6 +108,12 @@ def tree(tmp_path):
         for ckpt in (f"rmu-a-bio-{run}", f"elm-a-cyber-{run}"):
             _write(g / run / "generations" / f"{ckpt}__none-baseline.jsonl",
                    [_row(ckpt, c, i, "none-baseline") for c in CONCEPTS for i in range(6)])
+    items = [{"item_id": f"{c}-{i}", "concept_id": c, "concept_class": "general",
+              "concept_subtype": "hazard", "probe_type": "forget", "question": f"Q {c} {i}?",
+              "answer_key": "B" if i < 4 else "A", "source": "WMDP",
+              "meta": {"format": "mc", "choices": ["w", "x", "y", "z"]}}
+             for c in CONCEPTS for i in range(6)]
+    _write(tmp_path / "data" / "processed" / "p" / "items.jsonl", items)
     return tmp_path
 
 
@@ -215,3 +224,52 @@ def test_the_report_reads_a_checkpoint_as_its_own_arm(tree):
     assert ("gemma-a", "w1", "wmdp-bio", "trace") in keys
     assert ("rmu-a-bio-u1", "none-baseline", "wmdp-bio", "explanation") in keys
     assert len(keys) == len(cells)
+
+
+def test_the_join_puts_everything_about_a_generation_in_one_record(tree):
+
+
+    _sample(tree, "--per-concept", "6")
+    d = tree / "results" / "h"
+    m = json.loads((d / "judge_samples" / "panel-s3.manifest.json").read_text())
+    recs = []
+    for gid, meta in m["rows"].items():
+        for surface in ("trace", "explanation"):
+            if surface == "trace" and meta["think_state"] != "on":
+                continue
+            odd = meta["item_id"] == "wmdp-bio-5" and meta["prompt_id"] == "w2"
+            recs.append({"generation_id": gid, "surface": surface,
+                         "concept_score": 0 if odd else 2, "framing_score": 0,
+                         "mention_score": 2 if odd else 0, "judge_config_hash": "fp",
+                         "framing_config_hash": "ff", "mention_config_hash": "fm",
+                         "concept_raw": "<think>hm</think>The knowledge is there.\nRating: [[2]]",
+                         "concept_finish_reason": "stop"})
+    _write(d / "judgments" / "panel-s3__all.jsonl", recs)
+    out = subprocess.run([sys.executable, str(ROOT / "scripts" / "join_judged.py"), "--run", "h",
+                          "--sample", "panel-s3"], cwd=tree, capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr[-1500:]
+    rows = [json.loads(line) for line in
+            (d / "analysis" / "judge_sample" / "panel-s3" / "joined.jsonl").read_text().splitlines()]
+    assert len(rows) == len(m["rows"])
+    flipped = next(r for r in rows if r["model"] == "gemma-a" and r["prompt_id"] == "w1"
+                   and r["item_id"] == "wmdp-bio-0")
+    assert (flipped["question"], flipped["answer_key"], flipped["answer_text"]) == \
+        ("Q wmdp-bio 0?", "B", "x")
+    assert (flipped["model_answer"], flipped["correct"]) == ("C", False)
+    assert (flipped["baseline_answer"], flipped["baseline_correct"]) == ("B", True)
+    assert flipped["outcome"] == "removed" and flipped["baseline_generation_id"]
+    assert "weighing wmdp-bio item 0" in flipped["trace"] and flipped["explanation"] == "a reason."
+    assert flipped["trace_concept"] == 2 and flipped["trace_concept_why"] == \
+        "The knowledge is there.\nRating: [[2]]"                      
+    assert flipped["trace_cell"] == "used_unnamed"
+    held = {r["outcome"] for r in rows if r["arm"] == "suppressed"}
+    assert held == {"removed", "held", "no_headroom"}
+    assert {r["outcome"] for r in rows if r["arm"] == "baseline"} == {None}
+    ckpt = [r for r in rows if r["model"] == "rmu-a-bio-u1"]          
+    assert ckpt and all(r["baseline_correct"] is not None for r in ckpt)
+    assert {r["outcome"] for r in ckpt} == {"held", "no_headroom"}
+    odd = [r for r in rows if r["explanation_stage1_0_but"]]
+    assert odd and all(r["explanation_stage1_0_but"] == "used,named" for r in odd)
+    assert "stage 1 = 0 but a later stage disagrees" in out.stdout
+    header = (d / "analysis" / "judge_sample" / "panel-s3" / "joined.csv").read_text().splitlines()[0]
+    assert "question" in header and "trace_mention_why" in header and ",trace," not in header

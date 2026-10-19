@@ -22,17 +22,10 @@ def parse_labels(rows: Sequence[Mapping]) -> dict[int, dict]:
         if present not in ("0", "1", "2") or named not in ("0", "1", "2"):
             errors.append(f"row {n}: present and named must be 0, 1 or 2")
             continue
-        if present == "0":
-            if used in _YES:
-                errors.append(f"row {n}: used is y but present is 0")
-                continue
-            flag = False
-        elif used in _YES or used in _NO:
-            flag = used in _YES
-        else:
-            errors.append(f"row {n}: present is {present}, so used must be y or n")
+        if used not in _YES | _NO:
+            errors.append(f"row {n}: used must be y or n — it is answered for every passage")
             continue
-        out[n] = {"present": int(present), "used": flag, "named": int(named)}
+        out[n] = {"present": int(present), "used": used in _YES, "named": int(named)}
     if errors:
         raise ValueError("label sheet has malformed rows:\n  " + "\n  ".join(errors))
     return out
@@ -101,11 +94,8 @@ def parse_grade_sheet(text: str) -> tuple[dict[int, str], dict[int, dict]]:
             continue
         if c not in ("0", "1", "2") or m not in ("0", "1", "2"):
             errors.append(f"entry {k}: concept and mention must be 0, 1 or 2")
-        elif c == "0" and f:
-            errors.append(f"entry {k}: leave framing empty when concept is 0")
-        elif c != "0" and f not in ("0", "2"):
-            errors.append(f"entry {k}: concept is {c}, so framing must be 0 (used) or 2 (not "
-                          f"used)")
+        elif f not in ("0", "2"):
+            errors.append(f"entry {k}: framing must be 0 (used) or 2 (not used)")
         else:
             out[k] = {"concept": int(c), "framing": int(f) if f else None, "mention": int(m),
                       "present": int(c), "used": f == "0", "named": int(m)}

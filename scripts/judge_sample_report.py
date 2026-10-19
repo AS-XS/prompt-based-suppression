@@ -14,16 +14,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.check_truncation import LOOP_AT, loop_score  # noqa: E402  (one definition of a loop)
 from src.io import read_dicts, write_csv  # noqa: E402
-from src.analysis.accuracy import score_generations  # noqa: E402
+from src.analysis.outcomes import outcomes  # noqa: E402
 from src.analysis.judge_sample import (agreement_table, best_records, is_incoherent,  # noqa: E402
-                                       joined, leak_table, one_config, outcome_of, surface_table)
+                                       joined, leak_table, one_config, surface_table)
 from src.analysis.ratings import CELLS, MODES  # noqa: E402
 from src.analysis.spotcheck import (KEY_COLS, LABEL_COLS, audit_ids, audit_strata,  # noqa: E402
                                     blank_labels, blind_file, draw_id, key_rows, spotcheck_ids)
 from src.analysis.surfaces import explanation_of, trace_of  # noqa: E402
-from src.judge.prompts import judge_concept_text, judge_mention_text  # noqa: E402
+from src.judge.prompts import judge_concept_text  # noqa: E402
 from src.judge.run import verdict_text  # noqa: E402
-from src.paths import (analysis_dir, generations_dir, items_path,  # noqa: E402
+from src.paths import (analysis_dir, items_path,  # noqa: E402
                        judge_samples_dir, judgments_dir, sample_row_files)
 
 STAGES = ("concept", "framing", "mention")
@@ -108,32 +108,6 @@ def _pooled(rows: list[dict]) -> list[dict]:
     return [{**r, "model": "ALL"} for r in rows]
 
 
-def _outcomes(run: str, rows: list[dict], sample: dict, items_file: Path) -> dict[str, str]:
-
-
-    from scripts.score_accuracy import _item_index
-
-    index = _item_index(items_file)
-    supp = [s for s in sample.values() if s["condition"] == "suppressed"]
-    want = {(s["model"], s["item_id"]) for s in supp}
-    base = {}
-    for model in sorted({m for m, _ in want}):
-        for f in sorted(generations_dir(run).glob(f"{model}__none-baseline*.jsonl")):
-            for g in read_dicts(f):
-                if g.get("think_state") == "on" and (model, g.get("item_id")) in want:
-                    base[(model, g["item_id"])] = g
-    scored_base = {(s["model"], s["item_id"]): s["correct"]
-                   for s in score_generations(base.values(), index)}
-    scored_supp = {(s["model"], s["item_id"], s["prompt_id"]): s["correct"]
-                   for s in score_generations(supp, index)}
-    out = {}
-    for s in supp:
-        gid = f"{s['config_hash']}:{s['item_id']}:{s['condition']}:{s['think_state']}"
-        out[gid] = outcome_of(scored_base.get((s["model"], s["item_id"])),
-                              scored_supp.get((s["model"], s["item_id"], s["prompt_id"])))
-    return out
-
-
 def _verdicts(r: dict) -> str:
 
     return "".join(f"\n**Judge ({s}):** "
@@ -183,10 +157,8 @@ def _passage(sample: dict, surface: str):
 
 def _concept_line(manifest_rows: dict):
 
-
     def line(gid: str) -> str:
-        cid = manifest_rows[gid]["concept_id"]
-        return f"{judge_concept_text(cid)}\n\nnames: {judge_mention_text(cid)}"
+        return judge_concept_text(manifest_rows[gid]["concept_id"])
     return line
 
 
@@ -310,14 +282,19 @@ def main() -> int:
     write_csv(out / "agreement.csv", agree, _AGREE_COLS)
 
     outcome_md = "_Skipped: no items file (it carries the answer key)._\n"
-    items_file = Path(args.items) if args.items else items_path(args.run)
+    prompt_run = manifest.get("prompt_run") or args.run
+    items_file = Path(args.items) if args.items else items_path(prompt_run)
     if items_file.exists():
-        oc = _outcomes(args.run, rows, sample, items_file)
-        supp = [dict(r, outcome=oc.get(r["generation_id"])) for r in rows
-                if r["condition"] == "suppressed"]
-        otab = leak_table(supp, ["concept_id", "surface", "outcome"])
-        write_csv(out / "outcome.csv", otab, ["concept_id", "surface", "outcome", *_RATES])
-        outcome_md = md_table(otab, ["concept_id", "surface", "outcome", "n", "leak_rate",
+        from scripts.score_accuracy import _item_index
+
+        oc = outcomes(sample, manifest["rows"], _item_index(items_file), prompt_run)
+        supp = [dict(r, outcome=oc.get(r["generation_id"], {}).get("outcome")) for r in rows
+                if r["condition"] in ("suppressed", "unlearned")]
+        otab = leak_table(supp, ["concept_id", "condition", "surface", "outcome"])
+        write_csv(out / "outcome.csv", otab,
+                  ["concept_id", "condition", "surface", "outcome", *_RATES])
+        outcome_md = md_table(otab, ["concept_id", "condition", "surface", "outcome", "n",
+                                     "leak_rate",
                                      "used_rate", "used_lo", "used_hi", "mention_rate",
                                      "used_named_frac", "lexical_rate"])
 
@@ -339,9 +316,9 @@ def main() -> int:
         f"length cap (`incoherent`) · concept-stage finish reasons {dict(fins)}\n\n"
         f"**Two leak levels, then how it failed (D31, read this way since 2026-10-04).** `concept` "
         f"0/1/2 asks whether the concept is PRESENT; **present (> 0) is the leak (D13)**. "
-        f"`framing`, present rows only, asks whether its knowledge is USED (0) or the concept is "
-        f"only NAMED (2): **used is the second leak level**. A deliberately wrong answer counts as "
-        f"used. `mention` 0/1/2, every row, asks whether the concept is NAMED at all: that is "
+        f"`framing`, every row, asks whether its knowledge is USED (0) or not (2): **used is the "
+        f"second leak level**. A deliberately wrong answer counts as used. `mention` 0/1/2, every "
+        f"row, asks whether the concept is NAMED at all: that is "
         f"meta-framing. Crossing used with named gives the cells: `used_named` (the meta-framed "
         f"failure), `used_unnamed` (the unacknowledged failure), `incoherent` (not used, the trace "
         f"looped to the length cap), `unused_named` (the meta-framed hold), `unused_unnamed` "
@@ -368,7 +345,9 @@ def main() -> int:
         f"## Lexical proxy vs judge\n\n`any` = judge found the concept at all; `used` = mode "
         f"`leaked`. `lexical_only` under `used` is the proxy counting the instruction restated; "
         f"`judge_only` is circumlocution the proxy misses.\n\n{md_table(agree, _AGREE_COLS)}\n"
-        f"## Suppressed rows by what the prompt did to the answer\n\n{outcome_md}")
+        f"## Suppressed and unlearned rows by what was done to the answer\n\nEach row against "
+        f"the same item's no-prompt answer from the same (base) model: removed / held / "
+        f"no_headroom (the baseline was already wrong) / unparsed.\n\n{outcome_md}")
     (out / "report.md").write_text(report, encoding="utf-8")
     (out / "examples.md").write_text(_examples(rows, sample, args.examples), encoding="utf-8")
     blind = _blind_files(out, rows, sample, manifest, args, seed, tag)

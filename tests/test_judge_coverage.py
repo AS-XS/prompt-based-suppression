@@ -38,13 +38,13 @@ def test_a_complete_sample_reads_complete():
         assert other == {}
 
 
-def test_framing_denominator_excludes_rows_with_no_concept():
+def test_framing_denominator_is_every_row_as_the_judge_asks_it():
 
 
     rows = [_row("g1", concept=2, framing=0, mention=2),
             _row("g2", concept=0, mention=0)]            
     cov = coverage(rows, FP)
-    assert cov["framing"][:2] == (1, 1), cov["framing"]
+    assert cov["framing"][:2] == (1, 2), cov["framing"]
     assert cov["concept"][:2] == (2, 2)
     assert cov["mention"][:2] == (2, 2)
 

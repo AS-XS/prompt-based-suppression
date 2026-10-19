@@ -48,15 +48,23 @@ def test_each_row_falls_in_exactly_one_used_x_named_cell(concept, framing, menti
 def test_present_but_unused_is_a_reading_not_a_contradiction():
 
 
-    from src.judge.prompts import judge_concept_text, judge_mention_text
-    assert judge_concept_text("wmdp-bio") != judge_mention_text("wmdp-bio")   
-    rows = [_r(2, 2, 2), _r(1, 2, 0), _r(2, 0, 2), _r(0, None, 0)]
+    rows = [_r(2, 2, 2), _r(1, 2, 0), _r(2, 0, 2), _r(0, 2, 0)]
     (row,) = rating_table(rows)
     assert row["leak_rate"] == 0.75 and row["used_rate"] == 0.25    
-    assert row["named_only_share"] == round(2 / 3, 4) and row["framing_coverage"] == 1.0
+    assert row["named_only_share"] == 0.75 and row["framing_coverage"] == 1.0
     assert sum(row[f"{c}_frac"] for c in CELLS) == 1.0
     assert (row["used_named"], row["unused_named"], row["unused_unnamed"]) == (1, 1, 2)
     assert "n_contradiction" not in row
+
+
+def test_used_is_stage_2s_own_answer_and_a_disagreement_is_counted_not_refused():
+
+
+    (row,) = rating_table([_r(0, 0, 0), _r(2, 0, 2), _r(0)])
+    assert row["used_rate"] == round(2 / 3, 4) and row["n_used_not_present"] == 1
+    assert cell_of(_r(0, 0, 0)) == "used_unnamed"
+    assert cell_of(_r(0)) == "unused_unnamed"                  
+    assert cell_of(_r(2)) == "used_unnamed"                    
 
 
 def test_the_modes_are_the_cells_projected_leak_first():
@@ -268,7 +276,7 @@ def test_concept_only_rows_give_a_final_leak_rate_but_a_PROVISIONAL_mode_split()
     assert (row["leaked"], row["meta_framed"]) == (3, 0)   
 
 
-    stage3 = [_r(0, mention=0), _r(0, mention=0), _r(1, 2, 2), _r(2, 0, 0), _r(1, 0, 1)]
+    stage3 = [_r(0, 2, 0), _r(0, 2, 0), _r(1, 2, 2), _r(2, 0, 0), _r(1, 0, 1)]
     (row2,) = rating_table(stage3)
     assert row2["leak_rate"] == 0.6                
     assert row2["framing_coverage"] == 1.0 and row2["mention_coverage"] == 1.0
@@ -396,7 +404,7 @@ def test_run_plan_is_resumable_and_the_framing_stage_keeps_stage_1s_scores(tmp_p
     assert plan_file(gens, out, True, None, ("explanation",), None, "framing", None)["todo"] == []
 
 
-def test_the_framing_stage_skips_rows_with_no_leak_to_explain(tmp_path):
+def test_the_framing_stage_asks_every_row_even_where_stage_1_found_nothing(tmp_path):
 
 
     import json
@@ -411,4 +419,5 @@ def test_the_framing_stage_skips_rows_with_no_leak_to_explain(tmp_path):
     p1 = plan_file(gens, out, True, None, ("explanation",), None, "concept", None)
     run_plan(_FakeLLM("Not present at all.\nRating: [[0]]"), None, p1, "J", "concept")
 
-    assert plan_file(gens, out, True, None, ("explanation",), None, "framing", None)["todo"] == []
+    todo = plan_file(gens, out, True, None, ("explanation",), None, "framing", None)["todo"]
+    assert [t.row.item_id for t in todo] == ["i0"]
