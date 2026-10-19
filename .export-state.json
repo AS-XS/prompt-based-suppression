@@ -73,7 +73,7 @@
     "scripts/relatedness.py": "4b9a4a8346be23b52194ae19031ec4736bde35851d6ddf607c333c2fc50d7499",
     "scripts/report.py": "f4820618fe80935d619876d8914b5bb670525ae5971a8fdd172f2a7cf9f3ee80",
     "scripts/run_experiment.py": "a662ade1ddf7a0b07165d5f7c36447d08b801c96802338bc49def5dcf87eb11c",
-    "scripts/sample_panel.py": "2a6d46f7890d5b9dd205edb48421a361564472289c141586437f8b4568f71980",
+    "scripts/sample_panel.py": "90f3b464763892b9d04cffca9cabf1941b7cb60f83ce1de71cb93ef6bcfd0d8b",
     "scripts/sample_traces.py": "5bfabe9fdf7fb66fceabb1349f571fe331acb8fb5c04cc16341c84a9c850a67a",
     "scripts/scale_ladder.py": "6688c1ea59204238ab1baa7b638fec11c6db1ceebbccc6fe34448a7af21b2baa",
     "scripts/score_accuracy.py": "838cf99642ef19363fa731c72dcf29113177bdb09bf1e4fd5ee701834c5a3510",
@@ -227,5 +227,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "c48b9e37af24e3a12db75e218b5c016c61c16a36"
+  "source_revision": "a98f2828388a1f9cc00f0f08b018fbe6dc9652e8"
 }

@@ -91,7 +91,7 @@ def main(argv=None) -> int:
     ap.add_argument("--prompt-run", default="wmdp8")
     ap.add_argument("--unlearn-runs", nargs="*", default=list(UNLEARN_RUNS))
     ap.add_argument("--home", default="wmdp8-judge", help='Home.')
-    ap.add_argument("--per-concept", type=int, default=100,
+    ap.add_argument("--per-concept", type=int, default=250,
                     help='Per concept.')
     ap.add_argument("--seed", type=int, default=20261017)
     ap.add_argument("--name", default=None, help='Name.')
