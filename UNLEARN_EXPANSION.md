@@ -6,7 +6,7 @@ Commands are prepared for the server; no jobs have been submitted locally.
 Scope: the union of models in the current WMDP8 val/test accuracy tables, excluding
 Qwen. Nine non-Qwen models have results. Already measured and omitted: RMU/ELM on
 Llama-3-8B, Gemma E2B and31B; R2MU on E2B. New R2MU: Gemma E4B/12B/31B and
-OLMo Think7B/32B. New RMU+ELM: OLMo Instruct7B/32B. Both bio and cyber throughout.
+OLMo Think7B/32B. New RMU+ELM: OLMo Instruct7B/32B and Gemma E4B/12B. Both bio and cyber throughout.
 ELM is also added for Gemma E4B/12B and OLMo Think7B/32B; E2B/31B ELM already exist.
 Absence of local results is not proof no server job exists: check `qstat -u axsun`
 and completed checkpoint names before submission. Do not duplicate active jobs.
@@ -40,7 +40,7 @@ reasoning preservation.
 ## Initialize evaluation namespaces (after git pull)
 
 ```bash
-python scripts/setup_unlearn_runs.py r2mu-e4b r2mu-g12 r2mu-g31 r2mu-o7 r2mu-o32 rmu-o7 rmu-o32 elm-o7 elm-o32 elm-e4b elm-g12 elm-o7t elm-o32t
+python scripts/setup_unlearn_runs.py r2mu-e4b r2mu-g12 r2mu-g31 r2mu-o7 r2mu-o32 rmu-o7 rmu-o32 elm-o7 elm-o32 elm-e4b elm-g12 elm-o7t elm-o32t rmu-e4b rmu-g12
 ```
 
 ## Submit all trace preparation and full runs (no smoke)
@@ -137,6 +137,14 @@ qsub -l gpus=1,gpu_memory=80G -N elm_o7t_cyber_p01 -v MODEL=Olmo-3-7B-Think,NAME
 qsub -l gpus=2,gpu_memory=140G -N elm_o32t_bio_p01 -v MODEL=Olmo-3.1-32B-Think,NAME=elm-o32t-bio-p01,CONCEPT=wmdp-bio,LAYERS=auto,SAMPLES=3000,ETA=500,LR=5e-05,RESUME=1,PARALLEL=1,FORGET_FILE=data/raw/bio-forget-corpus.jsonl scripts/qsub_elm.sh
 
 qsub -l gpus=2,gpu_memory=140G -N elm_o32t_cyber_p01 -v MODEL=Olmo-3.1-32B-Think,NAME=elm-o32t-cyber-p01,CONCEPT=wmdp-cyber,LAYERS=auto,SAMPLES=3000,ETA=500,LR=5e-05,RESUME=1,PARALLEL=1 scripts/qsub_elm.sh
+
+qsub -l gpus=1,gpu_memory=80G -N rmu_e4b_bio_p01 -v MODEL=gemma-4-E4B-it,NAME=rmu-e4b-bio-p01,CONCEPT=wmdp-bio,LAYER=auto,STEERING_RATIO=1.1,ALPHA=300,LR=5e-05,MAX_BATCHES=150,BATCH_SIZE=4,DTYPE=float32,FROZEN_DTYPE=bfloat16,EARLY_STOP=1,FORGET_FILE=data/raw/bio-forget-corpus.jsonl scripts/qsub_unlearn.sh
+
+qsub -l gpus=1,gpu_memory=80G -N rmu_e4b_cyber_p01 -v MODEL=gemma-4-E4B-it,NAME=rmu-e4b-cyber-p01,CONCEPT=wmdp-cyber,LAYER=auto,STEERING_RATIO=1.1,ALPHA=300,LR=5e-05,MAX_BATCHES=150,BATCH_SIZE=4,DTYPE=float32,FROZEN_DTYPE=bfloat16,EARLY_STOP=1 scripts/qsub_unlearn.sh
+
+qsub -l gpus=1,gpu_memory=140G -N rmu_g12_bio_p01 -v MODEL=gemma-4-12B-it,NAME=rmu-g12-bio-p01,CONCEPT=wmdp-bio,LAYER=auto,STEERING_RATIO=1.1,ALPHA=300,LR=5e-05,MAX_BATCHES=150,BATCH_SIZE=4,DTYPE=float32,FROZEN_DTYPE=bfloat16,EARLY_STOP=1,FORGET_FILE=data/raw/bio-forget-corpus.jsonl scripts/qsub_unlearn.sh
+
+qsub -l gpus=1,gpu_memory=140G -N rmu_g12_cyber_p01 -v MODEL=gemma-4-12B-it,NAME=rmu-g12-cyber-p01,CONCEPT=wmdp-cyber,LAYER=auto,STEERING_RATIO=1.1,ALPHA=300,LR=5e-05,MAX_BATCHES=150,BATCH_SIZE=4,DTYPE=float32,FROZEN_DTYPE=bfloat16,EARLY_STOP=1 scripts/qsub_unlearn.sh
 ```
 
 ## Generate after checkpoints are exported
@@ -167,6 +175,10 @@ MODELS_DIR=models/unlearned GPU_MEM=80 GPU_UTIL=0.92 WAVES="none-baseline" CONFI
 MODELS_DIR=models/unlearned GPU_MEM=80 GPU_UTIL=0.92 WAVES="none-baseline" CONFIG=configs/elm-o7t.yaml bash scripts/generate_all.sh elm-o7t-bio-p01 elm-o7t-cyber-p01
 
 MODELS_DIR=models/unlearned GPU_MEM=80 GPU_UTIL=0.92 SHARDS=8 WAVES="none-baseline" CONFIG=configs/elm-o32t.yaml bash scripts/generate_all.sh elm-o32t-bio-p01 elm-o32t-cyber-p01
+
+MODELS_DIR=models/unlearned GPU_MEM=80 GPU_UTIL=0.92 WAVES="none-baseline" CONFIG=configs/rmu-e4b.yaml bash scripts/generate_all.sh rmu-e4b-bio-p01 rmu-e4b-cyber-p01
+
+MODELS_DIR=models/unlearned GPU_MEM=80 GPU_UTIL=0.92 WAVES="none-baseline" CONFIG=configs/rmu-g12.yaml bash scripts/generate_all.sh rmu-g12-bio-p01 rmu-g12-cyber-p01
 ```
 
 ## Coverage and validation after generation finishes
@@ -223,4 +235,12 @@ python scripts/score_accuracy.py --run elm-o7t --split val --baseline-model Olmo
 python scripts/coverage.py --run elm-o32t --config configs/elm-o32t.yaml --models Olmo-3.1-32B-Think elm-o32t-bio-p01 elm-o32t-cyber-p01
 
 python scripts/score_accuracy.py --run elm-o32t --split val --baseline-model Olmo-3.1-32B-Think
+
+python scripts/coverage.py --run rmu-e4b --config configs/rmu-e4b.yaml --models gemma-4-E4B-it rmu-e4b-bio-p01 rmu-e4b-cyber-p01
+
+python scripts/score_accuracy.py --run rmu-e4b --split val --baseline-model gemma-4-E4B-it
+
+python scripts/coverage.py --run rmu-g12 --config configs/rmu-g12.yaml --models gemma-4-12B-it rmu-g12-bio-p01 rmu-g12-cyber-p01
+
+python scripts/score_accuracy.py --run rmu-g12 --split val --baseline-model gemma-4-12B-it
 ```

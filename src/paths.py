@@ -117,6 +117,7 @@ UNLEARN_BASES = {
     'r2mu-e2b': 'gemma-4-E2B-it', 'r2mu-e4b': 'gemma-4-E4B-it',
     'r2mu-g12': 'gemma-4-12B-it', 'r2mu-g31': 'gemma-4-31B-it',
     'r2mu-o7': 'Olmo-3-7B-Think', 'r2mu-o32': 'Olmo-3.1-32B-Think',
+    'rmu-e4b': 'gemma-4-E4B-it', 'rmu-g12': 'gemma-4-12B-it',
     'elm-e4b': 'gemma-4-E4B-it', 'elm-g12': 'gemma-4-12B-it',
     'elm-o7t': 'Olmo-3-7B-Think', 'elm-o32t': 'Olmo-3.1-32B-Think',
     'rmu-o7': 'Olmo-3-7B-Instruct', 'elm-o7': 'Olmo-3-7B-Instruct',

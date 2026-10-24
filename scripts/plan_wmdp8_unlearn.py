@@ -17,7 +17,8 @@ PROFILES = (
     ('o32', 'rmu', 140, 2), ('o7', 'elm', 80, 1),
     ('o32', 'elm', 140, 2), ('e4b', 'elm', 80, 1),
     ('g12', 'elm', 140, 1), ('o7t', 'elm', 80, 1),
-    ('o32t', 'elm', 140, 2),
+    ('o32t', 'elm', 140, 2), ('e4b', 'rmu', 80, 1),
+    ('g12', 'rmu', 140, 1),
 )
 
 
@@ -110,7 +111,7 @@ Commands are prepared for the server; no jobs have been submitted locally.
 Scope: the union of models in the current WMDP8 val/test accuracy tables, excluding
 Qwen. Nine non-Qwen models have results. Already measured and omitted: RMU/ELM on
 Llama-3-8B, Gemma E2B and31B; R2MU on E2B. New R2MU: Gemma E4B/12B/31B and
-OLMo Think7B/32B. New RMU+ELM: OLMo Instruct7B/32B. Both bio and cyber throughout.
+OLMo Think7B/32B. New RMU+ELM: OLMo Instruct7B/32B and Gemma E4B/12B. Both bio and cyber throughout.
 ELM is also added for Gemma E4B/12B and OLMo Think7B/32B; E2B/31B ELM already exist.
 Absence of local results is not proof no server job exists: check `qstat -u axsun`
 and completed checkpoint names before submission. Do not duplicate active jobs.

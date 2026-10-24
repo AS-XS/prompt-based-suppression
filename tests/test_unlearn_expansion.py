@@ -23,7 +23,7 @@ def test_roster_excludes_completed_and_qwen_runs():
     runs={f'{method}-{code}' for code,method,_,_ in PROFILES}
     assert runs=={'r2mu-e4b','r2mu-g12','r2mu-g31','r2mu-o7','r2mu-o32',
                   'rmu-o7','rmu-o32','elm-o7','elm-o32',
-                  'elm-e4b','elm-g12','elm-o7t','elm-o32t'}
+                  'elm-e4b','elm-g12','elm-o7t','elm-o32t','rmu-e4b','rmu-g12'}
     assert all('Qwen' not in UNLEARN_BASES[r] for r in runs)
     for run in runs:
         assert Path(f'configs/{run}.yaml').is_file()
@@ -32,7 +32,7 @@ def test_roster_excludes_completed_and_qwen_runs():
 
 def test_paired_jobs_keep_same_inputs_and_resources_and_smokes_separate():
     train=commands('train');smoke=commands('smoke')
-    assert len(train)==36 and len(smoke)==26 and len(commands('traces'))==10
+    assert len(train)==40 and len(smoke)==30 and len(commands('traces'))==10
     parsed={}
     for line in train+smoke:
         parts=shlex.split(line)
@@ -58,7 +58,7 @@ def test_checked_in_runbook_matches_command_source():
 
 def test_submit_holds_only_r2mu_on_matching_trace_job():
     lines=commands('submit')
-    assert len(lines)==46
+    assert len(lines)==50
     trace_names={shlex.split(line)[shlex.split(line).index('-N')+1] for line in lines[:10]}
     for line in lines[10:]:
         p=shlex.split(line)
@@ -67,3 +67,16 @@ def test_submit_holds_only_r2mu_on_matching_trace_job():
         else:
             assert '-hold_jid' not in p
     assert all('smoke' not in line for line in lines)
+
+
+def test_standalone_gemma_rmu_in_generation_and_scoring():
+    for code,model in [('e4b','gemma-4-E4B-it'),('g12','gemma-4-12B-it')]:
+        run=f'rmu-{code}'
+        generation=next(line for line in commands('generate') if f'configs/{run}.yaml' in line)
+        coverage=next(line for line in commands('score') if f'configs/{run}.yaml' in line)
+        for domain in ['bio','cyber']:
+            name=f'{run}-{domain}-p01'
+            assert name in generation and name in coverage
+            assert sum(f'NAME={name},' in line for line in commands('train'))==1
+        assert model in coverage
+        assert any(f'--run {run} --split val --baseline-model {model}' in line for line in commands('score'))
