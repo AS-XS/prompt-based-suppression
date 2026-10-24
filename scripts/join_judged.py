@@ -12,8 +12,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts.check_truncation import LOOP_AT, loop_score  # noqa: E402
-from scripts.score_accuracy import _item_index  # noqa: E402  (the scorer's own answer-key index)
+from src.data.identity import generation_id_of as _gid  # noqa: E402,F401
+from src.analysis.repetition import LOOP_AT, loop_score  # noqa: E402
+from src.analysis.items import mc_item_index as _item_index  # noqa: E402  (the scorer's own answer-key index)
 from src.analysis.join import LONG, joined_record  # noqa: E402
 from src.analysis.judge_sample import is_incoherent, one_config  # noqa: E402
 from src.analysis.outcomes import item_details, outcomes  # noqa: E402
@@ -21,10 +22,6 @@ from src.analysis.ratings import best_records  # noqa: E402
 from src.io import read_dicts  # noqa: E402
 from src.paths import (analysis_dir, items_path, judge_samples_dir, judgments_dir,  # noqa: E402
                        sample_row_files)
-
-
-def _gid(r: dict) -> str:
-    return f"{r['config_hash']}:{r['item_id']}:{r['condition']}:{r['think_state']}"
 
 
 def main(argv=None) -> int:

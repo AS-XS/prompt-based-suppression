@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Mapping
 
+from src.data.identity import generation_id_of
 from src.analysis.accuracy import score_generations
 from src.analysis.judge_sample import outcome_of
 from src.io import read_dicts
@@ -47,9 +48,7 @@ def outcomes(sample: Mapping[str, Mapping], manifest_rows: Mapping[str, Mapping]
         braw = base.get((base_of(gid), row["item_id"], row["think_state"]))
         out[gid] = {"pred": mine.get("pred"), "parsed": mine.get("parsed"),
                     "correct": mine.get("correct"), "parse_tier": mine.get("parse_tier"),
-                    "baseline_generation_id": (
-                        f"{braw['config_hash']}:{braw['item_id']}:{braw['condition']}:"
-                        f"{braw['think_state']}" if braw else None),
+                    "baseline_generation_id": generation_id_of(braw) if braw else None,
                     "baseline_pred": b.get("pred"), "baseline_correct": b.get("correct"),
                     "outcome": None if is_baseline else outcome_of(b.get("correct"),
                                                                    mine.get("correct"))}

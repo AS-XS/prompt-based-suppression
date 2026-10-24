@@ -12,7 +12,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts.check_truncation import LOOP_AT, loop_score  # noqa: E402  (one definition of a loop)
+from src.data.identity import generation_id_of  # noqa: E402
+from src.analysis.repetition import LOOP_AT, loop_score  # noqa: E402  (one definition of a loop)
 from src.io import read_dicts, write_csv  # noqa: E402
 from src.analysis.outcomes import outcomes  # noqa: E402
 from src.analysis.judge_sample import (agreement_table, best_records, is_incoherent,  # noqa: E402
@@ -252,7 +253,7 @@ def main() -> int:
     sample = {}
     for path in sample_row_files(sdir, args.sample):
         for r in read_dicts(path):
-            sample[f"{r['config_hash']}:{r['item_id']}:{r['condition']}:{r['think_state']}"] = r
+            sample[generation_id_of(r)] = r
     globs = args.judgments or [str(judgments_dir(args.run) / f"{args.sample}*.jsonl")]
     files = sorted({f for g in globs for f in glob.glob(g)})
     if not files:
@@ -285,7 +286,7 @@ def main() -> int:
     prompt_run = manifest.get("prompt_run") or args.run
     items_file = Path(args.items) if args.items else items_path(prompt_run)
     if items_file.exists():
-        from scripts.score_accuracy import _item_index
+        from src.analysis.items import mc_item_index as _item_index
 
         oc = outcomes(sample, manifest["rows"], _item_index(items_file), prompt_run)
         supp = [dict(r, outcome=oc.get(r["generation_id"], {}).get("outcome")) for r in rows

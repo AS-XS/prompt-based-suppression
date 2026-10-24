@@ -14,17 +14,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.analysis.surface_gap import leak_pattern, leaks, novel_pattern  # noqa: E402
-from src.analysis.surfaces import explanation_of, trace_of  # noqa: E402
+from src.data.identity import generation_id_of as _gid  # noqa: E402,F401
+from src.analysis.lexical import lexical_flags  # noqa: E402,F401
+from src.analysis.surfaces import trace_of  # noqa: E402
 from src.paths import generations_glob, judge_samples_dir  # noqa: E402
 from src.provenance import git_commit  # noqa: E402
 
 BASELINE = "none-baseline"
-
-
-def _gid(r: dict) -> str:
-
-    return f"{r['config_hash']}:{r['item_id']}:{r['condition']}:{r['think_state']}"
 
 
 def scan(paths: list[Path], probe: str, models=None):
@@ -83,20 +79,6 @@ def draw(cells: dict, per_wave: int, n_baseline: int, seed: int):
             short.append((bkey, n_baseline, len(eligible)))
         picks += [(bkey, i) for i in rng.sample(eligible, min(n_baseline, len(eligible)))]
     return picks, short
-
-
-def lexical_flags(r: dict) -> dict:
-
-
-    cid, cls, pid = r["concept_id"], r["concept_class"], r["prompt_id"]
-    pat, npat = leak_pattern(cid, cls), novel_pattern(pid, cid, cls)
-    tr, ex = trace_of(r["raw_output"]) or "", explanation_of(r["raw_output"]) or ""
-    has_ex = bool(ex.strip())
-    return {"lex_trace": leaks(tr, pat),
-            "lex_trace_novel": leaks(tr, npat) if npat is not None else None,
-            "lex_explanation": leaks(ex, pat) if has_ex else None,
-            "lex_explanation_novel": leaks(ex, npat) if (has_ex and npat is not None) else None,
-            "trace_chars": len(tr), "has_explanation": has_ex}
 
 
 def _k(key: tuple) -> str:

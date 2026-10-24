@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.io import read_dicts as _read_dicts, write_csv as _write_csv  # noqa: E402
 from src.analysis.accuracy import accuracy_table, delta_table, score_generations  # noqa: E402
-from src.analysis.grouping import eval_subject  # noqa: E402
+from src.analysis.items import mc_item_index as _item_index  # noqa: E402,F401
 from src.data.mmlu import SUBJECT_TO_CONCEPT  # noqa: E402
 from src.data.split import SPLITS, read_val_ids, select, split_counts  # noqa: E402
 from src.paths import analysis_dir, generations_glob, items_path, split_path, stale_analysis  # noqa: E402
@@ -20,16 +20,6 @@ from src.provenance import one_row_per_cell, select_one_config  # noqa: E402
 
 
 _one_row_per_cell = one_row_per_cell
-
-
-def _item_index(path: Path) -> dict[str, dict]:
-    idx = {}
-    for it in _read_dicts(path):
-        meta = it.get("meta") or {}
-        idx[it["item_id"]] = {"answer_key": it.get("answer_key"), "format": meta.get("format"),
-                              "mmlu_subject": eval_subject(it),
-                              "probe_type": it.get("probe_type"), "concept_id": it.get("concept_id")}
-    return idx
 
 
 def _delta_cols(base: list[str], supp_prompts: list[str]) -> list[str]:

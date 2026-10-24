@@ -229,7 +229,7 @@ def test_a_real_miprov2_compile_runs_end_to_end_with_no_server():
 def test_the_driver_never_passes_auto_because_auto_overrides_minibatch():
 
 
-    src = (ROOT / "scripts" / "optimize_prompt.py").read_text()
+    src = (ROOT / "src" / "opt" / "search.py").read_text()
     assert "auto=None" in src, "auto must be None or --minibatch is ignored"
     assert "args.auto" not in src, "no --auto flag may remain — it cannot be used safely"
     assert "num_candidates=args.candidates" in src and "num_trials=n_trials_req" in src, (
@@ -252,7 +252,8 @@ def test_the_trial_count_matches_mipro_v2s_own_formula():
 def test_a_declared_probe_arm_that_contributes_nothing_is_reported():
 
 
-    src = (ROOT / "scripts" / "optimize_prompt.py").read_text()
+    src = "\n".join((ROOT / "src" / "opt" / name).read_text()
+                    for name in ("runner.py", "preparation.py"))
     assert "arms_requested_but_empty" in src, "the gap must be recorded in the JSON"
     assert "contributed ZERO examples" in src, "and warned about at run time"
 
@@ -430,7 +431,7 @@ def test_a_seed_that_already_had_the_format_is_not_blamed_on_the_search():
 def test_the_dead_total_calls_field_is_no_longer_recorded():
 
 
-    driver = (ROOT / "scripts" / "optimize_prompt.py").read_text()
+    driver = (ROOT / "src" / "opt" / "candidates.py").read_text()
     assert '"total_lm_calls":' not in driver
     table = (ROOT / "src" / "analysis" / "optimize_table.py").read_text()
     assert "total_lm_calls" not in table

@@ -108,3 +108,17 @@ def primitive_judgments_glob(run: str) -> str:
 
 def r2mu_training_dir(name: str) -> Path:
     return RESULTS_ROOT / "r2mu-training" / name
+
+
+UNLEARN_BASES = {
+    'rmu2': 'gemma-4-E2B-it', 'rmu3': 'Meta-Llama-3-8B-Instruct',
+    'rmu4': 'gemma-4-31B-it', 'elm1': 'Meta-Llama-3-8B-Instruct',
+    'elm2': 'gemma-4-E2B-it', 'elm3': 'gemma-4-31B-it',
+    'r2mu-e2b': 'gemma-4-E2B-it', 'r2mu-e4b': 'gemma-4-E4B-it',
+    'r2mu-g12': 'gemma-4-12B-it', 'r2mu-g31': 'gemma-4-31B-it',
+    'r2mu-o7': 'Olmo-3-7B-Think', 'r2mu-o32': 'Olmo-3.1-32B-Think',
+    'elm-e4b': 'gemma-4-E4B-it', 'elm-g12': 'gemma-4-12B-it',
+    'elm-o7t': 'Olmo-3-7B-Think', 'elm-o32t': 'Olmo-3.1-32B-Think',
+    'rmu-o7': 'Olmo-3-7B-Instruct', 'elm-o7': 'Olmo-3-7B-Instruct',
+    'rmu-o32': 'Olmo-3.1-32B-Instruct', 'elm-o32': 'Olmo-3.1-32B-Instruct',
+}

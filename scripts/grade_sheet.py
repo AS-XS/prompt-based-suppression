@@ -13,6 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.data.identity import generation_id_of  # noqa: E402
 from src.analysis.agreement import STAGES, compare, judge_labels, parse_grade_sheet  # noqa: E402
 from src.analysis.judge_sample import one_config  # noqa: E402
 from src.analysis.ratings import best_records  # noqa: E402
@@ -200,7 +201,7 @@ def main(argv=None) -> int:
         judged, _ = best_records(r for f in files for r in read_dicts(f))
         return compare_all(args, d, judged)
     seed = manifest["seed"] if args.seed is None else args.seed
-    sample = {f"{r['config_hash']}:{r['item_id']}:{r['condition']}:{r['think_state']}": r
+    sample = {generation_id_of(r): r
               for path in sample_row_files(sdir, args.sample) for r in read_dicts(path)}
     return make(args, d, manifest, sample, seed)
 

@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import csv
 import glob
-import json
 import sys
 from pathlib import Path
 

@@ -198,3 +198,19 @@ def test_coverage_allows_fewshot_waves_to_be_short_by_their_held_out_examples():
 
 
     assert 0 < cov._FEWSHOT_SLACK < 1000
+
+
+def test_first_fewshot_wave_reports_held_out_items_and_shards(tmp_path, capsys):
+    import json
+    from scripts.coverage import report_model
+
+    model = "Meta-Llama-3-8B-Instruct"
+    wave = "scoped-directed-fewshot@specific"
+    paths = [tmp_path / f"{model}__{wave}.shard{i}of2.jsonl" for i in (1, 2)]
+    for i, path in enumerate(paths):
+        path.write_text(json.dumps(dict(item_id=f"i{i}", config_hash="h", think_state="na",
+                                       condition="suppressed", finish_reason="stop")) + "\n")
+    assert report_model(model, [wave], {model: {wave: paths}}, 4, True) == ([], [])
+    output = capsys.readouterr().out
+    assert "[2 shards]" in output
+    assert "complete (−2:" in output

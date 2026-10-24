@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Iterable, Iterator, Type, TypeVar
 
@@ -24,14 +25,16 @@ def write_jsonl(path: str | Path, rows: Iterable[BaseModel]) -> int:
     return n
 
 
-def append_jsonl(path: str | Path, rows: Iterable[BaseModel]) -> int:
+def append_jsonl(path: str | Path, rows: Iterable[BaseModel | dict]) -> int:
 
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     n = 0
     with path.open("a", encoding="utf-8") as f:
         for row in rows:
-            f.write(row.model_dump_json() + "\n")
+            text = (json.dumps(row, ensure_ascii=False) if isinstance(row, dict)
+                    else row.model_dump_json())
+            f.write(text + "\n")
             n += 1
     return n
 
@@ -85,5 +88,3 @@ def stub_generate(item: Item, cell: dict, sampling: Sampling) -> GenerationRow:
         raw_reasoning=None,
         finish_reason="stop",
     )
-
-

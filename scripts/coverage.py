@@ -16,7 +16,8 @@ import re  # noqa: E402
 
 import yaml  # noqa: E402
 
-from scripts.generate import load_items  # noqa: E402  -- the SAME selection generation performs
+from src.data.identity import generation_id_of  # noqa: E402
+from src.data.selection import load_items  # noqa: E402  -- the SAME selection generation performs
 from src.gen.thinkstate import think_states_for  # noqa: E402
 from src.paths import generations_dir, items_path  # noqa: E402
 
@@ -33,7 +34,7 @@ def selected_items(items_file: Path, cfg: dict) -> int:
 
 def _gen_id(d: dict) -> str:
 
-    return f"{d.get('config_hash')}:{d.get('item_id')}:{d.get('condition')}:{d.get('think_state')}"
+    return generation_id_of(d, strict=False)
 
 
 def _scan(path: Path) -> tuple[int, Counter, Counter, Counter]:
@@ -62,6 +63,84 @@ _FEWSHOT_SLACK = 200
 
 def _is_fewshot(wave: str) -> bool:
     return "fewshot" in wave
+
+
+def report_model(m, waves, seen, n_items, stated):
+
+    absent, problems = [], []
+    try:
+        states = think_states_for(m)
+    except (KeyError, SystemExit, ValueError) as e:
+
+
+        print(f"{m:28} {'?':8} {'—':24} {'—':>9} {'—':>9}  NOT IN think_states.yaml")
+        print(f"{'':28} {str(e).splitlines()[0][:80]}")
+        problems.append((m, "*", "unaudited model"))
+        return absent, problems
+    expected_full = n_items * len(states)
+    for w in waves:
+
+
+        expected = expected_full
+        paths = seen.get(m, {}).get(w)
+        if not paths:
+            label = "MISSING" if stated else "— not submitted"
+            print(f"{m:28} {str(states):8} {w:24} {'-':>9} {expected:>9,}  {label}")
+            (problems if stated else absent).append((m, w, "missing"))
+            continue
+        rows, per_state, finish, ids = 0, Counter(), Counter(), Counter()
+        per_file = {}
+        for p in paths:
+            r, st, fi, idc = _scan(p)
+            rows += r
+            per_state.update(st)
+            finish.update(fi)
+            ids.update(idc)
+            per_file[p] = set(idc)
+        shards = f" [{len(paths)} shards]" if len(paths) > 1 else ""
+        if _is_fewshot(w):
+
+            short = expected_full - rows
+            if 0 < short <= _FEWSHOT_SLACK * len(states):
+                print(f"{m:28} {str(states):8} {w + shards:24} {rows:>9,} "
+                      f"{expected_full:>9,}  complete (−{short:,}: {short // max(len(states),1)} "
+                      f"held-out example item(s) × {len(states)} think-state(s))")
+                continue
+        if rows == expected:
+            status = "ok"
+        elif rows < expected:
+            status = f"SHORT by {expected - rows:,} ({100*rows/expected:.0f}% done)"
+            problems.append((m, w, status))
+        else:
+            dupes = sum(c - 1 for c in ids.values() if c > 1)
+            status = (f"OVER by {rows - expected:,} — {dupes:,} DUPLICATE cells"
+                      if dupes else f"OVER by {rows - expected:,} (not duplicates: more rows "
+                                    f"than items?)")
+            problems.append((m, w, status))
+        print(f"{m:28} {str(states):8} {w + shards:24} {rows:>9,} {expected:>9,}  {status}")
+
+        if rows != expected and per_state:
+            detail = " ".join(f"{k}={v:,}" for k, v in sorted(per_state.items(), key=str))
+            print(f"{'':28} {'':8} {'':24} {'':>9} {'':>9}    by state: {detail}")
+
+
+        if rows > expected and len(paths) > 1:
+            shared = [(a.name, b.name, len(per_file[a] & per_file[b]))
+                      for i, a in enumerate(paths) for b in paths[i + 1:]
+                      if per_file[a] & per_file[b]]
+            for an, bn, n in sorted(shared, key=lambda x: -x[2])[:4]:
+                print(f"{'':28} {'':8} {'':24} {'':>9} {'':>9}    overlap: {an} ∩ {bn} "
+                      f"= {n:,} cells")
+            if shared:
+                print(f"{'':28} {'':8} {'':24} {'':>9} {'':>9}    -> delete the file that is NOT "
+                      f"a shard; the shards cover the whole wave")
+
+        trunc = finish.get("length", 0)
+        if rows and trunc / rows > 0.10:
+            print(f"{'':28} {'':8} {'':24} {'':>9} {'':>9}    ⚠ {100*trunc/rows:.0f}% hit the "
+                  f"token cap (finish_reason=length)")
+
+    return absent, problems
 
 
 def main() -> int:
@@ -133,77 +212,9 @@ def main() -> int:
     absent: list = []
     problems: list[tuple[str, str, str]] = []
     for m in models:
-        try:
-            states = think_states_for(m)
-        except (KeyError, SystemExit, ValueError) as e:
-
-
-            print(f"{m:28} {'?':8} {'—':24} {'—':>9} {'—':>9}  NOT IN think_states.yaml")
-            print(f"{'':28} {str(e).splitlines()[0][:80]}")
-            problems.append((m, "*", "unaudited model"))
-            continue
-        expected_full = n_items * len(states)
-        for w in waves:
-
-
-            expected = expected_full
-            paths = seen.get(m, {}).get(w)
-            if not paths:
-                label = "MISSING" if stated else "— not submitted"
-                print(f"{m:28} {str(states):8} {w:24} {'-':>9} {expected:>9,}  {label}")
-                (problems if stated else absent).append((m, w, "missing"))
-                continue
-            rows, per_state, finish, ids = 0, Counter(), Counter(), Counter()
-            per_file = {}
-            for p in paths:
-                r, st, fi, idc = _scan(p)
-                rows += r
-                per_state.update(st)
-                finish.update(fi)
-                ids.update(idc)
-                per_file[p] = set(idc)
-            if _is_fewshot(w):
-
-                short = expected_full - rows
-                if 0 < short <= _FEWSHOT_SLACK * len(states):
-                    print(f"{m:28} {str(states):8} {w + shards:24} {rows:>9,} "
-                          f"{expected_full:>9,}  complete (−{short:,}: {short // max(len(states),1)} "
-                          f"held-out example item(s) × {len(states)} think-state(s))")
-                    continue
-            if rows == expected:
-                status = "ok"
-            elif rows < expected:
-                status = f"SHORT by {expected - rows:,} ({100*rows/expected:.0f}% done)"
-                problems.append((m, w, status))
-            else:
-                dupes = sum(c - 1 for c in ids.values() if c > 1)
-                status = (f"OVER by {rows - expected:,} — {dupes:,} DUPLICATE cells"
-                          if dupes else f"OVER by {rows - expected:,} (not duplicates: more rows "
-                                        f"than items?)")
-                problems.append((m, w, status))
-            shards = f" [{len(paths)} shards]" if len(paths) > 1 else ""
-            print(f"{m:28} {str(states):8} {w + shards:24} {rows:>9,} {expected:>9,}  {status}")
-
-            if rows != expected and per_state:
-                detail = " ".join(f"{k}={v:,}" for k, v in sorted(per_state.items(), key=str))
-                print(f"{'':28} {'':8} {'':24} {'':>9} {'':>9}    by state: {detail}")
-
-
-            if rows > expected and len(paths) > 1:
-                shared = [(a.name, b.name, len(per_file[a] & per_file[b]))
-                          for i, a in enumerate(paths) for b in paths[i + 1:]
-                          if per_file[a] & per_file[b]]
-                for an, bn, n in sorted(shared, key=lambda x: -x[2])[:4]:
-                    print(f"{'':28} {'':8} {'':24} {'':>9} {'':>9}    overlap: {an} ∩ {bn} "
-                          f"= {n:,} cells")
-                if shared:
-                    print(f"{'':28} {'':8} {'':24} {'':>9} {'':>9}    -> delete the file that is NOT "
-                          f"a shard; the shards cover the whole wave")
-
-            trunc = finish.get("length", 0)
-            if rows and trunc / rows > 0.10:
-                print(f"{'':28} {'':8} {'':24} {'':>9} {'':>9}    ⚠ {100*trunc/rows:.0f}% hit the "
-                      f"token cap (finish_reason=length)")
+        model_absent, model_problems = report_model(m, waves, seen, n_items, stated)
+        absent.extend(model_absent)
+        problems.extend(model_problems)
 
     print()
     if absent:

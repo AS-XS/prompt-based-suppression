@@ -1,0 +1,4 @@
+run: elm-o7t
+probe_types: [forget, neighbor, utility]
+conditions: [baseline]
+sampling: {max_tokens: 16384}

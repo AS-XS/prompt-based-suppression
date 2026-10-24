@@ -50,3 +50,19 @@ def test_csv_empty_input_still_writes_header(tmp_path, columns, expected):
     path = tmp_path / "table.csv"
     write_csv(path, [], columns)
     assert path.read_bytes() == expected
+
+
+def test_append_supports_validated_rows_and_judge_dicts_without_changing_text(tmp_path):
+    from pydantic import BaseModel
+    from src.gen.runner import append_jsonl
+
+    class Row(BaseModel):
+        text: str
+
+    row = Row(text="before\u2028after é\nnext")
+    record = {"raw_judge_json": '{"leak":false}', "surface": "trace"}
+    path = tmp_path / "rows.jsonl"
+    append_jsonl(path, [row, record])
+    assert path.read_bytes() == (row.model_dump_json() + "\n" +
+                                 json.dumps(record, ensure_ascii=False) + "\n").encode()
+    assert list(read_dicts(path)) == [row.model_dump(), record]

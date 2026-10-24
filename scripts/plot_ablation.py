@@ -71,6 +71,14 @@ _LABELS: dict[str, tuple[str, str]] = {
         "assess + monitored", "…the assessment frame plus a reader of the reasoning"),
     "scoped-assess-aware@keywords": (
         "assess + mon., ENUMERATED", "…both changes: assessment frame and enumerated scope"),
+    "scoped-directed-aware@cyber-keywords": (
+        "+ mon., cyber ENUM v2", "…unchanged template; application-qualified cyber enumeration"),
+    "scoped-assess@cyber-specific": (
+        "assessment, cyber v2", "…unchanged assessment frame; cyberweapon application scope"),
+    "scoped-assess-aware@cyber-specific": (
+        "assess + mon., cyber v2", "…unchanged monitored assessment; cyberweapon application scope"),
+    "scoped-assess-aware@cyber-keywords": (
+        "assess + mon., cyber ENUM v2", "…unchanged monitored assessment; qualified cyber enumeration"),
     "scoped-assess-decoy-redirect@specific": (
         "assess + decoy (list)", "…reason from a LIST of everyday senses, working written first"),
     "scoped-assess-decoy-conceal@specific": (

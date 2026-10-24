@@ -90,7 +90,7 @@ def test_the_driver_passes_a_nonzero_bootstrap_count_when_demos_are_on():
 
 
     src = (pathlib.Path(__file__).resolve().parents[1]
-           / "scripts" / "optimize_prompt.py").read_text()
+           / "src" / "opt" / "search.py").read_text()
     assert "max_bootstrapped_demos=n_demos" in src
     assert "max_bootstrapped_demos=0" not in src
 
@@ -99,7 +99,7 @@ def test_the_context_preflight_probes_WITH_demos_attached():
 
 
     src = (pathlib.Path(__file__).resolve().parents[1]
-           / "scripts" / "optimize_prompt.py").read_text()
+           / "src" / "opt" / "preflight.py").read_text()
     assert "probe_prog.demos =" in src
     assert "probe_prog(question=longest.question)" in src
 

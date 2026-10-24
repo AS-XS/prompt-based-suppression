@@ -5,6 +5,8 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from src.data.identity import generation_id
+
 SCHEMA_VERSION = "0.1.0"
 
 
@@ -97,4 +99,4 @@ class GenerationRow(BaseModel):
     @property
     def generation_id(self) -> str:
 
-        return f"{self.config_hash}:{self.item_id}:{self.condition}:{self.think_state}"
+        return generation_id(self.config_hash, self.item_id, self.condition, self.think_state)

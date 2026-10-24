@@ -12,27 +12,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import yaml  # noqa: E402
 
-from src.data.schema import Item, Sampling  # noqa: E402
-from src.gen.runner import read_jsonl  # noqa: E402
+from src.data.schema import Sampling  # noqa: E402
+from src.data.selection import load_items  # noqa: E402,F401 (script compatibility)
 from src.gen.sweep import run_sweep  # noqa: E402
 from src.gen.thinkstate import think_states_for  # noqa: E402
 from src.paths import generations_dir, items_path  # noqa: E402
 from src.prompts import ANSWER_FORMATS, DEFAULT_ANSWER_FORMAT  # noqa: E402
-
-
-def load_items(path: Path, concepts, probe_types, max_items, sample: int | None = None) -> list[Item]:
-    items = list(read_jsonl(path, Item))
-    if concepts:
-        items = [it for it in items if it.concept_id in set(concepts)]
-    if probe_types:
-        items = [it for it in items if it.probe_type in set(probe_types)]
-    if sample:
-
-
-        import random
-
-        return random.Random(0).sample(items, min(sample, len(items)))
-    return items[:max_items] if max_items else items
 
 
 def main() -> int:

@@ -81,12 +81,12 @@ def test_a_broken_derivation_raises_instead_of_leaking_a_placeholder():
 def test_the_union_is_exported_and_an_unknown_id_names_every_option():
 
 
-    from src.prompts import (CONDITIONAL_PROMPT_IDS, DIRECTED_PROMPT_IDS, LADDER_PROMPT_IDS, LI_PROMPT_IDS,
-                             PUBLISHED_PROMPT_IDS)
+    from src.prompts import (CONDITIONAL_PROMPT_IDS, CYBER_SCOPE_PROMPT_IDS, DIRECTED_PROMPT_IDS,
+                             LADDER_PROMPT_IDS, LI_PROMPT_IDS, PUBLISHED_PROMPT_IDS)
     assert set(ALL_PROMPT_IDS) == (set(PROMPT_IDS) | set(SYSTEM_PROMPT_IDS)
                                    | set(PUBLISHED_PROMPT_IDS) | set(LADDER_PROMPT_IDS)
                                    | set(DIRECTED_PROMPT_IDS) | set(LI_PROMPT_IDS)
-                                   | set(CONDITIONAL_PROMPT_IDS))
+                                   | set(CONDITIONAL_PROMPT_IDS) | set(CYBER_SCOPE_PROMPT_IDS))
     with pytest.raises(KeyError, match="sys-scoped-ignorance"):
         build_messages("nonsense", "biology", "Q?")
 

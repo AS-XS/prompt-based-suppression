@@ -111,5 +111,3 @@ def stub_judge(text: str, concept_label: str) -> JudgeOutput:
         fluent=len(text.split()) >= 3,
         guessing="guess" in text.lower() or "not sure" in text.lower(),
     )
-
-

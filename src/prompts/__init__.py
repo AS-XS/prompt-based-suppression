@@ -1,7 +1,7 @@
 from src.prompts.render import (ANSWER_FORMATS, DEFAULT_ANSWER_FORMAT,  # noqa: F401
                                 MC_INSTRUCTION, mc_instruction, render_question)
 from src.prompts.suppression import (PROMPT_IDS, build_messages, prompt_fingerprint, user_template)
-from src.prompts.labels import (LABEL_SCHEMES, LADDER_PROMPT_IDS, label_for,  # noqa: F401
+from src.prompts.labels import (CYBER_SCOPE_PROMPT_IDS, LABEL_SCHEMES, LADDER_PROMPT_IDS, label_for,  # noqa: F401
                                 split_prompt_id)
 from src.prompts.published import (PUBLISHED_PROMPT_IDS, build_published_messages,  # noqa: F401
                                    is_published_prompt, source_of)
@@ -16,7 +16,8 @@ from src.prompts.conditional import CONDITIONAL_PROMPT_IDS
 
 
 ALL_PROMPT_IDS = (PROMPT_IDS + SYSTEM_PROMPT_IDS + PUBLISHED_PROMPT_IDS + LADDER_PROMPT_IDS
-                  + DIRECTED_PROMPT_IDS + LI_PROMPT_IDS + CONDITIONAL_PROMPT_IDS)
+                  + DIRECTED_PROMPT_IDS + LI_PROMPT_IDS + CONDITIONAL_PROMPT_IDS
+                  + CYBER_SCOPE_PROMPT_IDS)
 
 __all__ = ["PROMPT_IDS", "SYSTEM_PROMPT_IDS", "PUBLISHED_PROMPT_IDS", "LADDER_PROMPT_IDS",
            "CONDITIONAL_PROMPT_IDS",

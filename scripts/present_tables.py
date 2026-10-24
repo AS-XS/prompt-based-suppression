@@ -173,6 +173,124 @@ def _isolated_rows(gens, idx, metric: str = "recall"):
     return out
 
 
+def write_figures_and_concepts(args, out, scored, rows, iso, iso_label, models, pooled_note):
+
+
+    errors_png = None
+    if not args.no_png:
+        try:
+            from src.analysis.errors import outcome_table, pair_outcomes
+            from src.analysis.figures import outcome_summary_png
+
+            paired = pair_outcomes(scored)
+            if paired:
+                otab = outcome_table(paired, by=("model", "think_state", "prompt_id", "probe_type"))
+                errors_png = outcome_summary_png(
+                    otab, out.parent / "png" / "errors_summary.png",
+                    title=f"{args.run} — did suppression bite on target, or everywhere?")
+                if errors_png:
+                    print(f"wrote error summary figure -> {errors_png}")
+            else:
+                print("  (no error summary — no suppressed rows could be paired with a baseline)")
+        except ImportError:
+            pass
+
+    by_concept, tested = [], []
+    pngs = 0
+    if not args.no_png:
+        try:
+            for m in models:
+                header, body = model_table(rows, m)
+                if body and _png(header, body, out.parent / "png" / f"{m}.png",
+                                 title=m, note=pooled_note):
+                    pngs += 1
+                ih, ib = model_table(iso, m)
+                if ib and _png(ih, ib, out.parent / "png" / f"{m}__isolated.png",
+                               title=f"{m} — isolated (RWKU, {iso_label})", note=_ISOLATED_NOTE):
+                    pngs += 1
+        except ImportError:
+            print("  (no PNGs — matplotlib missing; pip install -e '.[analysis]')")
+
+    if not args.no_by_concept:
+
+
+        for s in scored:
+            s["tested_concept"] = tested_concept(s, SUBJECT_TO_CONCEPT)
+        by_concept, _ = delta_table(
+            [s for s in scored if s.get("tested_concept")],
+            by=("model", "think_state", "concept_id", "tested_concept"))
+        dest = out.parent / "by_concept"
+        dest.mkdir(parents=True, exist_ok=True)
+        n = 0
+        tested = sorted({r.get("tested_concept") for r in by_concept if r.get("tested_concept")})
+        for m in models:
+            text = render_by_concept(by_concept, m, title=f"{m} — by suppressed concept",
+                                     note=_BY_CONCEPT_NOTE)
+            if text.count("## ") == 0:
+                continue
+            (dest / f"{m}.md").write_text(text, encoding="utf-8")
+            n += text.count("## ")
+            if args.no_png:
+                continue
+            concepts = sorted({r["concept_id"] for r in by_concept
+                               if r.get("model") == m and r.get("concept_id")})
+            try:
+                for c in concepts:
+                    h, b = concept_table(by_concept, m, c, tested=tested)
+                    if b and _png(h, b, dest / "png" / f"{m}__{c}.png",
+                                  title=f"{m} — suppressing: {c}", note=_BY_CONCEPT_NOTE):
+                        pngs += 1
+            except ImportError:
+                pass
+        print(f"wrote {n} per-concept table(s) -> {dest}/<model>.md")
+    if pngs:
+        print(f"wrote {pngs} PNG(s) -> {out.parent}/png/ and {out.parent}/by_concept/png/")
+
+    return by_concept, tested, errors_png
+
+
+def write_html(args, out, scored, rows, iso, models, by_concept, tested, errors_png):
+
+    if not args.no_html:
+
+
+        from src.analysis.present import model_table as _mt
+        parts = [f"<h1>{args.run} — results</h1>"]
+        if errors_png:
+
+
+            import base64
+
+            b64 = base64.b64encode(Path(errors_png).read_bytes()).decode("ascii")
+            parts += ["<h2>The summary — what suppression actually did</h2>",
+                      f"<p class=sub>{_ERRORS_NOTE}</p>",
+                      f"<img class=fig src='data:image/png;base64,{b64}' alt='error outcome summary'>"]
+        parts += ["<h2>General arm (MMLU) — accuracy</h2>",
+                  f"<p class=sub>{_note(scored)}</p>"]
+        for m in models:
+            h, b = _mt(rows, m)
+            if b:
+                parts += [f"<h3>{m}</h3>", _html_table(h, b)]
+        parts += ["<h2>Isolated arm (RWKU) — token-F1</h2>", f"<p class=sub>{_ISOLATED_NOTE}</p>"]
+        for m in models:
+            h, b = _mt(iso, m)
+            if b:
+                parts += [f"<h3>{m}</h3>", _html_table(h, b)]
+        if not args.no_by_concept:
+            parts += ["<h2>Per suppressed concept</h2>", f"<p class=sub>{_BY_CONCEPT_NOTE}</p>"]
+            for m in models:
+                cs = sorted({r["concept_id"] for r in by_concept
+                             if r.get("model") == m and r.get("concept_id")})
+                for c in cs:
+                    h, b = concept_table(by_concept, m, c, tested=tested)
+                    if b:
+                        parts += [f"<h3>{m} — suppressing: {c}</h3>", _html_table(h, b)]
+        html = out.parent / "results.html"
+        html.write_text(f"<!doctype html><meta charset=utf-8><title>{args.run} — results</title>"
+                        f"<style>{_CSS}</style>" + "\n".join(parts), encoding="utf-8")
+        print(f"wrote one-page HTML -> {html}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", default="exp1")
@@ -248,115 +366,9 @@ def main() -> int:
     else:
         print("  (no isolated table — no RWKU items with a gold `reference` matched these generations)")
 
-
-    errors_png = None
-    if not args.no_png:
-        try:
-            from src.analysis.errors import outcome_table, pair_outcomes
-            from src.analysis.figures import outcome_summary_png
-
-            paired = pair_outcomes(scored)
-            if paired:
-                otab = outcome_table(paired, by=("model", "think_state", "prompt_id", "probe_type"))
-                errors_png = outcome_summary_png(
-                    otab, out.parent / "png" / "errors_summary.png",
-                    title=f"{args.run} — did suppression bite on target, or everywhere?")
-                if errors_png:
-                    print(f"wrote error summary figure -> {errors_png}")
-            else:
-                print("  (no error summary — no suppressed rows could be paired with a baseline)")
-        except ImportError:
-            pass
-
-    by_concept, tested = [], []
-    pngs = 0
-    if not args.no_png:
-        try:
-            for m in models:
-                header, body = model_table(rows, m)
-                if body and _png(header, body, out.parent / "png" / f"{m}.png",
-                                 title=m, note=pooled_note):
-                    pngs += 1
-                ih, ib = model_table(iso, m)
-                if ib and _png(ih, ib, out.parent / "png" / f"{m}__isolated.png",
-                               title=f"{m} — isolated (RWKU, {iso_label})", note=_ISOLATED_NOTE):
-                    pngs += 1
-        except ImportError:
-            print("  (no PNGs — matplotlib missing; pip install -e '.[analysis]')")
-
-    if not args.no_by_concept:
-
-
-        for s in scored:
-            s["tested_concept"] = tested_concept(s, SUBJECT_TO_CONCEPT)
-        by_concept, _ = delta_table(
-            [s for s in scored if s.get("tested_concept")],
-            by=("model", "think_state", "concept_id", "tested_concept"))
-        dest = out.parent / "by_concept"
-        dest.mkdir(parents=True, exist_ok=True)
-        n = 0
-        tested = sorted({r.get("tested_concept") for r in by_concept if r.get("tested_concept")})
-        for m in models:
-            text = render_by_concept(by_concept, m, title=f"{m} — by suppressed concept",
-                                     note=_BY_CONCEPT_NOTE)
-            if text.count("## ") == 0:
-                continue
-            (dest / f"{m}.md").write_text(text, encoding="utf-8")
-            n += text.count("## ")
-            if args.no_png:
-                continue
-            concepts = sorted({r["concept_id"] for r in by_concept
-                               if r.get("model") == m and r.get("concept_id")})
-            try:
-                for c in concepts:
-                    h, b = concept_table(by_concept, m, c, tested=tested)
-                    if b and _png(h, b, dest / "png" / f"{m}__{c}.png",
-                                  title=f"{m} — suppressing: {c}", note=_BY_CONCEPT_NOTE):
-                        pngs += 1
-            except ImportError:
-                pass
-        print(f"wrote {n} per-concept table(s) -> {dest}/<model>.md")
-    if pngs:
-        print(f"wrote {pngs} PNG(s) -> {out.parent}/png/ and {out.parent}/by_concept/png/")
-
-    if not args.no_html:
-
-
-        from src.analysis.present import markdown_table, model_table as _mt
-        parts = [f"<h1>{args.run} — results</h1>"]
-        if errors_png:
-
-
-            import base64
-
-            b64 = base64.b64encode(Path(errors_png).read_bytes()).decode("ascii")
-            parts += ["<h2>The summary — what suppression actually did</h2>",
-                      f"<p class=sub>{_ERRORS_NOTE}</p>",
-                      f"<img class=fig src='data:image/png;base64,{b64}' alt='error outcome summary'>"]
-        parts += ["<h2>General arm (MMLU) — accuracy</h2>",
-                  f"<p class=sub>{_note(scored)}</p>"]
-        for m in models:
-            h, b = _mt(rows, m)
-            if b:
-                parts += [f"<h3>{m}</h3>", _html_table(h, b)]
-        parts += ["<h2>Isolated arm (RWKU) — token-F1</h2>", f"<p class=sub>{_ISOLATED_NOTE}</p>"]
-        for m in models:
-            h, b = _mt(iso, m)
-            if b:
-                parts += [f"<h3>{m}</h3>", _html_table(h, b)]
-        if not args.no_by_concept:
-            parts += ["<h2>Per suppressed concept</h2>", f"<p class=sub>{_BY_CONCEPT_NOTE}</p>"]
-            for m in models:
-                cs = sorted({r["concept_id"] for r in by_concept
-                             if r.get("model") == m and r.get("concept_id")})
-                for c in cs:
-                    h, b = concept_table(by_concept, m, c, tested=tested)
-                    if b:
-                        parts += [f"<h3>{m} — suppressing: {c}</h3>", _html_table(h, b)]
-        html = out.parent / "results.html"
-        html.write_text(f"<!doctype html><meta charset=utf-8><title>{args.run} — results</title>"
-                        f"<style>{_CSS}</style>" + "\n".join(parts), encoding="utf-8")
-        print(f"wrote one-page HTML -> {html}")
+    by_concept, tested, errors_png = write_figures_and_concepts(
+        args, out, scored, rows, iso, iso_label, models, pooled_note)
+    write_html(args, out, scored, rows, iso, models, by_concept, tested, errors_png)
     print("  (analysis/ untouched — these are separate deliverables)")
     return 0
 

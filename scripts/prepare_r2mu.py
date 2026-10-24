@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.unlearn.r2mu_data import digest, resume_rows
+from src.unlearn.r2mu_data import R2MU_MODELS, digest, resume_rows
 from src.unlearn.rmu import _git_commit, _fingerprint
 
 
@@ -15,7 +15,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--fetch-limo', action='store_true')
     ap.add_argument('--limo-file', type=Path, default=Path('data/raw/r2mu-limo.jsonl'))
-    ap.add_argument('--model', choices=['gemma-4-E2B-it', 'gemma-4-31B-it'])
+    ap.add_argument('--model', choices=R2MU_MODELS)
     ap.add_argument('--concept', choices=['wmdp-bio', 'wmdp-cyber'], default='wmdp-bio')
     ap.add_argument('--models-dir', default='models')
     ap.add_argument('--forget-file', type=Path)
@@ -58,7 +58,7 @@ def main():
                                  skip_special_tokens=True) for t in corpus]
     if any(not t.strip() for t in segments):
         ap.error('empty training segment')
-    kw = chat_kwargs(args.model, 'on')['chat_template_kwargs']
+    kw = chat_kwargs(args.model, 'on').get('chat_template_kwargs', {})
     messages = [[{'role': 'user', 'content': 'Explain this passage step by step:\n\n' + t}]
                 for t in segments]
     prompts = [tokenizer.apply_chat_template(m, tokenize=False, add_generation_prompt=True, **kw)

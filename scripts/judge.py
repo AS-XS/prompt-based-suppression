@@ -4,9 +4,7 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import glob
-import json
 import os
 import sys
 from pathlib import Path
@@ -14,7 +12,7 @@ from typing import NamedTuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.io import read_dicts  # noqa: E402
+from src.io import read_dicts, write_csv as _write_csv  # noqa: E402
 from src.analysis.ratings import best_records  # noqa: E402
 from src.analysis.surfaces import answer_of, explanation_of, trace_of  # noqa: E402
 from src.data.schema import GenerationRow  # noqa: E402
@@ -119,10 +117,7 @@ def plan_file(gens_path, out_dir, suppressed_only, limit, surfaces=("explanation
 
 def write_csv(plan: dict) -> None:
 
-    with plan["out_csv"].open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=_COLS, extrasaction="ignore")
-        w.writeheader()
-        w.writerows(plan["table"])
+    _write_csv(plan["out_csv"], plan["table"], _COLS)
 
 
 def _record(r, surface: str, concept_text: str, judge_name: str, meta: dict, scores: dict) -> dict:
@@ -165,15 +160,16 @@ def run_plan(llm, sp, plan: dict, judge_name, stage="both", chat_kw=None,
                     s.update({**f, **framing_meta})
             recs = [_record(t.row, t.surface, t.concept_text, judge_name, meta, s)
                     for t, s in zip(part, scores)]
-        append_jsonl(out_jsonl, [_Row(rec) for rec in recs])
+        append_jsonl(out_jsonl, recs)
         for rec in recs:
             key = (rec["generation_id"], rec["surface"])
+
+            best.pop(key, None)
             best[key] = rec
-            table[:] = [t for t in table if (t.get("generation_id"), t.get("surface")) != key]
-            table.append({k: rec.get(k) for k in _COLS})
         written += len(recs)
         print(f"  {plan['stem']}: {written:,}/{len(todo):,} judged", flush=True)
 
+    table[:] = [{k: rec.get(k) for k in _COLS} for rec in best.values()]
     write_csv(plan)
     return written, out_jsonl
 
@@ -306,16 +302,6 @@ def main() -> int:
         print(f"  {pl['stem']}: {n} judgments -> {out}")
     print(f"done — {total} judgments across {len(paths)} file(s)")
     return 0
-
-
-class _Row:
-
-
-    def __init__(self, d: dict):
-        self._d = d
-
-    def model_dump_json(self) -> str:
-        return json.dumps(self._d, ensure_ascii=False)
 
 
 if __name__ == "__main__":

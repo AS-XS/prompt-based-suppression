@@ -13,7 +13,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts.sample_traces import lexical_flags  # noqa: E402  (the proxy flags of the first sample)
+from src.data.identity import generation_id_of as _gid  # noqa: E402,F401
+from src.analysis.lexical import lexical_flags  # noqa: E402  (the proxy flags of the first sample)
 from src.analysis.panel import (BASELINE, Cell, appended_tail, arm_of, draw,  # noqa: E402
                                 file_order, method_of, same_instrument, target_concept)
 from src.analysis.surfaces import trace_of  # noqa: E402
@@ -24,10 +25,6 @@ UNLEARN_RUNS = ("rmu1", "rmu2", "rmu3", "rmu4", "elm1", "elm2", "elm3", "r2mu-e2
 
 
 CALLS_PER_SURFACE, TOKENS_PER_CALL, TOKENS_PER_SECOND = 3, 1480, 937
-
-
-def _gid(r: dict) -> str:
-    return f"{r['config_hash']}:{r['item_id']}:{r['condition']}:{r['think_state']}"
 
 
 def scan(run: str, prompt_run: str, models, think, probe, cells, base_cfg, sources, seen,

@@ -4,41 +4,28 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import glob
-import json
 import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.io import read_dicts  # noqa: E402
-from src.analysis.surfaces import answer_of, explanation_of, trace_of  # noqa: E402
-from src.data.schema import GenerationRow  # noqa: E402
+from src.io import read_dicts, write_csv as _write_csv  # noqa: E402
 from src.gen.env import constrain_to_schema, make_llm, setup_vllm_env  # noqa: E402
-from src.gen.runner import append_jsonl, read_jsonl  # noqa: E402
+from src.gen.runner import append_jsonl  # noqa: E402
+from src.judge.primitive_plan import plan_file  # noqa: E402
 from src.judge.prompts import judge_concept_text  # noqa: E402
 from src.judge.run import run_primitive_judge  # noqa: E402
 from src.judge.schema import judge_json_schema  # noqa: E402
 from src.judge.settings import (default_budget, judge_fingerprints, judge_sampling,  # noqa: E402
                                 refuse_mixed_config)
 from src.paths import generations_glob, primitive_judgments_dir  # noqa: E402
-from src.provenance import git_commit, select_one_config  # noqa: E402
+from src.provenance import git_commit  # noqa: E402
 
 _COLS = ["generation_id", "concept_id", "concept_class", "prompt_id", "condition", "think_state",
          "surface", "semantic_leak", "leak_type", "meta_reference", "fluent", "guessing",
          "parsed_ok", "judge"]
-
-
-class _Row:
-
-
-    def __init__(self, d: dict):
-        self._d = d
-
-    def model_dump_json(self) -> str:
-        return json.dumps(self._d, ensure_ascii=False)
 
 
 def _read_dicts(path: Path):
@@ -51,105 +38,37 @@ def outstanding(gens_path, out_dir, suppressed_only, limit, surfaces, config_has
                 shard=None, probe_types=None) -> int:
 
 
-    rows = list(read_jsonl(Path(gens_path), GenerationRow))
-    rows = select_one_config([r.model_dump() for r in rows], config_hash,
-                             what=f"generations in {Path(gens_path).name}")
-    rows = [GenerationRow.model_validate(r) for r in rows]
-    if suppressed_only:
-        rows = [r for r in rows if r.condition == "suppressed"]
-
-
-    if probe_types:
-        rows = [r for r in rows if r.probe_type in set(probe_types)]
-    if limit:
-        rows = rows[:limit]
-    stem = Path(gens_path).stem
-    if shard:
-        i, n = shard
-        rows = rows[i - 1::n]
-        stem = f"{stem}.shard{i}of{n}"
-    done = {(d.get("generation_id"), d.get("surface"))
-            for d in _read_dicts(Path(out_dir) / f"{stem}.jsonl")}
-    n = 0
-    for r in rows:
-        for surface in surfaces:
-            if (r.generation_id, surface) in done:
-                continue
-            if surface == "answer":
-                text = answer_of(r.raw_output)
-            elif surface == "explanation":
-                text = explanation_of(r.raw_output)
-            else:
-                text = trace_of(r.raw_output) or r.raw_reasoning
-            if (text or "").strip():
-                n += 1
-    return n
+    return len(plan_file(gens_path, out_dir, suppressed_only, limit, surfaces,
+                         config_hash, shard, probe_types).todo)
 
 
 def _judge_file(llm, sp, gens_path, out_dir, judge_name, suppressed_only, limit, surfaces,
                 config_hash=None, shard=None, probe_types=None, fingerprint=None, meta=None):
-    rows = list(read_jsonl(Path(gens_path), GenerationRow))
-    rows = select_one_config([r.model_dump() for r in rows], config_hash,
-                             what=f"generations in {Path(gens_path).name}")
-    rows = [GenerationRow.model_validate(r) for r in rows]
-    if suppressed_only:
-        rows = [r for r in rows if r.condition == "suppressed"]
-    if probe_types:
-        rows = [r for r in rows if r.probe_type in set(probe_types)]
-    if limit:
-        rows = rows[:limit]
-
-    stem = Path(gens_path).stem
-    if shard:
-
-
-        i, n = shard
-        rows = rows[i - 1::n]
-        stem = f"{stem}.shard{i}of{n}"
-    out_jsonl = Path(out_dir) / f"{stem}.jsonl"
-    out_csv = Path(out_dir) / f"{stem}.csv"
-    out_csv.parent.mkdir(parents=True, exist_ok=True)
-
-    prior = list(_read_dicts(out_jsonl))
-    done = {(d.get("generation_id"), d.get("surface")) for d in prior}
+    plan = plan_file(gens_path, out_dir, suppressed_only, limit, surfaces,
+                     config_hash, shard, probe_types)
+    out_jsonl, out_csv, prior = plan.out_jsonl, plan.out_csv, plan.prior
     table = [{k: d.get(k) for k in _COLS} for d in prior]
     checked = False
-    for r in rows:
-        for surface in surfaces:
-            if (r.generation_id, surface) in done:
-                continue
+    for r, surface, text in plan.todo:
+        if fingerprint and not checked:
 
 
-            if surface == "answer":
-                text = answer_of(r.raw_output)
-            elif surface == "explanation":
-                text = explanation_of(r.raw_output)
-            else:
-                text = trace_of(r.raw_output) or r.raw_reasoning
-            if not (text or "").strip():
-                continue
-            if fingerprint and not checked:
+            refuse_mixed_config(prior, fingerprint, out_jsonl)
+            checked = True
 
 
-                refuse_mixed_config(prior, fingerprint, out_jsonl)
-                checked = True
+        concept_text = judge_concept_text(r.concept_id)
+        j = run_primitive_judge(llm, sp, concept=concept_text, sentence=text or "",
+                                surface=surface, concept_class=r.concept_class)
+        rec = {"generation_id": r.generation_id, "model": r.model, "item_id": r.item_id,
+               "concept_id": r.concept_id, "concept_class": r.concept_class,
+               "probe_type": r.probe_type, "prompt_id": r.prompt_id,
+               "condition": r.condition, "think_state": r.think_state, "judge": judge_name,
+               "judge_concept": concept_text, **(meta or {}), **j}
+        append_jsonl(out_jsonl, [rec])
+        table.append({k: rec.get(k) for k in _COLS})
 
-
-            concept_text = judge_concept_text(r.concept_id)
-            j = run_primitive_judge(llm, sp, concept=concept_text, sentence=text or "",
-                                    surface=surface, concept_class=r.concept_class)
-            rec = {"generation_id": r.generation_id, "model": r.model, "item_id": r.item_id,
-                   "concept_id": r.concept_id, "concept_class": r.concept_class,
-                   "probe_type": r.probe_type, "prompt_id": r.prompt_id,
-                   "condition": r.condition, "think_state": r.think_state, "judge": judge_name,
-                   "judge_concept": concept_text, **(meta or {}), **j}
-            append_jsonl(out_jsonl, [_Row(rec)])
-            table.append({k: rec.get(k) for k in _COLS})
-
-    with out_csv.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=_COLS, extrasaction="ignore")
-        w.writeheader()
-        w.writerows(table)
+    _write_csv(out_csv, table, _COLS)
     return len(table), out_jsonl
 
 

@@ -4,6 +4,9 @@ from pathlib import Path
 
 from src.analysis.surfaces import split_think
 
+R2MU_MODELS = ('gemma-4-E2B-it', 'gemma-4-E4B-it', 'gemma-4-12B-it',
+               'gemma-4-31B-it', 'Olmo-3-7B-Think', 'Olmo-3.1-32B-Think')
+
 AUTHOR_REVISION = '3529e557a9c5d72ef53b7ee2b677a3aa8d2c8b06'
 
 
@@ -19,9 +22,17 @@ def read_rows(path):
 
 def trace_text(row):
 
-    if '<|channel>' not in row['raw_output']:
-        raise ValueError(f"No native Gemma reasoning channel for row {row['index']}")
-    trace, _ = split_think(row['raw_output'], expect_trace=True)
+    model = row.get('model', 'gemma-4-E2B-it')
+    opener = '<think>' if model.startswith('Olmo-') else '<|channel>'
+    raw = row['raw_output']
+
+
+    if opener not in raw:
+        if opener == '<think>' and row.get('prompt', '').rstrip().endswith(opener):
+            raw = opener + raw
+        else:
+            raise ValueError(f"No native reasoning channel for row {row['index']}")
+    trace, _ = split_think(raw, expect_trace=True)
     if not trace or not trace.strip():
         raise ValueError(f"No reasoning trace for training row {row['index']}")
     return trace

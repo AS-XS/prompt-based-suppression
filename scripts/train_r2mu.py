@@ -6,11 +6,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.unlearn.r2mu import run
+from src.unlearn.r2mu_data import R2MU_MODELS
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--model', required=True, choices=['gemma-4-E2B-it','gemma-4-31B-it'])
+    ap.add_argument('--model', required=True, choices=R2MU_MODELS)
     ap.add_argument('--models-dir', default='models')
     ap.add_argument('--name', required=True)
     ap.add_argument('--concept', choices=['wmdp-bio','wmdp-cyber'], default='wmdp-bio')
