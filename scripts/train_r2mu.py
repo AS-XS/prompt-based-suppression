@@ -31,6 +31,8 @@ def main():
     ap.add_argument('--device', default='cuda:0')
     ap.add_argument('--frozen-device', default='cuda:0')
     ap.add_argument('--max-seconds', type=int, default=37800)
+    ap.add_argument('--mixed-precision', action='store_true',
+                    help='Mixed precision.')
     ap.add_argument('--resume', action='store_true')
     args = ap.parse_args()
     if Path(args.name).name != args.name or args.name in ('.','..'):

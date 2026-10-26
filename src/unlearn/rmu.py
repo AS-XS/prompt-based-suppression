@@ -74,7 +74,8 @@ def _hidden_at(model, tok, texts: list[str], layer: int, device, max_chars: int,
 
     batch = tok([t[:max_chars] for t in texts], return_tensors="pt",
                 padding=True, truncation=True, max_length=512).to(device)
-    with torch.set_grad_enabled(model.training):
+    from src.unlearn.precision import forward_precision
+    with torch.set_grad_enabled(model.training), forward_precision(model):
         if early_stop:
             from src.unlearn.activations import block_output
             return block_output(model, _decoder_layers(model)[layer], batch)
@@ -85,7 +86,8 @@ def _hidden_at(model, tok, texts: list[str], layer: int, device, max_chars: int,
 def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
             forget: list[str], retain: list[str], cfg: RMUConfig,
             dtype: str = "bfloat16", device: str = "cuda",
-            frozen_dtype: str | None = None, frozen_device: str | None = None) -> RMUReport:
+            frozen_dtype: str | None = None, frozen_device: str | None = None,
+            mixed_precision: bool = False) -> RMUReport:
 
 
     src, dst = Path(model_path).resolve(), Path(out_dir).resolve()
@@ -107,6 +109,8 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
         tok.pad_token = tok.eos_token
 
 
+    if mixed_precision:
+        dtype = 'bfloat16'
     frozen_dtype = frozen_dtype or dtype
     frozen_device = frozen_device or device
     for requested in {device, frozen_device}:
@@ -133,6 +137,9 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
         proj = layers[i].mlp.down_proj
         proj.weight.requires_grad_(True)
         params.append(proj.weight)
+    if mixed_precision:
+        from src.unlearn.precision import promote_trainable
+        promote_trainable(updated)
     updated.train()
 
     if cfg.steering_ratio is not None:
@@ -160,6 +167,8 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
                        model=model_path, concept=concept,
                        n_forget=len(forget), n_retain=len(retain),
                        git_commit=_git_commit())
+    if mixed_precision:
+        report.config.update(mixed_precision=True, trainable_dtype='float32')
     print(f"  code: commit {report.git_commit} · c={cfg.steering_coeff} alpha={cfg.alpha} "
           f"layers={list(cfg.layers_to_update())} read_at=hidden_states"
           f"[{activation_index(cfg.layer, len(_decoder_layers(updated)) + 1)}]", flush=True)
@@ -171,7 +180,9 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
     for step in range(n):
         s = slice(step * cfg.batch_size, (step + 1) * cfg.batch_size)
         fh = _hidden_at(updated, tok, forget[s], cfg.layer, device, cfg.max_chars, cfg.early_stop)
-        forget_loss = torch.nn.functional.mse_loss(fh, control.expand_as(fh))
+        if mixed_precision:
+            fh = fh.float()
+        forget_loss = torch.nn.functional.mse_loss(fh, control.expand_as(fh).to(fh.dtype))
 
         if step == 0:
 
@@ -196,6 +207,8 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
                              cfg.max_chars, cfg.early_stop)
 
 
+        if mixed_precision:
+            rh = rh.float()
         retain_loss = torch.nn.functional.mse_loss(rh, rh0.to(device=rh.device, dtype=rh.dtype))
 
         loss = forget_loss + cfg.alpha * retain_loss
@@ -213,9 +226,13 @@ def run_rmu(model_path: str, out_dir: str | Path, *, concept: str,
     del frozen, opt, fh, rh, rh0, loss, forget_loss, retain_loss
     if device.startswith("cuda"):
         torch.cuda.empty_cache()
-    _fluency_check(updated, tok, retain[:1] if cfg.early_stop else retain[:3], device, report)
+    from src.unlearn.precision import forward_precision
+    with forward_precision(updated):
+        _fluency_check(updated, tok, retain[:1] if cfg.early_stop else retain[:3], device, report)
 
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
+    if mixed_precision:
+        updated.to(dtype=torch.bfloat16)
     updated.save_pretrained(out); tok.save_pretrained(out)
     copied = complete_checkpoint(src, out)
     if copied:

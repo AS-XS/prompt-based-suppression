@@ -46,6 +46,7 @@ def run(args):
         args.layer = max(2, round(getattr(config, 'text_config', config).num_hidden_layers * 7 / 32))
     else:
         args.layer = int(args.layer)
+    mixed = getattr(args, 'mixed_precision', False)
     ratio = getattr(args, 'steering_ratio', None)
     before = _fingerprint(src)
     if digest(before) != digest(manifest['base_fingerprint']):
@@ -56,6 +57,8 @@ def run(args):
         lr=args.lr, seed=args.seed, data=digest(rows), limo=digest(limo), retain=digest(retain),
         base=before, dtype='float32', frozen_dtype=args.frozen_dtype,
         device=args.device, frozen_device=args.frozen_device, version=1), default=str))
+    if mixed:
+        identity.update(dtype='bfloat16', trainable_dtype='float32', mixed_precision=True)
     _lock = lock_work(work)
     if unlearn_report_path(dst).exists():
         raise ValueError('checkpoint already complete')
@@ -67,7 +70,7 @@ def run(args):
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = 'right'
-    updated = AutoModelForCausalLM.from_pretrained(src, dtype=torch.float32).to(args.device)
+    updated = AutoModelForCausalLM.from_pretrained(src, dtype=torch.bfloat16 if mixed else torch.float32).to(args.device)
     frozen = AutoModelForCausalLM.from_pretrained(
         src, dtype=getattr(torch, args.frozen_dtype)).to(args.frozen_device)
     frozen.requires_grad_(False); frozen.eval()
@@ -77,6 +80,9 @@ def run(args):
         raise ValueError('layer must have two preceding decoder blocks')
     for i in range(args.layer-2, args.layer+1):
         blocks[i].mlp.down_proj.weight.requires_grad_(True)
+    if mixed:
+        from src.unlearn.precision import promote_trainable
+        promote_trainable(updated)
     updated.train()
     params = [p for p in updated.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(params, lr=args.lr)

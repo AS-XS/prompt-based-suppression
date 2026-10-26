@@ -56,6 +56,7 @@ def main() -> int:
                     help='Dtype.')
     ap.add_argument("--frozen-dtype", default=None,
                     help='Frozen dtype.')
+    ap.add_argument("--mixed-precision", action="store_true")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--frozen-device", help='Frozen device.')
     ap.add_argument("--early-stop", action="store_true", help='Early stop.')
@@ -140,7 +141,8 @@ def main() -> int:
                     seed=args.seed, early_stop=args.early_stop, steering_ratio=args.steering_ratio)
     report = run_rmu(model_path, out, concept=args.concept, forget=forget, retain=retain,
                      cfg=cfg, dtype=args.dtype, device=args.device,
-                     frozen_dtype=args.frozen_dtype, frozen_device=args.frozen_device)
+                     frozen_dtype=args.frozen_dtype, frozen_device=args.frozen_device,
+                     mixed_precision=args.mixed_precision)
 
     _write_report(out, {"method": args.method, "base_model": args.model,
                         "forget_file": args.forget_file, **vars(report)})

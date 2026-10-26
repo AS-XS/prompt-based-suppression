@@ -1,0 +1,4 @@
+run: r2mu-g31-mp80
+probe_types: [forget, neighbor, utility]
+conditions: [baseline]
+sampling: {max_tokens: 16384}

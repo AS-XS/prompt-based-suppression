@@ -36,6 +36,7 @@ def main():
     ap.add_argument("--lr", type=float, default=5e-5)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--dtype", choices=["float32", "bfloat16"], default="float32")
+    ap.add_argument("--mixed-precision", action="store_true")
     ap.add_argument("--parallel", action="store_true")
     ap.add_argument("--source-dir", type=Path, default=Path("data/external/elm"))
     ap.add_argument("--resume", action="store_true", help='Resume.')
@@ -43,6 +44,8 @@ def main():
     ap.add_argument("--max-seconds", type=int, default=37800,
                     help='Max seconds.')
     args = ap.parse_args()
+    if args.mixed_precision:
+        args.dtype = "bfloat16"
     if args.checkpoint_every <= 0 or args.max_seconds < 0:
         ap.error("checkpoint-every must be positive and max-seconds nonnegative")
     if Path(args.name).name != args.name or args.name in {".", ".."}:
@@ -89,7 +92,8 @@ def main():
     def load_model(model_id, dtype):
         options = dict(dtype=dtype)
         if args.parallel:
-            options.update(device_map="auto", max_memory={i: "65GiB" for i in range(2)})
+            options.update(device_map="balanced" if args.mixed_precision else "auto",
+                max_memory={i: "40GiB" if args.mixed_precision else "65GiB" for i in range(2)})
         model = AutoModelForCausalLM.from_pretrained(model_id, **options)
         if args.parallel:
             if any(str(d) in {"cpu", "disk"} for d in model.hf_device_map.values()):
@@ -98,8 +102,15 @@ def main():
             model.to("cuda:0")
         return model
 
+    def adapter_model(model, config, peft_factory):
+        adapted = get_elm_peft_model(model, config, peft_factory)
+        if args.mixed_precision:
+            from src.unlearn.precision import promote_trainable
+            promote_trainable(adapted)
+        return adapted
+
     namespace = {"__name__": "elm_pinned", "_load_model": load_model,
-                 "_get_elm_peft_model": get_elm_peft_model}
+                 "_get_elm_peft_model": adapter_model}
     exec(compile(tree, str(args.source_dir / "erase.py"), "exec"), namespace)
     original_prepare = namespace["prepare_prompts"]
     corpus_manifest = {}
@@ -138,6 +149,10 @@ def main():
         parallel=args.parallel, base_fingerprint=before, corpora=corpus_manifest,
         source=SOURCE_SHA256, torch_version=str(torch.__version__),
         keywords=provenance["keywords_sha256"]), default=str))
+    if args.mixed_precision:
+        precision = dict(backbone='bfloat16', trainable='float32', placement='balanced-40GiB')
+        identity['precision'] = precision
+        provenance['precision'] = precision
 
     identity["corpora"] = corpus_manifest
     namespace["_recovery"] = Recovery(work, identity, resume=args.resume,

@@ -12,7 +12,9 @@ def block_output(model, block, batch):
 
     handle = block.register_forward_hook(capture)
     try:
-        model(**batch, use_cache=False)
+        from src.unlearn.precision import forward_precision
+        with forward_precision(model):
+            model(**batch, use_cache=False)
     except _Captured:
         return captured[0]
     finally:

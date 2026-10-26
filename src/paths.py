@@ -123,3 +123,7 @@ UNLEARN_BASES = {
     'rmu-o7': 'Olmo-3-7B-Instruct', 'elm-o7': 'Olmo-3-7B-Instruct',
     'rmu-o32': 'Olmo-3.1-32B-Instruct', 'elm-o32': 'Olmo-3.1-32B-Instruct',
 }
+
+
+for _run in ('r2mu-g31', 'r2mu-o32', 'rmu-o32', 'elm-o32', 'elm-o32t'):
+    UNLEARN_BASES[_run + '-mp80'] = UNLEARN_BASES[_run]

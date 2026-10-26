@@ -74,7 +74,8 @@ def test_new_eval_configs_match_existing_instrument():
         assert config=={k:v for k,v in base.items() if k!='run'}
 
 
-def test_training_engine_runs_all_four_losses_and_exports(tmp_path, monkeypatch):
+@pytest.mark.parametrize('mixed', [False, True])
+def test_training_engine_runs_all_four_losses_and_exports(tmp_path, monkeypatch, mixed):
     torch=pytest.importorskip('torch')
     import sys
     from types import SimpleNamespace, ModuleType
@@ -130,7 +131,7 @@ def test_training_engine_runs_all_four_losses_and_exports(tmp_path, monkeypatch)
     args=SimpleNamespace(models_dir='models',model=src.name,name='r2mu-test',concept='wmdp-bio',
         data=root,limo_file=limo,steps=2,batch_size=1,layer=2,coeff=6.,gamma=1.,trace_weight=1.,
         cot_weight=1.,lr=.001,seed=42,frozen_dtype='float32',frozen_device='cpu',device='cpu',
-        max_seconds=0,resume=False)
+        max_seconds=0,resume=False,mixed_precision=mixed)
     r2mu.run(args)
     report=json.loads(Path('models/unlearned/r2mu-test/unlearn_report.json').read_text())
     assert report['method']=='r2mu' and report['base_model']==src.name
