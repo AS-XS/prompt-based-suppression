@@ -34,6 +34,19 @@ def _olmo3_rope_override(config):
 _HF_OVERRIDES = {"olmo-3": _olmo3_rope_override}
 
 
+def _hf_override_for(model: str):
+
+    import json
+    from pathlib import Path
+
+    config_path = Path(model) / "config.json"
+    if config_path.is_file():
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        if config.get("model_type") == "olmo3":
+            return _olmo3_rope_override
+    return next((fix for key, fix in _HF_OVERRIDES.items() if key in model.lower()), None)
+
+
 def make_llm(model: str, backend: str = "FLASH_ATTN", **kwargs):
 
 
@@ -49,10 +62,9 @@ def make_llm(model: str, backend: str = "FLASH_ATTN", **kwargs):
 
     name = model.lower()
     if "hf_overrides" not in kwargs:  
-        for key, fix in _HF_OVERRIDES.items():
-            if key in name:
-                kwargs["hf_overrides"] = fix
-                break
+        fix = _hf_override_for(model)
+        if fix is not None:
+            kwargs["hf_overrides"] = fix
     if backend and any(k in name for k in _NO_FLASH_ATTN):
         backend = None
     if not backend:

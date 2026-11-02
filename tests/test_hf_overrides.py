@@ -104,3 +104,31 @@ def test_every_make_engine_call_site_unpacks_three():
         for m in re.finditer(r"^\s*(.+?)\s*=\s*make_engine\(", f.read_text(), re.M):
             names = [x.strip() for x in m.group(1).split(",")]
             assert len(names) == 3, f"{f.name}: unpacks {len(names)}, make_engine returns 3"
+
+
+def test_renamed_olmo_checkpoint_gets_rope_fix(tmp_path, monkeypatch):
+    import json
+    import sys
+    from types import SimpleNamespace
+    from src.gen.env import make_llm
+
+    checkpoint = tmp_path / 'elm-o7t-bio-p01'
+    checkpoint.mkdir()
+    (checkpoint / 'config.json').write_text(json.dumps({'model_type': 'olmo3'}))
+    calls = []
+    monkeypatch.setitem(sys.modules, 'vllm', SimpleNamespace(
+        LLM=lambda **kwargs: calls.append(kwargs) or kwargs))
+    make_llm(str(checkpoint), backend=None)
+    fix = calls[0]['hf_overrides']
+    assert fix(_Cfg(dict(_NESTED))).rope_parameters == _NESTED['full_attention']
+    custom = lambda config: config
+    make_llm(str(checkpoint), backend=None, hf_overrides=custom)
+    assert calls[1]['hf_overrides'] is custom
+
+
+def test_config_detection_leaves_other_architectures_unchanged(tmp_path):
+    import json
+    from src.gen.env import _hf_override_for
+    (tmp_path / 'config.json').write_text(json.dumps({'model_type': 'gemma4'}))
+    assert _hf_override_for(str(tmp_path)) is None
+    assert _hf_override_for('models/Olmo-3.1-32B-Think') is _olmo3_rope_override
