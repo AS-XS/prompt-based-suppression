@@ -25,6 +25,8 @@ def main():
     ap.add_argument('--cot-weight', type=float, default=1)
     ap.add_argument('--lr', type=float, default=0.00025)
     ap.add_argument('--steps', type=int, default=150)
+    ap.add_argument('--fit-steps', action='store_true',
+                    help='Fit steps.')
     ap.add_argument('--batch-size', type=int, default=4)
     ap.add_argument('--seed', type=int, default=42)
     ap.add_argument('--frozen-dtype', choices=['float32','bfloat16'], default='bfloat16')

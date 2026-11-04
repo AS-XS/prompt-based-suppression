@@ -127,3 +127,5 @@ UNLEARN_BASES = {
 
 for _run in ('r2mu-g31', 'r2mu-o32', 'rmu-o32', 'elm-o32', 'elm-o32t'):
     UNLEARN_BASES[_run + '-mp80'] = UNLEARN_BASES[_run]
+
+UNLEARN_BASES['rmu-g31-mp80'] = 'gemma-4-31B-it'

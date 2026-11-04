@@ -14,6 +14,7 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.paths import UNLEARNED_ROOT, unlearn_report_path  # noqa: E402
+from src.unlearn.elm import layer_window  # noqa: E402
 from src.unlearn.elm_upstream import REVISION, SOURCE_SHA256, adapted_tree  # noqa: E402
 from src.unlearn.elm_resume import Recovery, TrainingPaused, lock_work  # noqa: E402
 from src.unlearn.elm_targets import get_elm_peft_model  # noqa: E402
@@ -31,7 +32,8 @@ def main():
     ap.add_argument("--forget-file", type=Path)
     ap.add_argument("--eta", type=int, default=500)
     ap.add_argument("--rank", type=int, default=4)
-    ap.add_argument("--layers", default="4,8", help='Layers.')
+    ap.add_argument("--layers", default="4,8",
+                    help='Layers.')
     ap.add_argument("--samples", type=int, default=3000)
     ap.add_argument("--lr", type=float, default=5e-5)
     ap.add_argument("--seed", type=int, default=42)
@@ -79,12 +81,10 @@ def main():
     torch.manual_seed(args.seed)
     config = AutoConfig.from_pretrained(base)
     depth = getattr(config, "text_config", config).num_hidden_layers
-    if args.layers == "auto":
-        start, end = round(depth * 4 / 32), round(depth * 8 / 32)
-    else:
-        start, end = map(int, args.layers.split(","))
-    if not 0 <= start < end <= depth:
-        ap.error("invalid layer range")
+    try:
+        start, end = layer_window(args.layers, depth)
+    except ValueError as e:
+        ap.error(str(e))
     if args.parallel and torch.cuda.device_count() < 2:
         ap.error("--parallel requires at least two visible GPUs")
     before = _fingerprint(base)

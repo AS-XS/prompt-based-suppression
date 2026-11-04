@@ -11,6 +11,15 @@ from src.unlearn.rmu import (_decoder_layers, _fingerprint, _git_commit,
 from src.unlearn.tensors import carry_over_missing
 
 
+def fitted_steps(requested, usable, batch_size):
+
+
+    steps = min(requested, usable // batch_size)
+    if steps < 1:
+        raise ValueError('not enough prepared traces for one batch')
+    return steps
+
+
 def masked_mse(actual, target, mask):
     error = (actual.float() - target.float()).square().mean(dim=-1)
     return (error * mask).sum() / mask.sum().clamp_min(1)
@@ -35,6 +44,9 @@ def run(args):
     limo = read_rows(args.limo_file)
     if not limo or any(not isinstance(r.get('solution'), str) or not r['solution'].strip() for r in limo):
         raise ValueError('LIMO solutions missing; run prepare_r2mu.py --fetch-limo')
+    if getattr(args, 'fit_steps', False):
+        args.steps = fitted_steps(args.steps, len(rows), args.batch_size)
+        print(f'R2MU steps fitted to the usable traces: {args.steps}', flush=True)
     if len(rows) < args.steps * args.batch_size:
         raise ValueError('not enough prepared traces for requested steps')
     retain = load_retain(limit=args.steps * args.batch_size)

@@ -3,6 +3,21 @@ from __future__ import annotations
 from pathlib import Path
 
 
+def layer_window(spec: str, depth: int) -> tuple[int, int]:
+
+
+    if spec == "auto":
+        spec = "rel:4-8"
+    if spec.startswith("rel:"):
+        a, b = map(float, spec[4:].split("-"))
+        start, end = round(depth * a / 32), round(depth * b / 32)
+    else:
+        start, end = map(int, spec.split(","))
+    if not 0 <= start < end <= depth:
+        raise ValueError(f"invalid layer range {spec!r} for {depth} layers")
+    return start, end
+
+
 def run_elm(*_args, **_kwargs):
 
     raise SystemExit(
