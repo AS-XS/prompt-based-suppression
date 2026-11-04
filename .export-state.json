@@ -22,6 +22,7 @@
     "configs/exp2.yaml": "697fa8d916e09ba7d3025c7aa4749d1d05547d256b619e3af8c74eb98d1af375",
     "configs/exp3.yaml": "081dd0cdaa6d11fb09e213347e6302d9753a8045dd7376510457be18fde8e647",
     "configs/gen_smoke.yaml": "cd41d8f47c49cc49260175c11daa548de79cb7483cd1d068bf930806814fbf5b",
+    "configs/panels/panel1.yaml": "a324bee120297ad183894896d68782795e55f1db6a052add5e6fbff23a2732a5",
     "configs/r2mu-e2b.yaml": "7f09577bccfee378ac463c865701d6782f95f5a3c0f5f83ab30cd07e7d6daffb",
     "configs/r2mu-e4b.yaml": "54f67a6d18e7bd384d35d91afee47d62fd5594a716b478cf3d72b81850297142",
     "configs/r2mu-g12.yaml": "91b72c434d776b3d06c1f65e7301a6848fbec2ffdf58af242137e2494267608e",
@@ -99,7 +100,7 @@
     "scripts/relatedness.py": "4b9a4a8346be23b52194ae19031ec4736bde35851d6ddf607c333c2fc50d7499",
     "scripts/report.py": "f4820618fe80935d619876d8914b5bb670525ae5971a8fdd172f2a7cf9f3ee80",
     "scripts/run_experiment.py": "a662ade1ddf7a0b07165d5f7c36447d08b801c96802338bc49def5dcf87eb11c",
-    "scripts/sample_panel.py": "18ed2738b19c031f7dfd78da81472b5627be57a32fa26e0f95d7f13bcaac87de",
+    "scripts/sample_panel.py": "5694fdd23e938baa8854acea1f8cd07da41fd56a45abfbf23f644b7e16a79802",
     "scripts/sample_traces.py": "f65d62ca8e6b2be2ec86fce5617877ec44456117c5f9d88c4c7aee05aa318676",
     "scripts/scale_ladder.py": "6688c1ea59204238ab1baa7b638fec11c6db1ceebbccc6fe34448a7af21b2baa",
     "scripts/score_accuracy.py": "138cca78601dddbfcda2e104f773d8ff3e57a872f8e6a5186f1cb4c61b645f7c",
@@ -240,7 +241,7 @@
     "tests/test_opt.py": "cf881f6de803188851efafb93173bb9ec110f5aa8e48a6977047179097ac7112",
     "tests/test_opt_runner.py": "706fde611ad748e9274965efa1689a8bbbe1189d7a9c3cf67b29695364fdc4ef",
     "tests/test_optimize_table.py": "2f552e0c4d15b99e52a6d11686424710a0e209cc96b5bdecac39aa5b4115a94f",
-    "tests/test_panel.py": "89cc49914363a60c733c0b3217043d0c7f7818b2a51c24bd5ca3594924aae407",
+    "tests/test_panel.py": "4928effc56de4003917dac914d85d21b203cea295873c105563e4d3bb756a36b",
     "tests/test_paths.py": "69935a7ceea2199bd86144d8b77e24ee49aacea1517119f3df70ebb104e6657f",
     "tests/test_present.py": "2bd77359f3838b31b7472ad641a3e60e3c5a56e5f9578a448caf4aa1fc97b581",
     "tests/test_primitive_judge.py": "786aad3168f021e6f8f0cc35434462c846d8861cc160c80c4f38eb8d0e0234fb",
@@ -272,5 +273,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "8bc56b2e905839e74d432ffd14fc86b144f548bd"
+  "source_revision": "0f07e6131d7ecdb78d72d4e15218658ecae0e690"
 }

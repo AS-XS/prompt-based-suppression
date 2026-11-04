@@ -13,22 +13,25 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import yaml  # noqa: E402
+
 from src.data.identity import generation_id_of as _gid  # noqa: E402,F401
 from src.analysis.lexical import lexical_flags  # noqa: E402  (the proxy flags of the first sample)
 from src.analysis.panel import (BASELINE, Cell, appended_tail, arm_of, draw,  # noqa: E402
                                 file_order, method_of, same_instrument, target_concept)
 from src.analysis.surfaces import trace_of  # noqa: E402
-from src.paths import generations_glob, judge_samples_dir  # noqa: E402
+from src.paths import UNLEARN_BASES, generations_glob, judge_samples_dir  # noqa: E402
 from src.provenance import git_commit  # noqa: E402
 
-UNLEARN_RUNS = ("rmu1", "rmu2", "rmu3", "rmu4", "elm1", "elm2", "elm3", "r2mu-e2b", "r2mu-g31")
+
+UNLEARN_RUNS = ("rmu1", *UNLEARN_BASES)
 
 
 CALLS_PER_SURFACE, TOKENS_PER_CALL, TOKENS_PER_SECOND = 3, 1480, 937
 
 
 def scan(run: str, prompt_run: str, models, think, probe, cells, base_cfg, sources, seen,
-         skip=frozenset()) -> int:
+         skip=frozenset(), prompts=frozenset(), checkpoints=frozenset()) -> int:
 
 
     dupes = 0
@@ -53,9 +56,11 @@ def scan(run: str, prompt_run: str, models, think, probe, cells, base_cfg, sourc
                 if r.get("probe_type") != probe or r.get("think_state") not in think:
                     continue
                 if run == prompt_run:
-                    if ckpt or (models and model not in models) or model in skip:
+                    if (ckpt or (models and model not in models) or model in skip
+                            or (prompts and r.get("prompt_id") not in prompts)):
                         continue
-                elif not ckpt or r.get("concept_id") != target_concept(model):
+                elif (not ckpt or (checkpoints and (run, model) not in checkpoints)
+                        or r.get("concept_id") != target_concept(model)):
                     continue
                 if r["think_state"] == "on" and not (trace_of(r.get("raw_output")) or "").strip():
                     continue
@@ -82,6 +87,20 @@ def _existing_ids(path: Path) -> list[str]:
         return [_gid(json.loads(line)) for line in f if line.strip()]
 
 
+def load_roster(path: Path, flags: dict) -> dict:
+
+
+    roster = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    unlearn = roster.pop("unlearn", None)
+    unknown = sorted(set(roster) - set(flags))
+    if unknown:
+        raise SystemExit(f"{path}: unknown roster key(s) {unknown}")
+    if unlearn is not None:
+        roster["unlearn_runs"] = list(unlearn)
+        roster["checkpoints"] = [f"{run}/{c}" for run, names in unlearn.items() for c in names]
+    return roster
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -100,7 +119,21 @@ def main(argv=None) -> int:
     ap.add_argument("--probe", default="forget")
     ap.add_argument("--force", action="store_true",
                     help='Force.')
+    ap.add_argument("--prompts", nargs="+", default=None, help='Prompts.')
+    ap.add_argument("--checkpoints", nargs="+", default=None, metavar="RUN/NAME",
+                    help='Checkpoints.')
+    ap.add_argument("--roster", default=None,
+                    help='Roster.')
+    roster = ap.parse_known_args(argv)[0].roster
+    if roster:
+        ap.set_defaults(**load_roster(Path(roster), vars(ap.parse_args([]))))
     args = ap.parse_args(argv)
+    checkpoints = set()
+    for token in args.checkpoints or ():
+        run, sep, ckpt = token.partition("/")
+        if not sep or run not in args.unlearn_runs:
+            ap.error(f"--checkpoints {token!r}: write RUN/NAME, with RUN among --unlearn-runs")
+        checkpoints.add((run, ckpt))
 
     name = args.name or f"panel-s{args.seed}"
     out_dir = judge_samples_dir(args.home)
@@ -113,7 +146,21 @@ def main(argv=None) -> int:
             continue
         print(f"scanning {run} ...", flush=True)
         dupes += scan(run, args.prompt_run, set(args.models or ()), set(args.think), args.probe,
-                      cells, base_cfg, sources, seen, frozenset(args.skip_models))
+                      cells, base_cfg, sources, seen, frozenset(args.skip_models),
+                      frozenset(args.prompts or ()), frozenset(checkpoints))
+
+
+    found = {(c.model, c.prompt_id) for c in cells if c.run == args.prompt_run}
+    present = {m for m, _ in found}
+    missing = sorted(set(args.models or ()) - present)
+    if args.prompts:
+        missing += sorted(f"{m} × {p}" for m in set(args.models or present) & present
+                          for p in args.prompts if (m, p) not in found)
+    missing += sorted(f"{r}/{c}" for r, c in checkpoints
+                      if not any(x.run == r and x.model == c for x in cells))
+    if missing:
+        raise SystemExit("no eligible rows for: " + ", ".join(missing) + "\nMisspelt, not "
+                         "generated here, or no think-on trace. Nothing was written.")
     taken = {}
     for run in args.unlearn_runs:
         if run in base_cfg:
@@ -182,6 +229,9 @@ def main(argv=None) -> int:
         "design": "panel", "name": name, "home": args.home, "prompt_run": args.prompt_run,
         "probe": args.probe, "seed": args.seed, "per_concept": args.per_concept,
         "history": old.get("history", []) + [{"per_concept": args.per_concept, "models": args.models,
+                                               "prompts": args.prompts, "roster": args.roster,
+                                               "unlearn_runs": args.unlearn_runs,
+                                               "checkpoints": args.checkpoints,
                                                "at": datetime.now(timezone.utc).isoformat()}],
         "think": args.think, "unlearn_runs": {**old.get("unlearn_runs", {}), **taken},
         "created_at": old.get("created_at") or datetime.now(timezone.utc).isoformat(),

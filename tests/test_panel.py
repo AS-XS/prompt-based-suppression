@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -66,6 +67,16 @@ def test_an_unlearning_run_is_taken_only_on_the_prompt_runs_instrument():
     ok, why = same_instrument({"llama": {"h4096"}}, prompt)       
     assert not ok and "h4096" in why
     assert not same_instrument({"olmo": {"x"}}, prompt)[0]
+
+
+def test_the_default_draw_reads_every_unlearning_namespace_and_round_twos_names_parse():
+    from scripts.plan_unlearn_round2 import commands
+    from scripts.sample_panel import UNLEARN_RUNS
+    from src.paths import UNLEARN_BASES
+    assert set(UNLEARN_RUNS) == {"rmu1", *UNLEARN_BASES}
+    for line in commands("train"):
+        name = line.split("NAME=")[1].split(",")[0]
+        assert method_of(name) and target_concept(name)
 
 
 def _row(model, concept, item, prompt, *, think="on", cfg=None, probe="forget", answer="B"):
@@ -165,6 +176,52 @@ def test_a_model_still_generating_can_be_left_out_and_added_later(tree):
     assert (d / "panel-s3__p__gemma-a.jsonl").read_text() == gemma        
     m = json.loads((d / "panel-s3.manifest.json").read_text())
     assert {v["model"] for v in m["rows"].values()} >= {"gemma-a", "llama-x", "rmu-a-bio-u1"}
+
+
+def _roster(cwd, roster: str):
+    (cwd / "roster.yaml").write_text(roster)
+    return subprocess.run([sys.executable, str(ROOT / "scripts" / "sample_panel.py"),
+                           "--prompt-run", "p", "--home", "h", "--roster", "roster.yaml"],
+                          cwd=cwd, capture_output=True, text=True)
+
+
+def test_a_roster_draws_exactly_what_it_names(tree):
+    out = _roster(tree, "seed: 3\nper_concept: 2\nmodels: [gemma-a]\nprompts: [none-baseline, w1]\n"
+                        "unlearn: {u1: [rmu-a-bio-u1], u2: [rmu-a-bio-u2]}\n")
+    assert out.returncode == 0, out.stderr[-1500:]
+    d = tree / "results" / "h" / "judge_samples"
+    assert sorted(p.name for p in d.glob("*.jsonl")) == ["panel-s3__p__gemma-a.jsonl",
+                                                         "panel-s3__unlearned.jsonl"]
+    assert {r["prompt_id"] for r in _rows(d / "panel-s3__p__gemma-a.jsonl")} == {"none-baseline", "w1"}
+    assert {r["model"] for r in _rows(d / "panel-s3__unlearned.jsonl")} == {"rmu-a-bio-u1"}
+    assert "u2: LEFT OUT" in out.stdout
+    m = json.loads((d / "panel-s3.manifest.json").read_text())
+    assert m["history"][-1]["checkpoints"] == ["u1/rmu-a-bio-u1", "u2/rmu-a-bio-u2"]
+
+
+@pytest.mark.parametrize("roster,why", [
+    ("prompts: [none-baseline, w9]\n", "gemma-a × w9"),
+    ("unlearn: {u1: [rmu-a-bio-u9]}\n", "u1/rmu-a-bio-u9"),
+    ("unlearn: {u1: [elm-a-cyber-u1]}\nmodels: [gemma-a, qwen-z]\n", "qwen-z"),
+    ("checkpionts: []\n", "unknown roster key"),
+])
+def test_a_roster_name_with_no_rows_is_refused_and_nothing_is_written(tree, roster, why):
+    out = _roster(tree, "seed: 3\nper_concept: 2\n" + roster)
+    assert out.returncode != 0 and why in out.stderr
+    assert not (tree / "results" / "h").exists()
+
+
+def test_the_committed_roster_names_real_prompts_runs_and_checkpoints():
+    from scripts.sample_panel import UNLEARN_RUNS
+    from src.prompts import ALL_PROMPT_IDS
+    from src.prompts.labels import split_prompt_id
+    roster = yaml.safe_load((ROOT / "configs/panels/panel1.yaml").read_text())
+    assert (roster["name"], roster["per_concept"], roster["prompt_run"]) == ("panel1", 200, "wmdp8")
+    assert all(split_prompt_id(p)[0] in ALL_PROMPT_IDS for p in roster["prompts"])
+    assert "none-baseline" in roster["prompts"]
+    assert set(roster["unlearn"]) <= set(UNLEARN_RUNS)
+    for names in roster["unlearn"].values():
+        assert all(method_of(n) and target_concept(n) for n in names)
 
 
 def test_growing_the_panel_appends_and_a_changed_source_is_refused(tree):

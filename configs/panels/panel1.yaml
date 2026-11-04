@@ -1,0 +1,117 @@
+name: panel1
+seed: 1
+per_concept: 200
+prompt_run: wmdp8
+models:
+  - Meta-Llama-3-8B-Instruct
+  - Olmo-3-7B-Instruct
+  - Olmo-3-7B-Think
+  - Olmo-3.1-32B-Instruct
+  - Olmo-3.1-32B-Think
+  - Qwen3-14B
+  - gemma-4-12B-it
+  - gemma-4-31B-it
+  - gemma-4-E2B-it
+  - gemma-4-E4B-it
+prompts:
+  - 'none-baseline'
+  - 'scoped-assess-aware@keywords'
+  - 'scoped-assess-aware@specific'
+  - 'scoped-assess-decoy-conceal@specific'
+  - 'scoped-assess-decoy-morph@specific'
+  - 'scoped-assess-decoy-redirect@specific'
+  - 'scoped-assess@specific'
+  - 'scoped-conditional@keywords'
+  - 'scoped-conditional@specific'
+  - 'scoped-directed-aware@keywords'
+  - 'scoped-directed-aware@specific'
+  - 'scoped-directed-decoy-conceal@specific'
+  - 'scoped-directed-decoy-redirect@specific'
+  - 'scoped-directed-fewshot-grouped-aware@specific'
+  - 'scoped-directed-fewshot-grouped-named-broad-aware@specific'
+  - 'scoped-directed-fewshot-grouped@specific'
+  - 'scoped-directed-fewshot@specific'
+  - 'scoped-directed-named-broad-aware@specific'
+  - 'scoped-directed-named-broad@specific'
+  - 'scoped-directed-named-exact@specific'
+  - 'scoped-directed@specific'
+  - 'scoped-persona-directed@specific'
+  - 'scoped-persona@specific'
+  - 'scoped-retain@specific'
+  - 'scoped-sandbag-aware@specific'
+  - 'scoped-sandbag@specific'
+  - 'scoped-world@specific'
+unlearn:
+  rmu1:
+    - rmu-llama-cyber
+    - rmu-llama-cyber-c20
+    - rmu-llama-cyber-c20a10
+    - rmu-llama-cyber-c20a100
+    - rmu-llama-cyber-c20a300
+    - rmu-llama-cyber-c70
+    - rmu-llama-cyber-v2
+  rmu2:
+    - rmu-e2b-bio-c81a100
+    - rmu-e2b-cyber-c122a300
+    - rmu-e2b-cyber-c162a300
+    - rmu-e2b-cyber-c81a100
+    - rmu-e2b-cyber-c81a1000
+    - rmu-e2b-cyber-c81a300x2
+    - rmu-gemma-cyber-lr25
+  rmu3:
+    - rmu-llama-bio-c20a300
+    - rmu-llama-bio-c20a300n75
+    - rmu-llama-bio-c20a600
+    - rmu-llama-bio-v2
+    - rmu-llama-cyber-c20a300
+    - rmu-llama-cyber-c20a300-s2
+    - rmu-llama-cyber-c20a300n75
+    - rmu-llama-cyber-c20a600
+    - rmu-llama-cyber-v2
+  rmu4:
+    - rmu-g31-bio-r11
+    - rmu-g31-bio-r11a1000
+    - rmu-g31-bio-r165
+    - rmu-g31-bio-r22
+    - rmu-g31-cyber-r11
+    - rmu-g31-cyber-r11a1000
+    - rmu-g31-cyber-r165
+    - rmu-g31-cyber-r22
+  elm1:
+    - elm-llama-bio
+    - elm-llama-cyber
+  elm2:
+    - elm-e2b-bio
+    - elm-e2b-cyber
+  elm3:
+    - elm-g31-bio-v2
+    - elm-g31-cyber-v3
+  r2mu-e2b:
+    - r2mu-e2b-bio-control
+    - r2mu-e2b-bio-full
+    - r2mu-e2b-bio-t01
+    - r2mu-e2b-cyber-control
+    - r2mu-e2b-cyber-full
+  r2mu-e4b:
+    - r2mu-e4b-bio-control
+    - r2mu-e4b-bio-t01
+    - r2mu-e4b-cyber-control
+    - r2mu-e4b-cyber-t01
+  r2mu-g12:
+    - r2mu-g12-bio-control
+    - r2mu-g12-bio-t01
+    - r2mu-g12-cyber-control
+    - r2mu-g12-cyber-t01
+  r2mu-g31-mp80:
+    - r2mu-g31-bio-control-mp80
+    - r2mu-g31-bio-t01-mp80
+    - r2mu-g31-cyber-control-mp80
+    - r2mu-g31-cyber-t01-mp80
+  rmu-e4b:
+    - rmu-e4b-bio-p01
+    - rmu-e4b-cyber-p01
+  rmu-g12:
+    - rmu-g12-bio-p01
+    - rmu-g12-cyber-p01
+  elm-g12:
+    - elm-g12-bio-p01
