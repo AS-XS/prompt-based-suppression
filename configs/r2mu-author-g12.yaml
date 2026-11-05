@@ -1,0 +1,4 @@
+run: r2mu-author-g12
+probe_types: [forget, neighbor, utility]
+conditions: [baseline]
+sampling: {max_tokens: 16384}
