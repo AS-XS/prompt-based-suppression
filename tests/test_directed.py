@@ -37,6 +37,8 @@ def test_every_directed_id_is_registered():
         "scoped-assess-decoy-redirect", "scoped-assess-decoy-conceal",
 
         "scoped-assess-decoy-morph",
+
+        "scoped-directed-related-aware", "scoped-assess-related", "scoped-assess-related-aware",
     }
     assert set(DIRECTED_PROMPT_IDS) <= set(ALL_PROMPT_IDS)
 

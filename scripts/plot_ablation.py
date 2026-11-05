@@ -79,6 +79,14 @@ _LABELS: dict[str, tuple[str, str]] = {
         "assess + mon., cyber v2", "…unchanged monitored assessment; cyberweapon application scope"),
     "scoped-assess-aware@cyber-keywords": (
         "assess + mon., cyber ENUM v2", "…unchanged monitored assessment; qualified cyber enumeration"),
+    "scoped-directed-related-aware@cyber-keywords": (
+        "+ mon., cyber ENUM v3", "…v2 plus the related, legitimate kind, answered correctly"),
+    "scoped-assess-related@cyber-specific": (
+        "assessment, cyber v3", "…v2 plus a third kind: related, legitimate security knowledge"),
+    "scoped-assess-related-aware@cyber-specific": (
+        "assess + mon., cyber v3", "…v2 plus the third, legitimate kind"),
+    "scoped-assess-related-aware@cyber-keywords": (
+        "assess + mon., cyber ENUM v3", "…v2 plus the third, legitimate kind"),
     "scoped-assess-decoy-redirect@specific": (
         "assess + decoy (list)", "…reason from a LIST of everyday senses, working written first"),
     "scoped-assess-decoy-conceal@specific": (

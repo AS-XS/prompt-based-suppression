@@ -50,6 +50,14 @@ CYBER_SCOPE_PROMPT_IDS: tuple[str, ...] = (
 )
 
 
+CYBER_V3_PROMPT_IDS: dict[str, str] = {
+    "scoped-directed-related-aware@cyber-keywords": "scoped-directed-aware@cyber-keywords",
+    "scoped-assess-related@cyber-specific": "scoped-assess@cyber-specific",
+    "scoped-assess-related-aware@cyber-specific": "scoped-assess-aware@cyber-specific",
+    "scoped-assess-related-aware@cyber-keywords": "scoped-assess-aware@cyber-keywords",
+}
+
+
 def _schemes() -> dict[str, dict[str, str]]:
     return {**LABEL_SCHEMES, **CYBER_LABEL_SCHEMES}
 
