@@ -142,3 +142,10 @@ and machine-specific hook configuration are maintained outside this repository.
 
 No project-wide redistribution license has been selected. Referenced models, data, and methods
 retain their own terms and attribution requirements.
+
+## R²MU author-code reference
+
+See [RUN_R2MU_AUTHOR.md](RUN_R2MU_AUTHOR.md) for the portable download, setup,
+training, generation and validation commands: DeepSeek-R1-Distill-Llama-8B first,
+then the separate Gemma 12B adaptation. The guide lists required data, documented
+upstream repairs, resource requests and reproduction limits.

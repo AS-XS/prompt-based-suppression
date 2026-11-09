@@ -4,7 +4,8 @@
     ".gitignore": "b78cc22b79347394fff6ba80bc384fe664656666ceb30889f357796dccb139e0",
     "Makefile": "993b623b77c555cf3b52a450c00ac54aa37c8b9122a44c37f384ae002a59a30f",
     "R2MU_AUTHOR.md": "1112f78f34976ce18c9b79652c762cddbae1bbdb567af759edf6c256efb4a7aa",
-    "README.md": "78aaa56da5aa4320a07522756ccc4e443fe466918f3ff739c1fd0b74e3f22755",
+    "README.md": "cb1a3fd018620aabd14ab8955f85bd2332c1eaf52e83174acdd11da5dbacef17",
+    "RUN_R2MU_AUTHOR.md": "0c6703c8d62b3be901e951dbeed52dadf977cfa7cb2fceeade8b71b98dbbe79d",
     "UNLEARN_80G.md": "4f1dd009d249825866aab2b25dde19dc0f694e7441585cea2356b454b212ce96",
     "UNLEARN_EXPANSION.md": "e69ff7a703b755415fba3d1e8ec877a7cb44b29a35c9250529c1c2e962296f2d",
     "UNLEARN_ROUND2.md": "22de783c8ab0e922a689fd1f2473eb0907808485b408dbae6445874bac04f09a",
@@ -282,5 +283,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "96d69c6a745c3749a709ecb5bb53574b59b038af"
+  "source_revision": "e10545303552e690dd72f0f185cddf2a8a8c665c"
 }
