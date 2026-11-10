@@ -5,7 +5,7 @@
     "Makefile": "993b623b77c555cf3b52a450c00ac54aa37c8b9122a44c37f384ae002a59a30f",
     "R2MU_AUTHOR.md": "1112f78f34976ce18c9b79652c762cddbae1bbdb567af759edf6c256efb4a7aa",
     "README.md": "cb1a3fd018620aabd14ab8955f85bd2332c1eaf52e83174acdd11da5dbacef17",
-    "RUN_R2MU_AUTHOR.md": "0c6703c8d62b3be901e951dbeed52dadf977cfa7cb2fceeade8b71b98dbbe79d",
+    "RUN_R2MU_AUTHOR.md": "5ba2fe77b60073a271c201abeb0942b0a94f63de7ba267300176937d6fe4540f",
     "UNLEARN_80G.md": "4f1dd009d249825866aab2b25dde19dc0f694e7441585cea2356b454b212ce96",
     "UNLEARN_EXPANSION.md": "e69ff7a703b755415fba3d1e8ec877a7cb44b29a35c9250529c1c2e962296f2d",
     "UNLEARN_ROUND2.md": "22de783c8ab0e922a689fd1f2473eb0907808485b408dbae6445874bac04f09a",
@@ -100,7 +100,7 @@
     "scripts/present_optimize.py": "b5c97b90d24addeeddaa2f44ea06eb46ee61a7f877d18b5ba4efbac8bf6a7494",
     "scripts/present_tables.py": "2f402ce380462cb024be0d66bf08f1928f89caf9c62e04019f5d18865a0b77ef",
     "scripts/probe_model.py": "6f73efa516972d4255b20d570443945820c83bee0c74323287a5920f54466c8b",
-    "scripts/qsub_r2mu_author.sh": "8a2369d25e4d6bb06c9870345b222ba1aac17736840c6c62b06b45dcf671a28a",
+    "scripts/qsub_r2mu_author.sh": "c0ee2b004bd44622ef8cb949b2e529999981ac91800f7a1415655d586a090c66",
     "scripts/rating_table.py": "b292b7513caaec0791424609d4682ea419ca2c61f61f2bd14603b6c40b69058b",
     "scripts/relatedness.py": "4b9a4a8346be23b52194ae19031ec4736bde35851d6ddf607c333c2fc50d7499",
     "scripts/report.py": "f4820618fe80935d619876d8914b5bb670525ae5971a8fdd172f2a7cf9f3ee80",
@@ -283,5 +283,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "e10545303552e690dd72f0f185cddf2a8a8c665c"
+  "source_revision": "57092798c94312996716339e7926267cd01e9c08"
 }

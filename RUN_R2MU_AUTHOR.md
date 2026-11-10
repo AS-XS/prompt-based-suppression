@@ -143,6 +143,22 @@ the allocation; retain the scheduler's `CUDA_VISIBLE_DEVICES` assignment.
 HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python scripts/train_r2mu_author.py --variant ds8 --models-dir models
 ```
 
+On SCC, you can submit the same training through the included wrapper instead
+of running the Python command interactively. Set `SCC_PROJECT` to your own authorized
+allocation (the script's historical default is `cs505am`; override it):
+
+```bash
+mkdir -p logs
+qsub -P "${SCC_PROJECT:?Set SCC_PROJECT to your authorized SCC allocation}" -l gpus=2,gpu_memory=80G,h_rt=48:00:00 -N r2mu_author_ds8_bio -v VARIANT=ds8 scripts/qsub_r2mu_author.sh
+```
+
+The wrapper activates `.venv/` (or `venv/`, or an explicit `VENV_DIR`) and works
+without `scripts/env.sh`. Errors include the failing command and line in
+`logs/r2mu_author_ds8_bio.o<job-id>`. It preserves default cache locations; if you
+used custom HF cache variables for setup, export the same variables in the job
+(for example with qsub `-v HF_HOME` when HF_HOME is exported). Do not switch caches
+between online setup and offline training.
+
 This runs all 500 updates, with no smoke stage. Progress and losses are printed and
 saved to `results/r2mu-author-training/r2mu-author-ds8-bio/losses.jsonl`.
 The trainer also writes `request.json` with configuration and provenance.
