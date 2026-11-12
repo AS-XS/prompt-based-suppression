@@ -5,7 +5,7 @@
     "Makefile": "993b623b77c555cf3b52a450c00ac54aa37c8b9122a44c37f384ae002a59a30f",
     "R2MU_AUTHOR.md": "1112f78f34976ce18c9b79652c762cddbae1bbdb567af759edf6c256efb4a7aa",
     "README.md": "a85d808c4f4ef097a9f99174d641a58ede38460a66edd5468d79c50f05616568",
-    "RMU_AUTHOR.md": "8e8a75af62f473cba726f53d8c665a79cc21c2314f396058b1077deb27919d57",
+    "RMU_AUTHOR.md": "c5862f8639492ac9f15e84433367febfcd8e35819a7e91827a58519a950b80c5",
     "RUN_R2MU_AUTHOR.md": "5ba2fe77b60073a271c201abeb0942b0a94f63de7ba267300176937d6fe4540f",
     "UNLEARN_80G.md": "4f1dd009d249825866aab2b25dde19dc0f694e7441585cea2356b454b212ce96",
     "UNLEARN_EXPANSION.md": "e69ff7a703b755415fba3d1e8ec877a7cb44b29a35c9250529c1c2e962296f2d",
@@ -120,7 +120,7 @@
     "scripts/score_recitation.py": "c47fd9d255de586598213deac61f347fb329160c9d7abefa76491d83a5a3276d",
     "scripts/score_surface_gap.py": "c2b5a5ff248a7e486817219a4fcdaa4f06fffc8fa1714bae1fe1e4e872cd3336",
     "scripts/setup_r2mu_author.py": "ffc79176015edb716c8452d1fd9d79f99ee28259e90901acf5f1860a59d6ad11",
-    "scripts/setup_rmu_author.py": "42e98c6732d779a509562bbc320586c3d37f13831f976880df895aba4faea14c",
+    "scripts/setup_rmu_author.py": "d5bb1e64c970100fb59c842fcdf5a19e1fe566d873c5f17d81883828769ab9b9",
     "scripts/setup_unlearn_runs.py": "d1ac2095207086c60bba6d91a3947a4164e1f051c8531553721eb828403853c3",
     "scripts/smoke.py": "9695f72776f8cb3f1b81f4a4842ab23c2bae6e035dea3fef8946f18c85f770be",
     "scripts/smoke_parse.py": "a4171b1ce5f22efd50d21be31da1b794cfec4abc5aec82eccba6cd786f7cec2d",
@@ -230,7 +230,7 @@
     "src/unlearn/r2mu_data.py": "fb63750d5cb6310a1053b9bf97b7dbdeef88d768ddd775da16d50a3ced074eab",
     "src/unlearn/rmu.py": "84019a5c233cb1e3ee68f27d8b088135562b25e942415db7f2400e45c5cd0adf",
     "src/unlearn/rmu_author.py": "dd6b50eeeaeeabd03cef87367f95c9b5d3ca52ea3d6d974c94c33e06d30fc251",
-    "src/unlearn/rmu_author_data.py": "6a13f7010565a5bf321347a4592597c5f2f87d91cbc2b90af28f0a5a3c111436",
+    "src/unlearn/rmu_author_data.py": "c7b96de6b367944a0b66ccf25e20b507078f09d39f4ffb3b6b594fba5c1bcf3c",
     "src/unlearn/tensors.py": "488d1fc50dca43aa9a9d6ce8d50d232a5a934497c56d89be29c76b63a51a1eb8",
     "tests/test_accuracy.py": "fd12c9183bb24dc114094a7412d6389406ea10767802d4a8e067ee859c388f5a",
     "tests/test_agreement.py": "4f1aa8524b564bb4e702b95fd190a7cf40d884a874e85b545e54f8b933002f79",
@@ -274,7 +274,7 @@
     "tests/test_recitation.py": "4dac754f98b539a8ab58dc13ca5eb7a3f4b5964fbd9be1c8af58e5e0dd1608f7",
     "tests/test_report.py": "421b381a1255e36941793c81ae0694428031165a6c9c3d61e33133ae93ac7c70",
     "tests/test_retain_tiers.py": "3e9d01cf7e996c15ac4dba428eaf990d37f3d7291eb67fcbb93865f682bd5756",
-    "tests/test_rmu_author.py": "590d269a32301b9b90232167363f75c007ddb596047b417b1a459fccd5efef76",
+    "tests/test_rmu_author.py": "8dc3ca0f19bed291ccd4198091780a9e481362aaa63265f20e3a6398b2115d66",
     "tests/test_runner_resume.py": "693b5b5c872d2ee09c7b427eb1c738b70b3c62d975752314095eb1b89e421bbf",
     "tests/test_scaffold.py": "b93d0132c74614d8e937cd6079728d3d9d1608f4b90c09161d01390892e59a7f",
     "tests/test_summary.py": "f6394b5a7640c8942e28202a77c2cb164cf82eea3fea00f61e231f8b6fbb23de",
@@ -293,5 +293,5 @@
     "tests/test_wmdp_split.py": "c69db285d63f2435a91f1e0371e7c03b3b6c087b4b7fa322b8000c0bd6cac09e"
   },
   "schema": 1,
-  "source_revision": "210a8254ec8408914f552ff1455759161957760f"
+  "source_revision": "7a612906af396c6d13d22d7ce19e0bd74faab3c5"
 }

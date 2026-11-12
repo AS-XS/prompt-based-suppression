@@ -51,8 +51,21 @@ fetches the pinned source and official `cais/wmdp-cyber-forget-corpus`, caches
 `Salesforce/wikitext` / `wikitext-2-raw-v1` test, freezes the training bundle, and copies
 evaluation inputs into the three new namespaces. It does not alter old inputs/results.
 Repeated setup refuses differing inputs. Compute jobs read the frozen bundle offline.
-The official cyber corpus and WikiText-2 are required to match this reference recipe;
-previous WikiText-103 caching is not a substitute.
+The separate official cyber repository requires its own access approval. If you
+already ran earlier experiments with `cais/wmdp-corpora`, explicitly reuse that
+cached cyber corpus instead of requesting another download:
+
+```bash
+python scripts/setup_rmu_author.py --cyber-source cached-corpora
+```
+
+This reads the `cyber-forget-corpus` configuration offline from your existing HF
+cache and records the dataset ID, configuration, fingerprint and frozen text hashes.
+The author loop/optimizer remain unchanged, but byte equivalence to the separately
+gated corpus has not been established. It is an author-code run using the existing
+corpus, not a certified exact-data reproduction. Use the same HF cache as earlier
+runs (`source scripts/env.sh` in the original checkout). WikiText-2 retain data is
+still required; previous WikiText-103 caching is not a substitute.
 
 For a fresh advisor clone, install `pip install -e '.[gpu,analysis]' accelerate
 sentencepiece` in `.venv`, obtain the authorized corpus using the dataset conversion

@@ -16,6 +16,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--source', type=Path, default=ROOT)
     ap.add_argument('--forget-file', type=Path, default=Path('data/raw/bio-forget-corpus.jsonl'))
+    ap.add_argument('--cyber-source', choices=['author', 'cached-corpora'], default='author',
+                    help='Cyber source.')
     args = ap.parse_args()
     for path in (args.forget_file, items_path('wmdp8'), split_path('wmdp8')):
         if not path.is_file():
@@ -32,7 +34,7 @@ def main():
             tmp.replace(dst)
         if sha(dst) != digest:
             raise ValueError(f'Existing source hash mismatch: {name}')
-    write_bundle(args.source, args.forget_file)
+    write_bundle(args.source, args.forget_file, cyber_source=args.cyber_source)
     for variant in MODELS:
         run = f'rmu-author-{variant}'
         for src, dst in [(items_path('wmdp8'), items_path(run)),

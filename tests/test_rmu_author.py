@@ -113,3 +113,26 @@ def test_setup_freezes_order_and_preserves_existing_bundle(tmp_path, monkeypatch
     bio.write_text(bio.read_text().replace('bio 0','CHANGED'))
     with pytest.raises(ValueError, match='Differing frozen input'): write_bundle(tmp_path, bio)
     assert hashes['corpora.json'] == sha(tmp_path/'corpora.json')
+
+
+def test_cached_cyber_uses_old_repo_offline_and_records_it(tmp_path, monkeypatch):
+    import sys
+    from src.unlearn.rmu_author_data import write_bundle
+    config = SimpleNamespace(HF_DATASETS_OFFLINE=False)
+    calls = []
+    class Dataset:
+        _fingerprint = 'cached-fixture'
+        def __getitem__(self, key): return [f'text {i}' for i in range(600)]
+    def load(name, subset, split):
+        calls.append((name, subset, config.HF_DATASETS_OFFLINE))
+        return Dataset()
+    monkeypatch.setitem(sys.modules, 'datasets', SimpleNamespace(load_dataset=load, config=config))
+    bio = tmp_path/'bio.jsonl'
+    bio.write_text(''.join(json.dumps({'text':f'bio {i}'})+'\n' for i in range(600)))
+    write_bundle(tmp_path, bio, cyber_source='cached-corpora')
+    assert calls[-1] == ('cais/wmdp-corpora', 'cyber-forget-corpus', True)
+    assert config.HF_DATASETS_OFFLINE is False
+    manifest = json.loads((tmp_path/'corpora-manifest.json').read_text())
+    assert manifest['cyber_dataset'] == 'cais/wmdp-corpora'
+    assert manifest['cyber_config'] == 'cyber-forget-corpus'
+    assert 'not verified' in manifest['author_dataset_equivalence']
