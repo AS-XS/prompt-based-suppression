@@ -132,3 +132,7 @@ UNLEARN_BASES['rmu-g31-mp80'] = 'gemma-4-31B-it'
 
 UNLEARN_BASES.update({'r2mu-author-ds8': 'DeepSeek-R1-Distill-Llama-8B',
                       'r2mu-author-g12': 'gemma-4-12B-it'})
+
+UNLEARN_BASES.update({'rmu-author-zephyr': 'zephyr-7b-beta',
+                      'rmu-author-g12': 'gemma-4-12B-it',
+                      'rmu-author-llama': 'Meta-Llama-3-8B-Instruct'})

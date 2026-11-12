@@ -149,3 +149,8 @@ See [RUN_R2MU_AUTHOR.md](RUN_R2MU_AUTHOR.md) for the portable download, setup,
 training, generation and validation commands: DeepSeek-R1-Distill-Llama-8B first,
 then the separate Gemma 12B adaptation. The guide lists required data, documented
 upstream repairs, resource requests and reproduction limits.
+
+## RMU author-code reference
+
+[RMU_AUTHOR.md](RMU_AUTHOR.md) documents the published Zephyr joint bio/cyber
+recipe, followed by separate Gemma 12B and Llama 8B Instruct adaptations.

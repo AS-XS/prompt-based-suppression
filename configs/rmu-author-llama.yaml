@@ -1,0 +1,4 @@
+run: rmu-author-llama
+probe_types: [forget, neighbor, utility]
+conditions: [baseline]
+sampling: {max_tokens: 16384}
